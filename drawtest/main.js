@@ -15,13 +15,13 @@ $(document).ready(function()
    nTool.stationaryReportInterval = 1;
    drawer.tools["network"] = nTool;
    drawer.currentTool = "network";
+   drawer.lineWidth = 3;
 
    var canvas = drawing[0];
    canvas.width = 600;
    canvas.height = 600;
 
    drawer.Attach(canvas, [], 0);
-   /*CanvasUtilities.AutoStyle(canvas);*/
 });
 
 function networkTool(data, context, drawer)

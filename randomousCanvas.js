@@ -1109,7 +1109,6 @@ CanvasDrawer.prototype.Redraw = function(bounding)
 
 CanvasDrawer.prototype.PerformDrawAction = function(data, context)
 {
-   console.trace(data);
    //Ensure the drawing canvases are properly set up before we hand the data
    //off to a tool action thingy.
    var bcontext = this.GetCurrentCanvas().getContext("2d");
