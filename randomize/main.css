@@ -1,0 +1,10 @@
+textarea, label
+{
+   display: block;
+}
+
+textarea
+{
+   height: 19em;
+   width: 15em;
+}

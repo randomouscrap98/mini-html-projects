@@ -1,0 +1,15 @@
+body
+{
+   font-family: sans-serif;
+}
+
+#result
+{
+   white-space: pre;
+}
+
+.error
+{
+   color: darkred;
+}
+

@@ -1,0 +1,25 @@
+<html>
+   <head>
+      <meta charset="UTF-8">
+      <meta name="rating" content="general">
+      <meta name="viewport" content="width=device-width,maximum-scale=1">
+      <!-- Jquery FIRST because everything needs it -->
+      <script src="../jquery-3.4.1.min.js"></script>
+      <script src="../mini.js"></script>
+      <script src="main.js"></script>
+      <link rel="stylesheet" href="../mini.css">
+      <link rel="stylesheet" href="main.css">
+   </head>
+   <body>
+      <h1>Assign randomly!</h1>
+      <form id="randomize">
+         <p class="warn">Enter names on each line</p>
+         <textarea name="users" placeholder="Names" required=""></textarea>
+         <label><input type="checkbox" name="noself" value="noself" checked=""><span>No self assign</span></label>
+         <label><input type="checkbox" name="notrade" value="notrade" checked=""><span>No trades</span></label>
+         <input type="submit" value="Randomize">
+      </form>
+      <div id="result">
+      </div>
+   </body>
+</html>

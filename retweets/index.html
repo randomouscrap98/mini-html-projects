@@ -1,0 +1,24 @@
+<html>
+   <head>
+      <meta charset="UTF-8">
+      <meta name="rating" content="general">
+      <meta name="viewport" content="width=device-width,maximum-scale=1">
+      <!-- Jquery FIRST because everything needs it -->
+      <script src="../jquery-3.4.1.min.js"></script>
+      <script src="../mini.js"></script>
+      <script src="main.js"></script>
+      <link rel="stylesheet" href="../mini.css">
+      <link rel="stylesheet" href="main.css">
+   </head>
+   <body>
+      <h1>Full(?) retweet finder</h1>
+      <form id="retweetFinder">
+         <p class="warn">Patience; this could take some time</p>
+         <input type="text" name="user" placeholder="Handle" required="">
+         <input type="text" name="tweetId" placeholder="Tweet ID (number in URL)" required="">
+         <input type="submit">
+      </form>
+      <div id="result">
+      </div>
+   </body>
+</html>
