@@ -866,10 +866,19 @@ function CanvasDrawer()
             data.startY = me.lastAction.startY;
          }
 
-         if(me.CheckToolValidity("frameLock"))
+         //Dump all frame actions on end
+         if((data.action & CursorActions.End))
+            me.frameActions = [];
+
+         if((data.action & (CursorActions.Start | CursorActions.End)) === 0 
+            && me.CheckToolValidity("frameLock"))
+         {
             me.frameActions.push({"data" : data, "context": context});
+         }
          else
+         {
             me.PerformDrawAction(data, context);
+         }
       }
    };
    this._doFrame = function()
@@ -884,15 +893,18 @@ function CanvasDrawer()
       //other thing added actions; I shouldn't ignore those.
       if(me.frameActions.length)
       {
-         for(var i = 0; i < me.frameActions.length; i++)
-         {
-            if(me.frameActions[i].data.action & (CursorActions.Start |
-               CursorActions.End) || i === me.frameActions.length - 1)
-            {
-               me.PerformDrawAction(me.frameActions[i].data,
-                  me.frameActions[i].context);
-            }
-         }
+         me.PerformDrawAction(me.frameActions[me.frameActions.length - 1].data, 
+            me.frameActions[me.frameActions.length - 1].context);
+         //for(var i = 0; i < me.frameActions.length; i++)
+         //{
+         //   //if(me.frameActions[i].data.action & (CursorActions.Start |
+         //   //   CursorActions.End) || i === me.frameActions.length - 1)
+         //   if(i === me.frameActions.length - 1)
+         //   {
+         //      me.PerformDrawAction(me.frameActions[i].data,
+         //         me.frameActions[i].context);
+         //   }
+         //}
 
          me.frameActions = [];
       }
@@ -902,7 +914,7 @@ function CanvasDrawer()
       //last stationary report.
       else if (me.CheckToolValidity("stationaryReportInterval") && me.CheckToolValidity("tool") && 
          me.lastAction && (me.lastAction.action & CursorActions.Drag) && 
-         !(me.lastAction.action & (CursorActions.End)) && 
+         !(me.lastAction.action & CursorActions.End) && 
          (frameCount % me.tools[me.currentTool].stationaryReportInterval) === 0)
       {
          me.PerformDrawAction(me.lastAction, me.GetCurrentCanvas().getContext("2d"));
@@ -1097,6 +1109,7 @@ CanvasDrawer.prototype.Redraw = function(bounding)
 
 CanvasDrawer.prototype.PerformDrawAction = function(data, context)
 {
+   console.trace(data);
    //Ensure the drawing canvases are properly set up before we hand the data
    //off to a tool action thingy.
    var bcontext = this.GetCurrentCanvas().getContext("2d");

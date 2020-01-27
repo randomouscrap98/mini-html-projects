@@ -1,9 +1,30 @@
 //Yeah
 $(document).ready(function()
 {
+   var st = StyleUtilities.CreateStyleElement();
+   StyleUtilities.InsertStylesAtTop([st]);
+   st.Append(["canvas"], StyleUtilities.NoImageInterpolationRules());
+
    console.log("I'M READY");
-   var drawer = new CanvasDrawer();
+
    var drawing = $("#drawing");
+
+   var drawer = new CanvasDrawer();
+   var nTool = new CanvasDrawerTool(networkTool);
+   nTool.frameLock = 1;
+   nTool.stationaryReportInterval = 1;
+   drawer.tools["network"] = nTool;
+   drawer.currentTool = "network";
+
    var canvas = drawing[0];
-   drawer.Attach(canvas, []);
+   canvas.width = 600;
+   canvas.height = 600;
+
+   drawer.Attach(canvas, [], 0);
+   /*CanvasUtilities.AutoStyle(canvas);*/
 });
+
+function networkTool(data, context, drawer)
+{
+   return data.lineFunction(context, data.oldX, data.oldY, data.x, data.y, data.lineWidth);
+}
