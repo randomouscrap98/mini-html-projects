@@ -1,0 +1,14 @@
+There is an endpoint:
+
+http://oboy.smilebasicsource.com/stream/<someName>
+
+* POST raw data to this endpoint to append to the given stream (can be any name). 
+* GET to read the entire stream.
+* GET with ?start=# to read from a given offset.
+* If start > stream length, endpoint will block until data comes in
+
+An example can be seen at http://oboy.smilebasicsource.com/random/mini/um?<roomName>
+It is a supremely simple chat built on top of the stream
+
+
+Note: streams can only go up to 5mb for now. They are not persisted to disk yet.
