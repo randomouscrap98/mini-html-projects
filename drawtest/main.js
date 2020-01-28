@@ -1,13 +1,11 @@
 // Carlos Sanchez
 // January, 2020
 
+var system = {};
+
 $(document).ready(function()
 {
-   var room = window.location.search.substr(1);
-
-   var st = StyleUtilities.CreateStyleElement();
-   StyleUtilities.InsertStylesAtTop([st]);
-   st.Append(["canvas"], StyleUtilities.NoImageInterpolationRules());
+   setupStyling();
 
    var controls = $("#controls");
    var percent = $("#percent");
@@ -17,24 +15,31 @@ $(document).ready(function()
    var lineNumber = $("#lineNumber");
    var context = drawing[0].getContext("2d");
 
-   var drawer = new CanvasDrawer();
-   var nTool = new CanvasDrawerTool(networkTool);
-   nTool.frameLock = 1;
-   drawer.tools["network"] = nTool;
-   drawer.currentTool = "network";
+   system.lines = "";
+   system.room = window.location.search.substr(1);
+   system.func = CanvasUtilities.DrawSolidSquareLine;
+   system.drawer = createBaseDrawer(function(dt, ct, dr)
+   {
+      var line = convertAction(dt);
+      system.lines += line;
+      return drawData(system.func, ct, line);
+   });
 
    //Setting up controls puts everything in the controls in a "ready" state.
-   setupPalette($("#palette"), function(v) { drawer.currentColor = v; });
+   setupPalette($("#palette"), function(v) 
+   { 
+      system.drawer.color = v;  //Note: we store INDEX instead of color like drawer expects, probably fine!
+   });
    $("#download")[0].addEventListener("click", function(e)
    {
       e.target.href = drawing[0].toDataURL();
-      e.target.download = room + "_" + (Math.floor(new Date().getTime()/1000)) + ".png";
+      e.target.download = system.room + "_" + (Math.floor(new Date().getTime()/1000)) + ".png";
    }, false);
    lineSlider.on("input", function()
    {
       var v = lineSlider.val();
       lineNumber.text(v);
-      drawer.lineWidth = v;
+      system.drawer.lineWidth = v;
    });
 
    lineSlider.val(3);
@@ -44,31 +49,33 @@ $(document).ready(function()
    canvas.width = 600;
    canvas.height = 600;
 
-   drawer.Attach(canvas, [], 0);
-   CanvasUtilities.Clear(drawing[0], palette[3]);
+   system.drawer.Attach(canvas, [], 0);
+   CanvasUtilities.Clear(canvas, palette[3]);
 
-   queryEnd(room, 0, function(data, start)
+   queryEnd(system.room, 0, function(data, start)
    {
       //messages.append(document.createTextNode(data));
       //container[0].scrollTop = container[0].scrollHeight;
-      if(data.length > 10000)
-         stat.text("Loading " + data.length + " bytes...");
-         
-      drawLines(data, context);
+      if(data.length > 10000) stat.text("Loading " + data.length + " bytes...");
+
+      for(var i = 0; i < data.length; i+= 10)
+      {
+         drawData(system.func, context, data, i);
+      }
+
       percent.text((Math.max(start,data.length)/50000) + "%");
 
-      if(data.length > 10000)
-         stat.text("");
+      if(data.length > 10000) stat.text("");
 
       return data.length;
    });
 
    setInterval(function()
    {
-      if(lines)
+      if(system.lines)
       {
-         post(endpoint(room), lines);
-         lines = "";
+         post(endpoint(system.room), system.lines);
+         system.lines = "";
       }
    }, 100);
 });
@@ -113,17 +120,15 @@ function charsToInt(chars, start, count)
 function pxCh(int) { return intToChars(int + 16, 2); }
 function chPx(char, offset) { return charsToInt(char, offset, 2) - 16; }
 
-var lines = "";
-var func = CanvasUtilities.DrawSolidSquareLine;
-
-function networkTool(data, context, drawer)
+//Convert action data (and extras) to line data
+function convertAction(data)
 {
-   var line = pxCh(data.oldX) + pxCh(data.oldY) + pxCh(data.x) + pxCh(data.y) +
-      intToChars(data.lineWidth, 1) + intToChars(drawer.currentColor, 1);
-   lines += line;
-   return drawData(func, context, line);
+   return pxCh(data.oldX) + pxCh(data.oldY) + pxCh(data.x) + pxCh(data.y) +
+      intToChars(data.lineWidth, 1) + intToChars(data.color, 1);
 }
 
+//Draw a converted action on the given context. Can index into larger actions,
+//or just draw the whole item given.
 function drawData(func, context, line, o)
 {
    o = o || 0;
@@ -131,12 +136,6 @@ function drawData(func, context, line, o)
    return func(context, 
       chPx(line, o), chPx(line, o + 2), chPx(line, o + 4), chPx(line, o + 6), 
       charsToInt(line, o + 8, 1));
-}
-
-function drawLines(lines, context)
-{
-   for(var i = 0; i < lines.length; i+= 10)
-      drawData(func, context, lines, i);
 }
 
 function setupPalette(controls, paletteFunc)
@@ -152,3 +151,19 @@ function setupPalette(controls, paletteFunc)
    radios.SelectRadio("0");
 }
 
+function setupStyling()
+{
+   var st = StyleUtilities.CreateStyleElement();
+   StyleUtilities.InsertStylesAtTop([st]);
+   st.Append(["canvas"], StyleUtilities.NoImageInterpolationRules());
+}
+
+function createBaseDrawer(toolFunc)
+{
+   var drawer = new CanvasDrawer();
+   var nTool = new CanvasDrawerTool(toolFunc);
+   nTool.frameLock = 1;
+   drawer.tools["network"] = nTool;
+   drawer.currentTool = "network";
+   return drawer;
+}
