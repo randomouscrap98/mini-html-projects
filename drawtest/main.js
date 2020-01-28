@@ -1,4 +1,6 @@
-//Yeah
+// Carlos Sanchez
+// January, 2020
+
 $(document).ready(function()
 {
    var room = window.location.search.substr(1);
@@ -21,13 +23,19 @@ $(document).ready(function()
    drawer.lineWidth = 3;
 
    //Setting up controls puts everything in the controls in a "ready" state.
-   setupControls(controls, function(v) { drawer.currentColor = v; });
+   setupPalette($("#palette"), function(v) { drawer.currentColor = v; });
+   $("#download")[0].addEventListener("click", function(e)
+   {
+      e.target.href = drawing[0].toDataURL();
+      e.target.download = room + "_" + (Math.floor(new Date().getTime()/1000)) + ".png";
+   }, false);
 
    var canvas = drawing[0];
    canvas.width = 600;
    canvas.height = 600;
 
    drawer.Attach(canvas, [], 0);
+   CanvasUtilities.Clear(drawing[0], palette[3]);
 
    queryEnd(room, 0, function(data, start)
    {
@@ -121,16 +129,16 @@ function drawLines(lines, context)
       drawData(func, context, lines, i);
 }
 
-function setupControls(controls, paletteFunc)
+function setupPalette(controls, paletteFunc)
 {
-   var paletteControls = controls.find("#palette");
-   paletteControls.empty();
-   var radios = new RadioSimulator(paletteControls[0], "data-index", paletteFunc);
+   controls.empty();
+   var radios = new RadioSimulator(controls[0], "data-index", paletteFunc);
    for(var i = 0; i < palette.length; i++)
    {
       var radio = $(radios.CreateRadioButton("", i));
       radio.css("background-color", palette[i]);
-      paletteControls.append(radio);
+      controls.append(radio);
    }
    radios.SelectRadio("0");
 }
+
