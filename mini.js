@@ -50,3 +50,19 @@ function any(array, check)
 
    return false;
 }
+
+function endpoint(room) { return "/stream/" + room; }
+
+function queryEnd(room, start, handle)
+{
+   $.get(endpoint(room) + "?start=" + start)
+      .done(function(data) { start += handle(data); })
+      .always(function() { queryEnd(room, start, handle); });
+}
+
+function post(url, data)
+{
+   var xhr = new XMLHttpRequest();
+   xhr.open('POST', url, true);
+   xhr.send(data);
+}
