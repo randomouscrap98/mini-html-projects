@@ -316,7 +316,7 @@ var RadioSimulator = function(container, attribute, callback, clickCycle)
    this.container = container;
    this.attribute = attribute;
    this.callback = callback;
-   this.clickCycle = clickCycle;
+   this.clickCycle = clickCycle; //Clicking repeatedly cycles (forward) through radios
    this.selectedAttribute = "data-selected";
 };
 

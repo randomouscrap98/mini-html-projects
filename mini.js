@@ -56,7 +56,7 @@ function endpoint(room) { return "/stream/" + room; }
 function queryEnd(room, start, handle)
 {
    $.get(endpoint(room) + "?start=" + start)
-      .done(function(data) { start += handle(data); })
+      .done(function(data) { start += handle(data, start); })
       .always(function() { queryEnd(room, start, handle); });
 }
 

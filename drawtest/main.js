@@ -7,7 +7,9 @@ $(document).ready(function()
    StyleUtilities.InsertStylesAtTop([st]);
    st.Append(["canvas"], StyleUtilities.NoImageInterpolationRules());
 
-   var status = $("#status");
+   var controls = $("#controls");
+   var percent = $("#percent");
+   var stat = $("#status");
    var drawing = $("#drawing");
    var context = drawing[0].getContext("2d");
 
@@ -18,23 +20,27 @@ $(document).ready(function()
    drawer.currentTool = "network";
    drawer.lineWidth = 3;
 
+   //Setting up controls puts everything in the controls in a "ready" state.
+   setupControls(controls, function(v) { drawer.currentColor = v; });
+
    var canvas = drawing[0];
    canvas.width = 600;
    canvas.height = 600;
 
    drawer.Attach(canvas, [], 0);
 
-   queryEnd(room, 0, function(data)
+   queryEnd(room, 0, function(data, start)
    {
       //messages.append(document.createTextNode(data));
       //container[0].scrollTop = container[0].scrollHeight;
       if(data.length > 10000)
-         displayError("Loading " + data.length + " bytes...", status)
+         stat.text("Loading " + data.length + " bytes...");
          
       drawLines(data, context);
+      percent.text((Math.max(start,data.length)/50000) + "%");
 
       if(data.length > 10000)
-         status.empty();
+         stat.text("");
 
       return data.length;
    });
@@ -49,7 +55,15 @@ $(document).ready(function()
    }, 100);
 });
 
-var currentColor = 0; //Don't use this!
+//black, gray, light gray, white
+//red, pink, purple, blue
+//light blue, cyan, green, light green, 
+//yellow, orange, brown, tan
+var palette = [
+   "rgb(0,0,0)", "rgb(87,87,87)", "rgb(160,160,160)", "rgb(255,255,255)",
+   "rgb(173,35,35)", "rgb(255,205,243)", "rgb(129,38,192)", "rgb(42,75,215)",
+   "rgb(157,175,255)", "rgb(41,208,208)", "rgb(29,105,20)", "rgb(129,197,122)", 
+   "rgb(255,238,51)", "rgb(255,146,51)", "rgb(129,74,25)", "rgb(233,222,187)"];
 var charStart = 48;
 
 function intToChars(int, chars)
@@ -87,7 +101,7 @@ var func = CanvasUtilities.DrawSolidSquareLine;
 function networkTool(data, context, drawer)
 {
    var line = pxCh(data.oldX) + pxCh(data.oldY) + pxCh(data.x) + pxCh(data.y) +
-      intToChars(data.lineWidth, 1) + intToChars(currentColor, 1);
+      intToChars(data.lineWidth, 1) + intToChars(drawer.currentColor, 1);
    lines += line;
    return drawData(func, context, line);
 }
@@ -95,6 +109,7 @@ function networkTool(data, context, drawer)
 function drawData(func, context, line, o)
 {
    o = o || 0;
+   context.fillStyle = palette[charsToInt(line, o + 9, 1) % palette.length];
    return func(context, 
       chPx(line, o), chPx(line, o + 2), chPx(line, o + 4), chPx(line, o + 6), 
       charsToInt(line, o + 8, 1));
@@ -102,12 +117,20 @@ function drawData(func, context, line, o)
 
 function drawLines(lines, context)
 {
-   //var oldStyle = context.fillStyle;
-   //context.fillStyle = "red";
-   //CanvasUtilities.Clear(context.canvas);
-   //console.log('cleared, lines: ' + lines.length);
    for(var i = 0; i < lines.length; i+= 10)
       drawData(func, context, lines, i);
-   //console.log('done?');
-   //context.fillStyle = oldStyle;
+}
+
+function setupControls(controls, paletteFunc)
+{
+   var paletteControls = controls.find("#palette");
+   paletteControls.empty();
+   var radios = new RadioSimulator(paletteControls[0], "data-index", paletteFunc);
+   for(var i = 0; i < palette.length; i++)
+   {
+      var radio = $(radios.CreateRadioButton("", i));
+      radio.css("background-color", palette[i]);
+      paletteControls.append(radio);
+   }
+   radios.SelectRadio("0");
 }
