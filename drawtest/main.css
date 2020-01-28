@@ -10,11 +10,24 @@ canvas
    margin: 0;
 }
 
+#controls > *, #line > *
+{
+   vertical-align: middle;
+}
+
 #download
 {
    padding: 0.2em;
    font-size: 0.8em;
 }
+
+#line
+{
+   display: inline-block;
+   background-color: #F7F7F7;
+   padding: 0.1em;
+}
+
 
 #palette
 {

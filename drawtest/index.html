@@ -11,7 +11,14 @@
    <body>
       <div id="main">
          <canvas id="drawing"></canvas>
-         <div id="controls"><div id="palette"></div><a id="download" href="#">Download</a></div>
+         <div id="controls">
+            <div id="palette"></div>
+            <div id="line">
+               <input id="lineSlider" type="range" min="1" max="20">
+               <span id="lineNumber"></span>
+            </div>
+            <a id="download" href="#">Download</a>
+         </div>
          <div id="status"></div>
          <div id="percent"></div>
       </div>

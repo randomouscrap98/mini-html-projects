@@ -13,6 +13,8 @@ $(document).ready(function()
    var percent = $("#percent");
    var stat = $("#status");
    var drawing = $("#drawing");
+   var lineSlider = $("#lineSlider");
+   var lineNumber = $("#lineNumber");
    var context = drawing[0].getContext("2d");
 
    var drawer = new CanvasDrawer();
@@ -20,7 +22,6 @@ $(document).ready(function()
    nTool.frameLock = 1;
    drawer.tools["network"] = nTool;
    drawer.currentTool = "network";
-   drawer.lineWidth = 3;
 
    //Setting up controls puts everything in the controls in a "ready" state.
    setupPalette($("#palette"), function(v) { drawer.currentColor = v; });
@@ -29,6 +30,15 @@ $(document).ready(function()
       e.target.href = drawing[0].toDataURL();
       e.target.download = room + "_" + (Math.floor(new Date().getTime()/1000)) + ".png";
    }, false);
+   lineSlider.on("input", function()
+   {
+      var v = lineSlider.val();
+      lineNumber.text(v);
+      drawer.lineWidth = v;
+   });
+
+   lineSlider.val(3);
+   lineSlider.trigger("input");
 
    var canvas = drawing[0];
    canvas.width = 600;
