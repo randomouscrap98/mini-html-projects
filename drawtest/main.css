@@ -1,8 +1,16 @@
+/* Main */
 body
 {
    font-family: sans-serif;
 }
 
+.inline
+{
+   display: inline-block;
+   vertical-align: middle;
+}
+
+/* Canvas stuff? */
 canvas 
 { 
    border: 1px solid;
@@ -51,4 +59,35 @@ canvas
    border-radius: 0;
    width: 2em;
    height: 2em;
+}
+
+
+/* Chat styling */
+
+#chat
+{
+   width: 15em;
+}
+
+#mainForm, #mainForm > *, #messageContainer
+{
+   width: 100%;
+}
+
+#messageContainer
+{
+   height: 20em;
+   overflow-y: scroll;
+   overflow-x: hidden;
+}
+
+#messages
+{
+   display: block;
+   white-space: pre-wrap;
+}
+
+#username, #message
+{
+   display: block;
 }

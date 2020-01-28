@@ -17,12 +17,12 @@ $(document).ready(function()
 
    system.lines = "";
    system.room = window.location.search.substr(1);
-   system.func = CanvasUtilities.DrawSolidSquareLine;
+   system.rawTool = CanvasUtilities.DrawSolidSquareLine;
    system.drawer = createBaseDrawer(function(dt, ct, dr)
    {
       var line = convertAction(dt);
       system.lines += line;
-      return drawData(system.func, ct, line);
+      return drawData(system.rawTool, ct, line);
    });
 
    //Setting up controls puts everything in the controls in a "ready" state.
@@ -60,7 +60,7 @@ $(document).ready(function()
 
       for(var i = 0; i < data.length; i+= 10)
       {
-         drawData(system.func, context, data, i);
+         drawData(system.rawTool, context, data, i);
       }
 
       percent.text((Math.max(start,data.length)/50000) + "%");
@@ -129,11 +129,11 @@ function convertAction(data)
 
 //Draw a converted action on the given context. Can index into larger actions,
 //or just draw the whole item given.
-function drawData(func, context, line, o)
+function drawData(rawTool, context, line, o)
 {
    o = o || 0;
    context.fillStyle = palette[charsToInt(line, o + 9, 1) % palette.length];
-   return func(context, 
+   return rawTool(context, 
       chPx(line, o), chPx(line, o + 2), chPx(line, o + 4), chPx(line, o + 6), 
       charsToInt(line, o + 8, 1));
 }

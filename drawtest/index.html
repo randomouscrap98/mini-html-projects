@@ -9,7 +9,7 @@
       <link rel="stylesheet" href="main.css">
    </head>
    <body>
-      <div id="main">
+      <div id="main" class="inline">
          <canvas id="drawing"></canvas>
          <div id="controls">
             <div id="palette"></div>
@@ -21,6 +21,16 @@
          </div>
          <div id="status"></div>
          <div id="percent"></div>
+      </div>
+      <div id="chat" class="inline">
+         <div id="messageContainer">
+            <div id="messages" class="messages"></div>
+         </div>
+         <form id="mainform">
+            <input type="text" id="username" placeholder="username">
+            <textarea id="message" maxlength="1000" placeholder="message"></textarea>
+            <input type="submit">
+         </form>
       </div>
    </body>
 </html>
