@@ -53,11 +53,21 @@ function any(array, check)
 
 function endpoint(room) { return "/stream/" + room; }
 
-function queryEnd(room, start, handle)
+function queryEnd(room, start, handle, error)
 {
+   var requery = function() { queryEnd(room, start, handle, error); };
    $.get(endpoint(room) + "?start=" + start)
-      .done(function(data) { start += handle(data, start); })
-      .always(function() { queryEnd(room, start, handle); });
+      .done(function(data) 
+      { 
+         start += handle(data, start); 
+         requery();
+      })
+      .fail(function(data)
+      {
+         if(error) error();
+         //Requery but later
+         setTimeout(requery, 2000);
+      });
 }
 
 function post(url, data)

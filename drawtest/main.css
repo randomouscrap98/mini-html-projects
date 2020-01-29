@@ -8,7 +8,7 @@ body
 .inline
 {
    display: inline-block;
-   vertical-align: middle;
+   /*vertical-align: middle;*/
 }
 
 .inline > *
@@ -94,6 +94,7 @@ input[type="range"]
 #chat
 {
    width: 15em;
+   vertical-align: top;
 }
 
 #mainForm, #mainForm > *, #messageContainer
@@ -103,7 +104,7 @@ input[type="range"]
 
 #messageContainer
 {
-   height: 20em;
+   height: 400px;
    overflow-y: scroll;
    overflow-x: hidden;
    background-color: #FFF;
@@ -123,4 +124,10 @@ input[type="range"]
 }
 
 /* Data */
-
+#statusindicator
+{
+   display: inline-block;
+   width: 1em;
+   height: 1em;
+   background-color: gray;
+}

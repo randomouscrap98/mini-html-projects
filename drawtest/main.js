@@ -11,8 +11,6 @@ $(document).ready(function()
    $("#newroom").attr("href", window.location.href.split('?')[0] + "?" + Math.random().toString().substr(2));
 
    var controls = $("#controls");
-   var percent = $("#percent");
-   var stat = $("#status");
    var drawing = $("#drawing");
    var lineSlider = $("#lineSlider");
    var lineNumber = $("#lineNumber");
@@ -20,6 +18,11 @@ $(document).ready(function()
    var pDown = $("#pagedown");
    var pUp = $("#pageup");
    var pNum = $("#pagenum");
+
+   //Special
+   var percent = $("#percent");
+   var stat = $("#status");
+   var statusindicator = $("#statusindicator");
 
    //Chat elements
    var chatForm = $("#mainform");
@@ -77,9 +80,11 @@ $(document).ready(function()
    system.drawer.Attach(canvas, [], 0);
    CanvasUtilities.Clear(canvas, palette[3]);
 
+   stat.text("Loading...");
+
    queryEnd(system.room, 0, function(data, start)
    {
-      if(data.length > 10000) stat.text("Loading " + data.length + " bytes...");
+      statusindicator.css("background-color", "lightgreen");
 
       var parsed;
 
@@ -102,10 +107,12 @@ $(document).ready(function()
       }
 
       percent.text((Math.max(start,data.length)/50000).toFixed(2) + "%");
-
-      if(data.length > 10000) stat.text("");
+      stat.text("");
 
       return data.length;
+   }, function() 
+   { 
+      statusindicator.css("background-color", "red");
    });
 
    setInterval(function()
