@@ -63,6 +63,11 @@ $(document).ready(function()
       e.target.href = drawing[0].toDataURL();
       e.target.download = system.room + "_" + (Math.floor(new Date().getTime()/1000)) + ".png";
    }, false);
+   $("#swapside").click(function()
+   {
+      $("body > .inline").toggleClass("right");
+      return false;
+   });
    lineSlider.on("input", function()
    {
       var v = lineSlider.val();

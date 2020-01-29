@@ -3,44 +3,32 @@ body
 {
    font-family: sans-serif;
    background-color: #FCFCFC;
+   color: #222;
 }
 
-.inline
-{
-   display: inline-block;
-   /*vertical-align: middle;*/
-}
-
-.inline > *
-{
-   vertical-align: middle;
-}
+.right { float: right; }
+.inline { display: inline-block; }
+.inline > * { vertical-align: middle; }
 
 /* Canvas stuff? */
 #window
 {
-   border: 1px solid;
+   border: 1px solid #222;
    width: 600px;
    height: 600px;
    overflow: hidden;
    position: relative;
 }
 
-#drawing
+#window > *
 {
-   position: absolute;
-}
-
-canvas 
-{ 
    padding: 0;
    margin: 0;
 }
 
-#data a
+#drawing
 {
-   padding: 0.2em;
-   font-size: 0.8em;
+   position: absolute;
 }
 
 #line
@@ -93,8 +81,9 @@ input[type="range"]
 
 #chat
 {
-   width: 15em;
+   width: 20em;
    vertical-align: top;
+   font-size: 0.8em;
 }
 
 #mainForm, #mainForm > *, #messageContainer
@@ -114,7 +103,6 @@ input[type="range"]
 {
    display: block;
    white-space: pre-wrap;
-   font-size: 0.8em;
    padding: 0.25em;
 }
 
@@ -130,4 +118,19 @@ input[type="range"]
    width: 1em;
    height: 1em;
    background-color: gray;
+}
+
+#status
+{
+   color: gray;
+}
+
+#data > *
+{
+   margin-bottom: 0.5em;
+}
+
+#data a
+{
+   padding: 0.2em;
 }
