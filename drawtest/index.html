@@ -10,17 +10,21 @@
    </head>
    <body>
       <div id="main" class="inline">
-         <canvas id="drawing"></canvas>
+         <div id="window">
+            <canvas id="drawing"></canvas>
+         </div>
          <div id="controls">
-            <div id="palette"></div>
-            <div id="line">
+            <div id="palette" class="inline"></div>
+            <div id="line" class="inline">
                <input id="lineSlider" type="range" min="1" max="20">
                <span id="lineNumber"></span>
             </div>
-            <a id="download" href="#">Download</a>
+            <div id="pages" class="inline">
+               <button id="pagedown">&lt;</button>
+               <span id="pagenum">Page 01</span>
+               <button id="pageup">&gt;</button>
+            </div>
          </div>
-         <div id="status"></div>
-         <div id="percent"></div>
       </div>
       <div id="chat" class="inline">
          <div id="messageContainer">
@@ -31,6 +35,11 @@
             <textarea id="message" maxlength="1000" placeholder="message" required=""></textarea>
             <input type="submit">
          </form>
+         <div id="data">
+            <div id="status"></div>
+            <span id="percent"></span>
+            <a id="download" href="#">Download</a>
+         </div>
       </div>
    </body>
 </html>

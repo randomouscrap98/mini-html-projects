@@ -14,6 +14,9 @@ $(document).ready(function()
    var lineSlider = $("#lineSlider");
    var lineNumber = $("#lineNumber");
    var context = drawing[0].getContext("2d");
+   var pDown = $("#pagedown");
+   var pUp = $("#pageup");
+   var pNum = $("#pagenum");
 
    //Chat elements
    var chatForm = $("#mainform");
@@ -65,8 +68,8 @@ $(document).ready(function()
    lineSlider.trigger("input");
 
    var canvas = drawing[0];
-   canvas.width = 600;
-   canvas.height = 600;
+   canvas.width = 3600;
+   canvas.height = 3600;
 
    system.drawer.Attach(canvas, [], 0);
    CanvasUtilities.Clear(canvas, palette[3]);
@@ -95,7 +98,7 @@ $(document).ready(function()
          }
       }
 
-      percent.text((Math.max(start,data.length)/50000) + "%");
+      percent.text((Math.max(start,data.length)/50000).toFixed(2) + "%");
 
       if(data.length > 10000) stat.text("");
 
@@ -110,6 +113,19 @@ $(document).ready(function()
          system.lines = "";
       }
    }, 100);
+
+   //Page turner
+   var updatePage = function(amount)
+   {
+      var newPage = ((pNum.data("page") || 0) + amount + 36) % 36;
+      drawing.css("left", (-600 * (newPage % 6)) + "px");
+      drawing.css("top", (-600 * Math.floor(newPage / 6)) + "px");
+      pNum.data("page", newPage);
+      pNum.text("Page " + (newPage + 1).toString().padStart(2, '0'));
+   };
+
+   pDown.click(function() {updatePage(-1);});
+   pUp.click(function() {updatePage(1);});
 });
 
 //black, gray, light gray, white

@@ -11,17 +11,30 @@ body
    vertical-align: middle;
 }
 
-/* Canvas stuff? */
-canvas 
-{ 
-   border: 1px solid;
-   padding: 0;
-   margin: 0;
-}
-
-#controls > *, #line > *
+.inline > *
 {
    vertical-align: middle;
+}
+
+/* Canvas stuff? */
+#window
+{
+   border: 1px solid;
+   width: 600px;
+   height: 600px;
+   overflow: hidden;
+   position: relative;
+}
+
+#drawing
+{
+   position: absolute;
+}
+
+canvas 
+{ 
+   padding: 0;
+   margin: 0;
 }
 
 #download
@@ -37,6 +50,20 @@ canvas
    padding: 0.1em;
 }
 
+input[type="range"]
+{
+   width: 7em;
+}
+
+#pages button
+{
+   font-weight: bold;
+}
+
+#pagenum
+{
+   font-size: 0.8em;
+}
 
 #palette
 {
@@ -52,7 +79,6 @@ canvas
    border: none;
    cursor: pointer;
    border-radius: 2em;
-   vertical-align: middle;
 }
 
 #palette button[data-selected]
@@ -95,3 +121,6 @@ canvas
 {
    display: block;
 }
+
+/* Data */
+
