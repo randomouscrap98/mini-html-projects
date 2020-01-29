@@ -7,6 +7,9 @@ $(document).ready(function()
 {
    setupStyling();
 
+   //Just a fast thing: make the random room button
+   $("#newroom").attr("href", window.location.href.split('?')[0] + "?" + Math.random().toString().substr(2));
+
    var controls = $("#controls");
    var percent = $("#percent");
    var stat = $("#status");
