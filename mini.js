@@ -78,3 +78,24 @@ function enterSubmits(input, form)
       }
    });
 }
+
+function parsePreamble(data)
+{
+   if(data.indexOf("#") !== 0) return null;
+
+   var end = data.substr(1).indexOf("#");
+
+   if(end < 0) return null;
+
+   var preamble = data.substr(1, end + 1);
+   var parts = preamble.split(":");
+
+   if(parts.length < 2) return null;
+
+   return { skip: end + 1, name: parts[0], version: parts[1]};
+}
+
+function createPreamble(name, version)
+{
+   return "#" + name + ":" + version + "#";
+}

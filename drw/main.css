@@ -1,0 +1,134 @@
+/* Main */
+
+body
+{
+   font-family: sans-serif;
+   background-color: #FCFCFC;
+}
+
+/* Things with NO padding/margin */
+body, .nospacing
+{
+   padding: 0;
+   margin: 0;
+}
+
+#main
+{
+   width: 100vw;
+   height: 100vh;
+}
+
+.pane
+{
+   display: block;
+   width: 100%;
+   height: 100%;
+   box-sizing: border-box;
+}
+
+
+/* Canvas stuff? */
+
+#drawpane
+{
+   position: relative;
+}
+
+#drawwindow
+{
+   width: 100%;
+   height: 100%;
+}
+
+#controls
+{
+   left: 0;
+   bottom: 0;
+   position: absolute;
+   width: 100%;
+   background-color: #333;
+   height: 2em;
+}
+
+#controls > *, #line > *
+{
+   vertical-align: middle;
+}
+
+#download
+{
+   padding: 0.2em;
+   font-size: 0.8em;
+}
+
+#line
+{
+   display: inline-block;
+   background-color: #F7F7F7;
+   padding: 0.1em;
+}
+
+
+#palette
+{
+   background-color: #EEE;
+   padding: 0.2em;
+   display: inline-block;
+}
+
+#palette button
+{
+   width: 1.5em;
+   height: 1.5em;
+   border: none;
+   cursor: pointer;
+   border-radius: 2em;
+   vertical-align: middle;
+}
+
+#palette button[data-selected]
+{
+   border-radius: 0;
+   width: 2em;
+   height: 2em;
+}
+
+
+/* Chat styling */
+
+#chatpane
+{
+   display: none;
+}
+
+#chat
+{
+   width: 15em;
+}
+
+#mainForm, #mainForm > *, #messageContainer
+{
+   width: 100%;
+}
+
+#messageContainer
+{
+   height: 20em;
+   overflow-y: scroll;
+   overflow-x: hidden;
+   background-color: #FFF;
+}
+
+#messages
+{
+   display: block;
+   white-space: pre-wrap;
+   font-size: 0.8em;
+   padding: 0.25em;
+}
+
+#username, #message
+{
+   display: block;
+}

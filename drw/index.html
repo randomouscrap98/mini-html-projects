@@ -1,0 +1,57 @@
+<html>
+   <head>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+      <script src="../jquery-3.4.1.min.js"></script>
+      <script src="../randomous.js"></script>
+      <script src="../randomousCanvas.js"></script>
+      <script src="main.js"></script>
+      <script src="../mini.js"></script>
+      <link rel="stylesheet" href="main.css">
+   </head>
+   <body>
+      <div id="main" class="nospacing">
+         <!-- The drawpane is the entirety of the left side of the screen. ALL
+              drawing stuff go here-->
+         <div id="drawpane" class="pane">
+            <!-- The drawwindow is the visible area other than controls where
+                 the canvases can be panned/zoomed/etc.-->
+            <div id="drawwindow">
+               <!-- The drawstack is a stack of canvases with a dummy on top.
+                    The dummy accepts inputs for the drawer, but the commands
+                    are sent to the appropriate layer.-->
+               <div id="drawstack">
+                  <canvas id="drawdummy"></canvas>
+                  <div id="layers">
+                     <!-- Layers can spawn here. Draw directly into layers for optimization-->
+                  </div>
+               </div>
+            </div>
+            <!-- Controls for the window go above/below/who knows. -->
+            <div id="controls">
+               <div id="palette"><!-- Fill the palette from js --></div>
+               <div id="line">
+                  <input id="lineSlider" type="range" min="1" max="20">
+                  <span id="lineNumber"></span>
+               </div>
+               <a id="download" href="#">Download</a>
+               <div id="information">
+                  <span id="status"></span>
+                  <span id="percent"></span>
+               </div>
+            </div>
+         </div>
+         <!-- The chatpane is the entire right side of the screen. It is/may be
+              collapsible. Only chat goes here-->
+         <div id="chatpane" class="pane">
+            <div id="messageContainer">
+               <div id="messages" class="messages"></div>
+            </div>
+            <form id="mainform">
+               <input type="text" id="username" placeholder="username" required="">
+               <textarea id="message" maxlength="1000" placeholder="message" required=""></textarea>
+               <input type="submit">
+            </form>
+         </div>
+      </div>
+   </body>
+</html>

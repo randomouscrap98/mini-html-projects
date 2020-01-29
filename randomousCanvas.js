@@ -895,16 +895,6 @@ function CanvasDrawer()
       {
          me.PerformDrawAction(me.frameActions[me.frameActions.length - 1].data, 
             me.frameActions[me.frameActions.length - 1].context);
-         //for(var i = 0; i < me.frameActions.length; i++)
-         //{
-         //   //if(me.frameActions[i].data.action & (CursorActions.Start |
-         //   //   CursorActions.End) || i === me.frameActions.length - 1)
-         //   if(i === me.frameActions.length - 1)
-         //   {
-         //      me.PerformDrawAction(me.frameActions[i].data,
-         //         me.frameActions[i].context);
-         //   }
-         //}
 
          me.frameActions = [];
       }
