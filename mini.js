@@ -66,3 +66,15 @@ function post(url, data)
    xhr.open('POST', url, true);
    xhr.send(data);
 }
+
+function enterSubmits(input, form)
+{
+   input.keydown(function(e)
+   {
+      if(e.keyCode === 13 && !e.shiftKey)
+      {
+         e.preventDefault();
+         form.submit();
+      }
+   });
+}

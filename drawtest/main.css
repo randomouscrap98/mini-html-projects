@@ -2,6 +2,7 @@
 body
 {
    font-family: sans-serif;
+   background-color: #FCFCFC;
 }
 
 .inline
@@ -79,12 +80,15 @@ canvas
    height: 20em;
    overflow-y: scroll;
    overflow-x: hidden;
+   background-color: #FFF;
 }
 
 #messages
 {
    display: block;
    white-space: pre-wrap;
+   font-size: 0.8em;
+   padding: 0.25em;
 }
 
 #username, #message

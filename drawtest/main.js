@@ -15,6 +15,25 @@ $(document).ready(function()
    var lineNumber = $("#lineNumber");
    var context = drawing[0].getContext("2d");
 
+   //Chat elements
+   var chatForm = $("#mainform");
+   var mContainer = $("#messageContainer");
+   var messages = $("#messages");
+   var message = $("#message");
+   var username = $("#username");
+
+   //Boring "enter to yeah"
+   enterSubmits(message, chatForm);
+
+   chatForm.submit(function()
+   {
+      var m = username.val() + ": " + message.val() + "\n";
+      var text = "(" + intToChars(Math.min(m.length, 4000), 2) + m;
+      post(endpoint(system.room), text);
+      message.val("");
+      return false;
+   });
+
    system.lines = "";
    system.room = window.location.search.substr(1);
    system.rawTool = CanvasUtilities.DrawSolidSquareLine;
@@ -54,13 +73,26 @@ $(document).ready(function()
 
    queryEnd(system.room, 0, function(data, start)
    {
-      //messages.append(document.createTextNode(data));
-      //container[0].scrollTop = container[0].scrollHeight;
       if(data.length > 10000) stat.text("Loading " + data.length + " bytes...");
+
+      var parsed;
 
       for(var i = 0; i < data.length; i+= 10)
       {
-         drawData(system.rawTool, context, data, i);
+         //First, always check for chat messages
+         parsed = tryParseMessage(data, i);
+
+         //If there's chat, put it in. Otherwise keep drawing.
+         if(parsed)
+         {
+            messages.append(document.createTextNode(parsed.message));
+            mContainer[0].scrollTop = mContainer[0].scrollHeight;
+            i += parsed.shift - 10;
+         }
+         else
+         {
+            drawData(system.rawTool, context, data, i);
+         }
       }
 
       percent.text((Math.max(start,data.length)/50000) + "%");
@@ -125,6 +157,18 @@ function convertAction(data)
 {
    return pxCh(data.oldX) + pxCh(data.oldY) + pxCh(data.x) + pxCh(data.y) +
       intToChars(data.lineWidth, 1) + intToChars(data.color, 1);
+}
+
+function tryParseMessage(data, i)
+{
+   if(data.charAt(i) === "(")
+   {
+      var l = charsToInt(data, i + 1, 2); //12 bits (2 chars) for message length
+      message = data.substring(i + 3, i + 3 + l);
+      return { shift: 3 + l, message: message};
+   }
+
+   return null;
 }
 
 //Draw a converted action on the given context. Can index into larger actions,
