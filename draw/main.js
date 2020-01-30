@@ -7,9 +7,6 @@ $(document).ready(function()
 {
    setupStyling();
 
-   //Just a fast thing: make the random room button
-   $("#newroom").attr("href", window.location.href.split('?')[0] + "?" + Math.random().toString().substr(2));
-
    var controls = $("#controls");
    var drawing = $("#drawing");
    var lineSlider = $("#lineSlider");
@@ -36,9 +33,7 @@ $(document).ready(function()
 
    chatForm.submit(function()
    {
-      var m = username.val() + ": " + message.val() + "\n";
-      var text = "(" + intToChars(Math.min(m.length, 4000), 2) + m;
-      post(endpoint(system.room), text);
+      post(endpoint(system.room), createMessageChunk(username.val(), message.val()));
       message.val("");
       return false;
    });
@@ -68,6 +63,8 @@ $(document).ready(function()
       $("body > .inline").toggleClass("right");
       return false;
    });
+   $("#newroom").attr("href", randomRoomLink());
+
    lineSlider.on("input", function()
    {
       var v = lineSlider.val();
@@ -75,50 +72,48 @@ $(document).ready(function()
       system.drawer.lineWidth = v;
    });
 
-   lineSlider.val(3);
-   lineSlider.trigger("input");
+   setSlider(lineSlider, 3);
 
    var canvas = drawing[0];
    canvas.width = 3600;
    canvas.height = 3600;
 
    system.drawer.Attach(canvas, [], 0);
-   CanvasUtilities.Clear(canvas, palette[3]);
+   CanvasUtilities.Clear(canvas, palette[3]); //palette[3] is the white color (hopefully)
 
    stat.text("Loading...");
 
    queryEnd(system.room, 0, function(data, start)
    {
-      statusindicator.css("background-color", "lightgreen");
+      setRunning(statusindicator);
 
       var parsed;
+      var d = data.data;
 
-      for(var i = 0; i < data.length; i+= 10)
+      for(var i = 0; i < d.length; i+= 10)
       {
          //First, always check for chat messages
-         parsed = tryParseMessage(data, i);
+         parsed = tryParseMessage(d, i);
 
          //If there's chat, put it in. Otherwise keep drawing.
          if(parsed)
          {
-            messages.append(document.createTextNode(parsed.message));
+            messages.append(createMessageElement(parsed));
             mContainer[0].scrollTop = mContainer[0].scrollHeight;
             i += parsed.shift - 10;
          }
          else
          {
-            drawData(system.rawTool, context, data, i);
+            drawData(system.rawTool, context, d, i);
          }
       }
 
-      percent.text((Math.max(start,data.length)/50000).toFixed(2) + "%");
+      percent.text((data.used / data.limit * 100).toFixed(2) + "%");
+      statusindicator.text(data.signalled);
       stat.text("");
 
-      return data.length;
-   }, function() 
-   { 
-      statusindicator.css("background-color", "red");
-   });
+      return d.length;
+   }, function() { setError(statusindicator); });
 
    setInterval(function()
    {
@@ -195,11 +190,44 @@ function tryParseMessage(data, i)
    if(data.charAt(i) === "(")
    {
       var l = charsToInt(data, i + 1, 2); //12 bits (2 chars) for message length
-      message = data.substring(i + 3, i + 3 + l);
-      return { shift: 3 + l, message: message};
+      var result = {};
+      result.shift = l + 3;
+      result.full = data.substring(i + 3, i + 3 + l);
+      var colon = result.full.indexOf(":");
+      if(colon >= 0)
+      {
+         result.username = result.full.substr(0, colon + 1);
+         result.message = result.full.substr(colon + 1);
+      }
+      return result;
    }
 
    return null;
+}
+
+function createMessageChunk(username, message)
+{
+   var m = username + ": " + message + "\n";
+   return "(" + intToChars(Math.min(m.length, 4000), 2) + m;
+}
+
+function createMessageElement(parsed)
+{
+   var msg = parsed.full;
+   var msgelem = $("<div></div>");
+   msgelem.addClass("message");
+
+   if(parsed.username)
+   {
+      var username = $("<span></span>");
+      username.addClass("username");
+      username.text(parsed.username);
+      msgelem.append(username);
+      msg = parsed.message;
+   }
+
+   msgelem.append(document.createTextNode(msg));
+   return msgelem;
 }
 
 //Draw a converted action on the given context. Can index into larger actions,
@@ -241,4 +269,9 @@ function createBaseDrawer(toolFunc)
    drawer.tools["network"] = nTool;
    drawer.currentTool = "network";
    return drawer;
+}
+
+function randomRoomLink()
+{
+   return window.location.href.split('?')[0] + "?" + Math.random().toString().substr(2);
 }

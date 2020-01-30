@@ -56,7 +56,7 @@ function endpoint(room) { return "/stream/" + room; }
 function queryEnd(room, start, handle, error)
 {
    var requery = function() { queryEnd(room, start, handle, error); };
-   $.get(endpoint(room) + "?start=" + start)
+   $.getJSON(endpoint(room) + "/json?start=" + start)
       .done(function(data) 
       { 
          start += handle(data, start); 
@@ -108,4 +108,14 @@ function parsePreamble(data)
 function createPreamble(name, version)
 {
    return "#" + name + ":" + version + "#";
+}
+
+function setRunning(element) { element.css("background-color", "lightgreen"); }
+function setError(element) { element.css("background-color", "red"); }
+
+function setSlider(slider, val)
+{
+   slider.val(val);
+   slider.trigger("input");
+   slider.trigger("change");
 }
