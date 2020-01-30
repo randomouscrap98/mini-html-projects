@@ -119,3 +119,27 @@ function setSlider(slider, val)
    slider.trigger("input");
    slider.trigger("change");
 }
+
+//Crappy queue
+function Queue(capacity)
+{
+   this.array = [];
+   this.position = 0;
+
+   for(var i = 0; i < capacity; i++)
+      this.array.push(0);
+}
+
+Queue.prototype.Enqueue = function(value)
+{
+   this.array[this.position] = value;
+   this.position = (this.position + 1) % this.array.length;
+};
+
+Queue.prototype.Average = function()
+{
+   var sum = 0;
+   for(var i = 0; i < this.array.length; i++)
+      sum += this.array[i];
+   return sum / this.array.length;
+};

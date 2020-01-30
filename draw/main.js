@@ -38,6 +38,8 @@ $(document).ready(function()
       return false;
    });
 
+   //Setup main system
+   system.signaled = new Queue(20);
    system.lines = "";
    system.room = window.location.search.substr(1);
    system.rawTool = CanvasUtilities.DrawSolidSquareLine;
@@ -47,23 +49,6 @@ $(document).ready(function()
       system.lines += line;
       return drawData(system.rawTool, ct, line);
    });
-
-   //Setting up controls puts everything in the controls in a "ready" state.
-   setupPalette($("#palette"), function(v) 
-   { 
-      system.drawer.color = v;  //Note: we store INDEX instead of color like drawer expects, probably fine!
-   });
-   $("#download")[0].addEventListener("click", function(e)
-   {
-      e.target.href = drawing[0].toDataURL();
-      e.target.download = system.room + "_" + (Math.floor(new Date().getTime()/1000)) + ".png";
-   }, false);
-   $("#swapside").click(function()
-   {
-      $("body > .inline").toggleClass("right");
-      return false;
-   });
-   $("#newroom").attr("href", randomRoomLink());
 
    lineSlider.on("input", function()
    {
@@ -81,6 +66,7 @@ $(document).ready(function()
    system.drawer.Attach(canvas, [], 0);
    CanvasUtilities.Clear(canvas, palette[3]); //palette[3] is the white color (hopefully)
 
+   //Query initial data (and continue querying)
    stat.text("Loading...");
 
    queryEnd(system.room, 0, function(data, start)
@@ -109,7 +95,8 @@ $(document).ready(function()
       }
 
       percent.text((data.used / data.limit * 100).toFixed(2) + "%");
-      statusindicator.text(data.signalled);
+      system.signaled.Enqueue(data.signalled);
+      statusindicator.text(Math.ceil(system.signaled.Average()));
       stat.text("");
 
       return d.length;
@@ -123,6 +110,24 @@ $(document).ready(function()
          system.lines = "";
       }
    }, 100);
+
+   //Now setup some elements or whatever.
+   //Setting up controls puts everything in the controls in a "ready" state.
+   setupPalette($("#palette"), function(v) 
+   { 
+      system.drawer.color = v;  //Note: we store INDEX instead of color like drawer expects, probably fine!
+   });
+   $("#download")[0].addEventListener("click", function(e)
+   {
+      e.target.href = drawing[0].toDataURL();
+      e.target.download = system.room + "_" + (Math.floor(new Date().getTime()/1000)) + ".png";
+   }, false);
+   $("#swapside").click(function()
+   {
+      $("body > .inline").toggleClass("right");
+      return false;
+   });
+   $("#newroom").attr("href", randomRoomLink());
 
    //Page turner
    var updatePage = function(amount)
