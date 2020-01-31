@@ -29,6 +29,7 @@ body
 #drawing
 {
    position: absolute;
+   cursor: crosshair;
 }
 
 #line

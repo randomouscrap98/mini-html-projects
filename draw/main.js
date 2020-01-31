@@ -43,28 +43,18 @@ $(document).ready(function()
    system.lines = "";
    system.room = window.location.search.substr(1);
    system.rawTool = CanvasUtilities.DrawSolidSquareLine;
-   system.drawer = createBaseDrawer(function(dt, ct, dr)
-   {
-      var line = convertAction(dt);
-      system.lines += line;
-      return drawData(system.rawTool, ct, line);
-   });
+   system.drawer = createBaseDrawer(drawing, 3600, 3600);
+   system.context = context;
+   system.frameDraw = setupFrameDraw(system);
 
    lineSlider.on("input", function()
    {
       var v = lineSlider.val();
       lineNumber.text(v);
-      system.drawer.lineWidth = v;
+      system.lineWidth = v;
    });
 
    setSlider(lineSlider, 3);
-
-   var canvas = drawing[0];
-   canvas.width = 3600;
-   canvas.height = 3600;
-
-   system.drawer.Attach(canvas, [], 0);
-   CanvasUtilities.Clear(canvas, palette[3]); //palette[3] is the white color (hopefully)
 
    //Query initial data (and continue querying)
    stat.text("Loading...");
@@ -102,20 +92,14 @@ $(document).ready(function()
       return d.length;
    }, function() { setError(statusindicator); });
 
-   setInterval(function()
-   {
-      if(system.lines)
-      {
-         post(endpoint(system.room), system.lines);
-         system.lines = "";
-      }
-   }, 100);
+   //Start the system
+   system.frameDraw();
 
    //Now setup some elements or whatever.
    //Setting up controls puts everything in the controls in a "ready" state.
    setupPalette($("#palette"), function(v) 
    { 
-      system.drawer.color = v;  //Note: we store INDEX instead of color like drawer expects, probably fine!
+      system.color = v;  //Note: we store INDEX instead of color like drawer expects, probably fine!
    });
    $("#download")[0].addEventListener("click", function(e)
    {
@@ -182,13 +166,6 @@ function charsToInt(chars, start, count)
 
 function pxCh(int) { return intToChars(int + 16, 2); }
 function chPx(char, offset) { return charsToInt(char, offset, 2) - 16; }
-
-//Convert action data (and extras) to line data
-function convertAction(data)
-{
-   return pxCh(data.oldX) + pxCh(data.oldY) + pxCh(data.x) + pxCh(data.y) +
-      intToChars(data.lineWidth, 1) + intToChars(data.color, 1);
-}
 
 function tryParseMessage(data, i)
 {
@@ -263,16 +240,76 @@ function setupStyling()
 {
    var st = StyleUtilities.CreateStyleElement();
    StyleUtilities.InsertStylesAtTop([st]);
+   //alert("7");
    st.Append(["canvas"], StyleUtilities.NoImageInterpolationRules());
 }
 
-function createBaseDrawer(toolFunc)
+function setupFrameDraw(system)
 {
-   var drawer = new CanvasDrawer();
-   var nTool = new CanvasDrawerTool(toolFunc);
-   nTool.frameLock = 1;
-   drawer.tools["network"] = nTool;
-   drawer.currentTool = "network";
+   var drw = system.drawer;
+   var frameCounter = 0;
+
+   function frameDraw()
+   {
+      frameCounter++;
+      if(system.drawer.currentX !== null)
+      {
+         var line = pxCh(drw.lastX) + pxCh(drw.lastY) + pxCh(drw.currentX) + pxCh(drw.currentY) +
+            intToChars(system.lineWidth, 1) + intToChars(system.color, 1);
+
+         system.lines += line;
+
+         drawData(system.rawTool, system.context, line);
+
+         drw.lastX = drw.currentX;
+         drw.lastY = drw.currentY;
+         drw.currentX = null;
+         drw.currentY = null;
+      }
+
+      if(frameCounter >= 10 && system.lines.length > 0)
+      {
+         post(endpoint(system.room), system.lines);
+         system.lines = "";
+         frameCounter = 0;
+      }
+
+      requestAnimationFrame(frameDraw);
+   }
+
+   return frameDraw;
+}
+
+function createBaseDrawer(canvas, width, height)
+{
+   var drawer = new CanvasPerformer();
+
+   drawer.currentX = null;
+   drawer.currentY = null;
+
+   drawer.OnAction = function(data, context)
+   {
+      //DON'T actually do anything. Just store the data for laters.
+      if(data.onTarget && (data.action & CursorActions.Drag) > 0)
+      {
+         if(data.action & CursorActions.Start)
+         {
+            drawer.lastX = data.x;
+            drawer.lastY = data.y;
+         }
+
+         //Always store current position.
+         drawer.currentX = data.x;
+         drawer.currentY = data.y;
+      }
+   };
+
+   canvas[0].width = 3600;
+   canvas[0].height = 3600;
+
+   drawer.Attach(canvas[0]);
+   CanvasUtilities.Clear(canvas[0], palette[3]); //palette[3] is the white color (hopefully)
+
    return drawer;
 }
 
@@ -280,3 +317,4 @@ function randomRoomLink()
 {
    return window.location.href.split('?')[0] + "?" + Math.random().toString().substr(2);
 }
+
