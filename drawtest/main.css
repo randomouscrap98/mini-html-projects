@@ -150,3 +150,9 @@ input[type="range"]
    padding: 0.2em;
    cursor: pointer;
 }
+
+.right #swapside
+{
+   transform: scaleX(-1);
+   display: inline-block;
+}

@@ -41,6 +41,7 @@ $(document).ready(function()
    //Setup main system
    system.signaled = new Queue(20);
    system.lines = "";
+   system.receivedLines = "";
    system.room = window.location.search.substr(1);
    system.rawTool = CanvasUtilities.DrawSolidSquareLine;
    system.drawer = createBaseDrawer(drawing, 3600, 3600);
@@ -66,7 +67,8 @@ $(document).ready(function()
       var parsed;
       var d = data.data;
 
-      for(var i = 0; i < d.length; i+= 10)
+
+      for(var i = 0; i < d.length; i+= lineBytes)
       {
          //First, always check for chat messages
          parsed = tryParseMessage(d, i);
@@ -76,11 +78,11 @@ $(document).ready(function()
          {
             messages.append(createMessageElement(parsed));
             mContainer[0].scrollTop = mContainer[0].scrollHeight;
-            i += parsed.shift - 10;
+            i += parsed.shift - lineBytes;
          }
          else
          {
-            drawData(system.rawTool, context, d, i);
+            system.receivedLines += d.substring(i, i + lineBytes);
          }
       }
 
@@ -137,6 +139,7 @@ var palette = [
    "rgb(157,175,255)", "rgb(41,208,208)", "rgb(29,105,20)", "rgb(129,197,122)", 
    "rgb(255,238,51)", "rgb(255,146,51)", "rgb(129,74,25)", "rgb(233,222,187)"];
 var charStart = 48;
+var lineBytes = 10;
 
 function intToChars(int, chars)
 {
@@ -240,7 +243,6 @@ function setupStyling()
 {
    var st = StyleUtilities.CreateStyleElement();
    StyleUtilities.InsertStylesAtTop([st]);
-   //alert("7");
    st.Append(["canvas"], StyleUtilities.NoImageInterpolationRules());
 }
 
@@ -248,6 +250,7 @@ function setupFrameDraw(system)
 {
    var drw = system.drawer;
    var frameCounter = 0;
+   var drawReceiveCount = 0;
 
    function frameDraw()
    {
@@ -267,7 +270,14 @@ function setupFrameDraw(system)
          drw.currentY = null;
       }
 
-      if(frameCounter >= 10 && system.lines.length > 0)
+      drawReceiveCount = Math.ceil(system.receivedLines.length / (60 * lineBytes));
+
+      for(var i = 0; i < drawReceiveCount; i++)
+         drawData(system.rawTool, system.context, system.receivedLines, i * lineBytes);
+
+      system.receivedLines = system.receivedLines.substr(drawReceiveCount * lineBytes);
+
+      if(frameCounter >= 20 && system.lines.length > 0)
       {
          post(endpoint(system.room), system.lines);
          system.lines = "";
