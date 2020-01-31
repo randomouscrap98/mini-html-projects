@@ -1,0 +1,152 @@
+/* Main */
+body
+{
+   font-family: sans-serif;
+   background-color: #FCFCFC;
+   color: #222;
+}
+
+.right { float: right; }
+.inline { display: inline-block; }
+.inline > * { vertical-align: middle; }
+
+/* Canvas stuff? */
+#window
+{
+   border: 1px solid #222;
+   width: 600px;
+   height: 600px;
+   overflow: hidden;
+   position: relative;
+}
+
+#window > *
+{
+   padding: 0;
+   margin: 0;
+}
+
+#drawing
+{
+   position: absolute;
+   cursor: crosshair;
+}
+
+#line
+{
+   display: inline-block;
+   background-color: #F7F7F7;
+   padding: 0.1em;
+}
+
+input[type="range"]
+{
+   width: 7em;
+}
+
+#pages button
+{
+   font-weight: bold;
+}
+
+#pagenum
+{
+   font-size: 0.8em;
+}
+
+#palette
+{
+   background-color: #EEE;
+   padding: 0.2em;
+   display: inline-block;
+}
+
+#palette button
+{
+   width: 1.5em;
+   height: 1.5em;
+   border: none;
+   cursor: pointer;
+   border-radius: 2em;
+}
+
+#palette button[data-selected]
+{
+   border-radius: 0;
+   width: 2em;
+   height: 2em;
+}
+
+
+/* Chat styling */
+
+#chat
+{
+   width: 20em;
+   vertical-align: top;
+   font-size: 0.8em;
+}
+
+#mainForm, #mainForm > *, #messageContainer
+{
+   width: 100%;
+}
+
+#messageContainer
+{
+   height: 400px;
+   overflow-y: scroll;
+   overflow-x: hidden;
+   background-color: #FFF;
+}
+
+#messages
+{
+   display: block;
+   white-space: pre-wrap;
+   padding: 0.25em;
+}
+
+.message:nth-child(even)
+{
+   background-color: #F7F7F7;
+}
+
+.username
+{
+   font-weight: bold;
+}
+
+#username, #message
+{
+   display: block;
+}
+
+/* Data */
+#statusindicator
+{
+   display: inline-block;
+   width: 1.5em;
+   height: 1.5em;
+   line-height: 1.5em;
+   background-color: gray;
+   text-align: center;
+   font-size: 0.7em;
+   color: rgba(0,0,0,0.25);
+}
+
+#status
+{
+   color: gray;
+}
+
+#data > *
+{
+   margin-bottom: 0.5em;
+}
+
+#data a
+{
+   padding: 0.2em;
+   cursor: pointer;
+}
