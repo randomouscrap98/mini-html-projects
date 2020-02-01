@@ -9,6 +9,13 @@ body
 .right { float: right; }
 .inline { display: inline-block; }
 .inline > * { vertical-align: middle; }
+.inert
+{
+   touch-action: manipulation;
+   -webkit-touch-callout: none;
+   -webkit-user-select: none;
+   user-select: none;
+}
 
 /* Canvas stuff? */
 #window
