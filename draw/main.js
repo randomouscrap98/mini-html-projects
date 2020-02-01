@@ -297,10 +297,16 @@ function createBaseDrawer(canvas, width, height)
    drawer.currentX = null;
    drawer.currentY = null;
 
+   var ignore;
+
    drawer.OnAction = function(data, context)
    {
-      //DON'T actually do anything. Just store the data for laters.
-      if(data.onTarget && (data.action & CursorActions.Drag) > 0)
+      if(data.action & CursorActions.Interrupt)
+         ignore = true;
+
+      //If you're drawing on the canvas by dragging and we don't want to ignore
+      //this line, store the position for later (animation frames pick it up)
+      if(data.onTarget && (data.action & CursorActions.Drag) > 0 && !ignore)
       {
          if(data.action & CursorActions.Start)
          {
@@ -312,6 +318,13 @@ function createBaseDrawer(canvas, width, height)
          drawer.currentX = data.x;
          drawer.currentY = data.y;
       }
+
+      //If you're ending a drag and not interrupting (meaning a TRUE drag end),
+      //we can stop ignoring the stroke. Honestly though, the performer should
+      //keep track of a like "stroke id" for us. Consider doing this.
+      if ((data.action & (CursorActions.Drag | CursorActions.End | CursorActions.Interrupt)) == 
+         (CursorActions.End | CursorActions.Drag))
+         ignore = false;
    };
 
    canvas[0].width = 3600;
