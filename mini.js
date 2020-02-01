@@ -143,3 +143,20 @@ Queue.prototype.Average = function()
       sum += this.array[i];
    return sum / this.array.length;
 };
+
+//This works all the way up to 40... like wow.
+function randomLetters(count, r)
+{
+   r = r || Math.random();
+   var result = "";
+   var w, b = "a".charCodeAt(0);
+   for(var i = 0; i < count; i++)
+   {
+      r = r * 26;
+      w = Math.floor(r);
+      result += String.fromCharCode(b + w);
+      r = r - w;
+   }
+   return result;
+}
+
