@@ -251,10 +251,10 @@ function setupFrameDraw(system)
    var drw = system.drawer;
    var frameCounter = 0;
    var drawReceiveCount = 0;
+   var drawAccumulator = 0;
 
    function frameDraw()
    {
-      frameCounter++;
       if(system.drawer.currentX !== null)
       {
          var line = pxCh(drw.lastX) + pxCh(drw.lastY) + pxCh(drw.currentX) + pxCh(drw.currentY) +
@@ -270,14 +270,30 @@ function setupFrameDraw(system)
          drw.currentY = null;
       }
 
-      drawReceiveCount = Math.ceil(system.receivedLines.length / (60 * lineBytes));
+      if(system.receivedLines.length > 0)
+      {
+         drawAccumulator += Math.max(0.5, 
+            Math.pow(system.receivedLines.length, 1.169) / (120 * lineBytes));
+         drawReceiveCount = Math.floor(drawAccumulator);
+      
+         //Only draw lines if... we've accumulated enough
+         if(drawReceiveCount > 0)
+         {
+            for(var i = 0; i < drawReceiveCount; i++) 
+               drawData(system.rawTool, system.context, system.receivedLines, i * lineBytes);
+            
+            //Get rid of what we drew from the accumulator
+            drawAccumulator -= drawReceiveCount;
+            system.receivedLines = system.receivedLines.substr(drawReceiveCount * lineBytes);
+         }
+      }
 
-      for(var i = 0; i < drawReceiveCount; i++)
-         drawData(system.rawTool, system.context, system.receivedLines, i * lineBytes);
+      //While we have pending lines, keep track of frames. We only care about
+      //frames to post these lines anyway.
+      if(system.lines.length > 0)
+         frameCounter++;
 
-      system.receivedLines = system.receivedLines.substr(drawReceiveCount * lineBytes);
-
-      if(frameCounter >= 20 && system.lines.length > 0)
+      if(frameCounter >= 30)
       {
          post(endpoint(system.room), system.lines);
          system.lines = "";
