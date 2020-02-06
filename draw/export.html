@@ -12,6 +12,23 @@ window.onload = function(e)
    canvas.width = totalWidth;
    canvas.height = totalHeight;
    var ctx = canvas.getContext("2d");
+   var currentPage = 0;
+
+   var pNum = document.getElementById("pagenum");
+
+   var myUpdatePage = function(amount)
+   {
+      var result = updatePage(currentPage, amount);
+      canvas.style="left: " + result.left + "; top: " + result.top;
+      currentPage = result.page;
+      pNum.innerHTML = result.pageText;
+   };
+
+   document.getElementById("pagedown").onclick = function () {myUpdatePage(-1);};
+   document.getElementById("pageup").onclick = function () {myUpdatePage(1);};
+
+   var messages = document.getElementById("messages");
+
    for(var i = 0; i < rawdata.length; i+= lineBytes)
    {
       //First, always check for chat messages
@@ -21,8 +38,7 @@ window.onload = function(e)
       if(parsed)
       {
          console.log(parsed);
-         /*messages.append(createMessageElement(parsed));
-         mContainer[0].scrollTop = mContainer[0].scrollHeight;*/
+         messages.appendChild(createMessageElement(parsed));
          i += parsed.shift - lineBytes;
       }
       else
@@ -32,52 +48,35 @@ window.onload = function(e)
    }
 };
       </script>
+      <style>%DRAWCSS%</style>
       <style>
-body
-{
-   font-family: sans-serif;
-   background-color: #FCFCFC;
-   color: #222;
-}
-#drawing
-{
-   image-rendering: pixelated;
-   box-sizing: border-box;
-   margin: 0;
-   padding: 0;
-   border: none;
-}
-#window
-{
-   border: 1px solid #222;
-   width: 600px;
-   height: 600px;
-   overflow: hidden;
-   position: relative;
-}
-#messageContainer
-{
-   height: 550px;
-   overflow-y: scroll;
-   overflow-x: hidden;
-   background-color: #FFF;
+#drawing { image-rendering: pixelated; }
+#messageContainer { height: 550px; }
+#pagenum { font-size: 1.0em; }
+#roomname { 
+   color: #304d8a; 
+   font-weight: bold;
+   font-size: 1.2em;
+   vertical-align: middle;
+   margin: 0 0.2em;
 }
       </style>
    </head>
    <body>
       <div id="main" class="inline">
          <div id="window"><canvas id="drawing"></canvas></div>
+      </div>
+      <div id="chat" class="inline">
+         <div id="messageContainer">
+            <div id="messages" class="messages"></div>
+         </div>
          <div class="inert" id="controls">
             <div id="pages" class="inline inert">
                <button class="inert" id="pagedown">&lt;</button>
                <span class="inert" id="pagenum">Page 01</span>
                <button class="inert" id="pageup">&gt;</button>
             </div>
-         </div>
-      </div>
-      <div id="chat" class="inline">
-         <div id="messageContainer">
-            <div id="messages" class="messages"></div>
+            <div id="roomname" class="inline">%ROOMNAME%</div>
          </div>
       </div>
    </body>

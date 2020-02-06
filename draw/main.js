@@ -111,24 +111,28 @@ $(document).ready(function()
    }, false);
    $("#export").click("click", function()
    {
-      var js, html, data;
+      var js, html, data, css;
       var btn = $(this);
       btn.addClass("disabled");
       var finalize = function()
       {
-         if(!(js && html && data)) return;
+         if(!(js && html && data && css)) return;
          btn.removeClass("disabled");
-         var fin = html.replace("%DRAWJS%", js).replace("%RAWDATA%", JSON.stringify(data));
-         var dl = $("<a>Download Export!</a>");
-         dl.attr("href","data:text/plain;charset=utf-8;base64," + btoa(fin));
+         var fin = html.replace("%DRAWJS%", js)
+                       .replace("%DRAWCSS%", css)
+                       .replace("%ROOMNAME%", system.room)
+                       .replace("%RAWDATA%", JSON.stringify(data));
+         var dl = $('<a>Download Export!</a>');
+         dl.attr("href","data:text/plain;charset=utf-8;base64," + Base64.encode(fin));
          dl.attr("download", system.fileName() + ".html");
          dl.click(function() { dl.remove(); });
-         stat.append(dl);
+         $("#data").append(dl);
       };
       //Note: this does NOT show errors if anything errors out!
       $.get(endpoint(system.room), function(d) { data = d; finalize(); });
       $.get("export.html", function(d) { html = d; finalize(); });
       $.get("draw.js", function(d) { js = d; finalize(); });
+      $.get("main.css", function(d) { css = d; finalize(); });
    });
    $("#swapside").click(function()
    {
@@ -155,25 +159,6 @@ function createMessageChunk(username, message)
 {
    var m = username + ": " + message + "\n";
    return "(" + intToChars(Math.min(m.length, 4000), 2) + m;
-}
-
-function createMessageElement(parsed)
-{
-   var msg = parsed.full;
-   var msgelem = $("<div></div>");
-   msgelem.addClass("message");
-
-   if(parsed.username)
-   {
-      var username = $("<span></span>");
-      username.addClass("username");
-      username.text(parsed.username);
-      msgelem.append(username);
-      msg = parsed.message;
-   }
-
-   msgelem.append(document.createTextNode(msg));
-   return msgelem;
 }
 
 function setupPalette(controls, paletteFunc)
