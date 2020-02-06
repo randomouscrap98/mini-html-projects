@@ -43,7 +43,7 @@ $(document).ready(function()
    system.lines = "";
    system.receivedLines = "";
    system.room = window.location.search.substr(1);
-   system.rawTool = CanvasUtilities.DrawSolidSquareLine;
+   system.rawTool = drawSimpleLine;
    system.drawer = createBaseDrawer(drawing, 3600, 3600);
    system.context = context;
    system.frameDraw = setupFrameDraw(system);
@@ -66,7 +66,6 @@ $(document).ready(function()
 
       var parsed;
       var d = data.data;
-
 
       for(var i = 0; i < d.length; i+= lineBytes)
       {
@@ -97,6 +96,8 @@ $(document).ready(function()
    //Start the system
    system.frameDraw();
 
+   system.fileName = function() { return system.room + "_" + (Math.floor(new Date().getTime()/1000)); };
+
    //Now setup some elements or whatever.
    //Setting up controls puts everything in the controls in a "ready" state.
    setupPalette($("#palette"), function(v) 
@@ -106,8 +107,28 @@ $(document).ready(function()
    $("#download")[0].addEventListener("click", function(e)
    {
       e.target.href = drawing[0].toDataURL();
-      e.target.download = system.room + "_" + (Math.floor(new Date().getTime()/1000)) + ".png";
+      e.target.download = system.fileName() + ".png";
    }, false);
+   $("#export").click("click", function()
+   {
+      var js, html, data;
+      var btn = $(this);
+      btn.addClass("disabled");
+      var finalize = function()
+      {
+         if(!(js && html && data)) return;
+         btn.removeClass("disabled");
+         var fin = html.replace("%DRAWJS%", js).replace("%RAWDATA%", JSON.stringify(data));
+         var dl = $("<a>Download Export!</a>");
+         dl.attr("href","data:text/plain;charset=utf-8;base64," + btoa(fin));
+         dl.attr("download", system.fileName() + ".html");
+         stat.append(dl);
+      };
+      //Note: this does NOT show errors if anything errors out!
+      $.get(endpoint(system.room), function(d) { data = d; finalize(); });
+      $.get("export.html", function(d) { html = d; finalize(); });
+      $.get("draw.js", function(d) { js = d; finalize(); });
+   });
    $("#swapside").click(function()
    {
       $("body > .inline").toggleClass("right");
@@ -116,79 +137,18 @@ $(document).ready(function()
    $("#newroom").attr("href", randomRoomLink());
 
    //Page turner
-   var updatePage = function(amount)
+   var myUpdatePage = function(amount)
    {
-      var newPage = ((pNum.data("page") || 0) + amount + 36) % 36;
-      drawing.css("left", (-600 * (newPage % 6)) + "px");
-      drawing.css("top", (-600 * Math.floor(newPage / 6)) + "px");
-      pNum.data("page", newPage);
-      pNum.text("Page " + (newPage + 1).toString().padStart(2, '0'));
+      var result = updatePage(pNum.data("page"), amount);
+      drawing.css("left", result.left);
+      drawing.css("top", result.top);
+      pNum.data("page", result.page);
+      pNum.text(result.pageText);
    };
 
-   pDown.click(function() {updatePage(-1);});
-   pUp.click(function() {updatePage(1);});
+   pDown.click(function() {myUpdatePage(-1);});
+   pUp.click(function() {myUpdatePage(1);});
 });
-
-//black, gray, light gray, white
-//red, pink, purple, blue
-//light blue, cyan, green, light green, 
-//yellow, orange, brown, tan
-var palette = [
-   "rgb(0,0,0)", "rgb(87,87,87)", "rgb(160,160,160)", "rgb(255,255,255)",
-   "rgb(173,35,35)", "rgb(255,205,243)", "rgb(129,38,192)", "rgb(42,75,215)",
-   "rgb(157,175,255)", "rgb(41,208,208)", "rgb(29,105,20)", "rgb(129,197,122)", 
-   "rgb(255,238,51)", "rgb(255,146,51)", "rgb(129,74,25)", "rgb(233,222,187)"];
-var charStart = 48;
-var lineBytes = 10;
-
-function intToChars(int, chars)
-{
-   chars = chars || 1;
-   var max = ((1 << (chars * 6)) - 1);
-
-   if(int < 0) int = 0;
-   if(int > max) int = max;
-
-   var result = "";
-
-   for(var i = 0; i < chars; i++)
-      result += String.fromCharCode(charStart + ((int >> (i * 6)) & 63));
-
-   return result;
-}
-
-function charsToInt(chars, start, count)
-{
-   start = start || 0;
-   count = count || chars.length - start;
-   var result = 0;
-   for(var i = 0; i < count; i++)
-      result += (chars.charCodeAt(i + start) - charStart) << (i * 6);
-   return result;
-}
-
-function pxCh(int) { return intToChars(int + 16, 2); }
-function chPx(char, offset) { return charsToInt(char, offset, 2) - 16; }
-
-function tryParseMessage(data, i)
-{
-   if(data.charAt(i) === "(")
-   {
-      var l = charsToInt(data, i + 1, 2); //12 bits (2 chars) for message length
-      var result = {};
-      result.shift = l + 3;
-      result.full = data.substring(i + 3, i + 3 + l);
-      var colon = result.full.indexOf(":");
-      if(colon >= 0)
-      {
-         result.username = result.full.substr(0, colon + 1);
-         result.message = result.full.substr(colon + 1);
-      }
-      return result;
-   }
-
-   return null;
-}
 
 function createMessageChunk(username, message)
 {
@@ -213,17 +173,6 @@ function createMessageElement(parsed)
 
    msgelem.append(document.createTextNode(msg));
    return msgelem;
-}
-
-//Draw a converted action on the given context. Can index into larger actions,
-//or just draw the whole item given.
-function drawData(rawTool, context, line, o)
-{
-   o = o || 0;
-   context.fillStyle = palette[charsToInt(line, o + 9, 1) % palette.length];
-   return rawTool(context, 
-      chPx(line, o), chPx(line, o + 2), chPx(line, o + 4), chPx(line, o + 6), 
-      charsToInt(line, o + 8, 1));
 }
 
 function setupPalette(controls, paletteFunc)

@@ -6,6 +6,19 @@ body
    color: #222;
 }
 
+form
+{
+   margin-bottom: 0.4em;
+}
+
+.disabled
+{
+   pointer-events: none;
+   opacity: 0.5;
+   text-decoration: none;
+   cursor: wait;
+}
+
 .right { float: right; }
 .inline { display: inline-block; }
 .inline > * { vertical-align: middle; }
@@ -162,4 +175,9 @@ input[type="range"]
 {
    transform: scaleX(-1);
    display: inline-block;
+}
+
+#info
+{
+   padding: 0 0.2em;
 }

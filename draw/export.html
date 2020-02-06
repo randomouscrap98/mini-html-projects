@@ -1,0 +1,59 @@
+<html>
+   <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <script>%DRAWJS%</script>
+      <script>var rawdata = %RAWDATA%;</script>
+      <script>
+//This is our running code
+window.onload = function(e)
+{
+   console.log("Loading now");
+};
+      </script>
+      <style>
+body
+{
+   font-family: sans-serif;
+   background-color: #FCFCFC;
+   color: #222;
+}
+canvas
+{
+   image-rendering: pixelated;
+}
+#window
+{
+   border: 1px solid #222;
+   width: 600px;
+   height: 600px;
+   overflow: hidden;
+   position: relative;
+}
+#messageContainer
+{
+   height: 550px;
+   overflow-y: scroll;
+   overflow-x: hidden;
+   background-color: #FFF;
+}
+      </style>
+   </head>
+   <body>
+      <div id="main" class="inline">
+         <div id="window"><canvas id="drawing"></canvas></div>
+         <div class="inert" id="controls">
+            <div id="pages" class="inline inert">
+               <button class="inert" id="pagedown">&lt;</button>
+               <span class="inert" id="pagenum">Page 01</span>
+               <button class="inert" id="pageup">&gt;</button>
+            </div>
+         </div>
+      </div>
+      <div id="chat" class="inline">
+         <div id="messageContainer">
+            <div id="messages" class="messages"></div>
+         </div>
+      </div>
+   </body>
+</html>
