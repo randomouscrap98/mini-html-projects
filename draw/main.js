@@ -122,6 +122,7 @@ $(document).ready(function()
          var dl = $("<a>Download Export!</a>");
          dl.attr("href","data:text/plain;charset=utf-8;base64," + btoa(fin));
          dl.attr("download", system.fileName() + ".html");
+         dl.click(function() { dl.remove(); });
          stat.append(dl);
       };
       //Note: this does NOT show errors if anything errors out!
@@ -292,8 +293,8 @@ function createBaseDrawer(canvas, width, height)
          ignore = false;
    };
 
-   canvas[0].width = 3600;
-   canvas[0].height = 3600;
+   canvas[0].width = totalWidth;
+   canvas[0].height = totalHeight;
 
    drawer.Attach(canvas[0]);
    CanvasUtilities.Clear(canvas[0], palette[3]); //palette[3] is the white color (hopefully)

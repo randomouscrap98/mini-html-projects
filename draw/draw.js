@@ -11,9 +11,12 @@ var palette = [
 var charStart = 48;
 var lineBytes = 10;
 var pageWidth = 600;
+var pageHeight = 600;
 var pagesX = 6;
 var pagesY = 6;
 var pagesTotal = pagesX * pagesY;
+var totalWidth = pageWidth * pagesX;
+var totalHeight = pageHeight * pagesY;
 
 function intToChars(int, chars)
 {

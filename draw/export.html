@@ -8,7 +8,28 @@
 //This is our running code
 window.onload = function(e)
 {
-   console.log("Loading now");
+   var canvas = document.getElementById("drawing");
+   canvas.width = totalWidth;
+   canvas.height = totalHeight;
+   var ctx = canvas.getContext("2d");
+   for(var i = 0; i < rawdata.length; i+= lineBytes)
+   {
+      //First, always check for chat messages
+      parsed = tryParseMessage(rawdata, i);
+
+      //If there's chat, put it in. Otherwise keep drawing.
+      if(parsed)
+      {
+         console.log(parsed);
+         /*messages.append(createMessageElement(parsed));
+         mContainer[0].scrollTop = mContainer[0].scrollHeight;*/
+         i += parsed.shift - lineBytes;
+      }
+      else
+      {
+         drawData(drawSimpleLine, ctx, rawdata, i);
+      }
+   }
 };
       </script>
       <style>
@@ -18,9 +39,13 @@ body
    background-color: #FCFCFC;
    color: #222;
 }
-canvas
+#drawing
 {
    image-rendering: pixelated;
+   box-sizing: border-box;
+   margin: 0;
+   padding: 0;
+   border: none;
 }
 #window
 {
