@@ -298,7 +298,7 @@ function createBaseDrawer(canvas, width, height)
    canvas[0].height = totalHeight;
 
    drawer.Attach(canvas[0]);
-   CanvasUtilities.Clear(canvas[0], palette[3]); //palette[3] is the white color (hopefully)
+   CanvasUtilities.Clear(canvas[0], palette[clearIndex]);
 
    return drawer;
 }
