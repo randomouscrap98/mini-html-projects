@@ -15,6 +15,7 @@ $(document).ready(function()
    var pDown = $("#pagedown");
    var pUp = $("#pageup");
    var pNum = $("#pagenum");
+   var exp = $("#export");
 
    //Special
    var percent = $("#percent");
@@ -88,7 +89,12 @@ $(document).ready(function()
       percent.text((data.used / data.limit * 100).toFixed(2) + "%");
       system.signaled.Enqueue(data.signalled);
       statusindicator.text(Math.ceil(system.signaled.Average()));
+
       stat.text("");
+
+      //Oops, we went over the export limit. Fix this one day!
+      if(data.used > 1490000)
+         exp.addClass("disabled");
 
       return d.length;
    }, function() { setError(statusindicator); });
@@ -109,15 +115,14 @@ $(document).ready(function()
       e.target.href = drawing[0].toDataURL();
       e.target.download = system.fileName() + ".png";
    }, false);
-   $("#export").click("click", function()
+   exp.click("click", function()
    {
       var js, html, data, css;
-      var btn = $(this);
-      btn.addClass("disabled");
+      exp.addClass("disabled");
       var finalize = function()
       {
          if(!(js && html && data && css)) return;
-         btn.removeClass("disabled");
+         exp.removeClass("disabled");
          var fin = html.replace("%DRAWJS%", js)
                        .replace("%DRAWCSS%", css)
                        .replace("%ROOMNAME%", system.room)

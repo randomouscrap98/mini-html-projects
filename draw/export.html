@@ -8,10 +8,8 @@
 //This is our running code
 window.onload = function(e)
 {
-   var canvas = document.getElementById("drawing");
-   canvas.width = totalWidth;
-   canvas.height = totalHeight;
-   var ctx = canvas.getContext("2d");
+   var canvas = document.getElementById("drawing"), ctx = canvas.getContext("2d");
+   canvas.width = totalWidth; canvas.height = totalHeight;
    var currentPage = 0;
 
    var pNum = document.getElementById("pagenum");
@@ -37,14 +35,10 @@ window.onload = function(e)
       //If there's chat, put it in. Otherwise keep drawing.
       if(parsed)
       {
-         console.log(parsed);
          messages.appendChild(createMessageElement(parsed));
          i += parsed.shift - lineBytes;
       }
-      else
-      {
-         drawData(drawSimpleLine, ctx, rawdata, i);
-      }
+      else { drawData(drawSimpleLine, ctx, rawdata, i); }
    }
 };
       </script>
@@ -53,6 +47,7 @@ window.onload = function(e)
 #drawing { image-rendering: pixelated; }
 #messageContainer { height: 550px; }
 #pagenum { font-size: 1.0em; }
+#controls { margin: 0.3em 0; }
 #roomname { 
    color: #304d8a; 
    font-weight: bold;
