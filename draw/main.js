@@ -8,6 +8,7 @@ $(document).ready(function()
    setupStyling();
 
    var controls = $("#controls");
+   var pControls = $("#palette");
    var drawing = $("#drawing");
    var lineSlider = $("#lineSlider");
    var lineNumber = $("#lineNumber");
@@ -106,8 +107,9 @@ $(document).ready(function()
 
    //Now setup some elements or whatever.
    //Setting up controls puts everything in the controls in a "ready" state.
-   setupPalette($("#palette"), function(v) 
+   setupPalette(pControls, function(v) 
    { 
+      pControls.css("background-color", palette[v]);
       system.color = v;  //Note: we store INDEX instead of color like drawer expects, probably fine!
    });
    $("#download")[0].addEventListener("click", function(e)
@@ -170,11 +172,20 @@ function setupPalette(controls, paletteFunc)
 {
    controls.empty();
    var radios = new RadioSimulator(controls[0], "data-index", paletteFunc);
+   var paletteBlock
    for(var i = 0; i < palette.length; i++)
    {
+      if(i % 16 === 0)
+      {
+         paletteBlock = $("<div></div>");
+         paletteBlock.addClass("inline");
+         paletteBlock.addClass("inert");
+         controls.append(paletteBlock);
+      }
+
       var radio = $(radios.CreateRadioButton("", i));
       radio.css("background-color", palette[i]);
-      controls.append(radio);
+      paletteBlock.append(radio);
    }
    radios.SelectRadio("0");
 }
