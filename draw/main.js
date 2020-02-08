@@ -187,7 +187,7 @@ function setupPalette(controls, paletteFunc)
       radio.css("background-color", palette[i]);
       paletteBlock.append(radio);
    }
-   radios.SelectRadio("0");
+   radios.SelectRadio("1");
 }
 
 function setupStyling()
