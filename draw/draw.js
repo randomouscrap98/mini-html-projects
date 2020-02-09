@@ -23,7 +23,7 @@ var palette = [
    "#03193f", "#3b1443", "#622461", "#93388f",
    "#ca52c9", "#c85086", "#f68187", "#f5555d",
    "#ea323c", "#c42430", "#891e2b", "#571c27"
-   ];
+];
 
 var charStart = 48;
 var lineBytes = 10;
@@ -65,15 +65,49 @@ function charsToInt(chars, start, count)
 function pxCh(int) { return intToChars(int + 16, 2); }
 function chPx(char, offset) { return charsToInt(char, offset, 2) - 16; }
 
-//Draw a converted action on the given context. Can index into larger actions,
-//or just draw the whole item given.
-function drawData(rawTool, context, line, o)
+//Parse the next line. Is it REALLY going to be ok creating all these objects?
+function parseSingleLine(line, i)
 {
-   o = o || 0;
-   context.fillStyle = palette[charsToInt(line, o + 9, 1) % palette.length];
-   return rawTool(context, 
-      chPx(line, o), chPx(line, o + 2), chPx(line, o + 4), chPx(line, o + 6), 
-      charsToInt(line, o + 8, 1));
+   return new LineData(
+      charsToInt(line, i + 8, 1),            //Width
+      charsToInt(line, i + 9, 1),            //Color (index)
+      chPx(line, i), chPx(line, i + 2),      //Point 1
+      chPx(line, i + 4), chPx(line, i + 6),  //Point 2
+   );
+}
+
+//Try to parse a line chunk. This is a space optimization for greater versions
+//of the drawing software
+function tryParseLines(line, i)
+{
+   if(line.charAt(i) === ".")
+   {
+      var index = i + 7;
+      var result = { lines: [] };
+      var width = charsToInt(line, i + 1, 1);
+      var color = charsToInt(line, i + 2, 1);
+      var lastX = chPx(line, i + 3);
+      var lastY = chPx(line, i + 5);
+      var x = null, y;
+
+      while(data.charAt(index) !== ".")
+      {
+         x = chPx(line, index);
+         y = chpx(line, index + 2);
+         result.lines.push(new LineData(width, color, lastX, lastY, x, y));
+         lastX = x; lastY = y;
+         index += 4;
+      }
+
+      if(x === null) //A strange optimization: single pixel = 1 point
+         result.lines.push(new LineData(width, color, lastX, lastY, lastX, lastY));
+
+      result.jump = index + 1;
+
+      return result;
+   }
+
+   return null;
 }
 
 function tryParseMessage(data, i)
@@ -82,7 +116,7 @@ function tryParseMessage(data, i)
    {
       var l = charsToInt(data, i + 1, 2); //12 bits (2 chars) for message length
       var result = {};
-      result.shift = l + 3;
+      result.jump = i + l + 3;
       result.full = data.substring(i + 3, i + 3 + l);
       var colon = result.full.indexOf(":");
       if(colon >= 0)
@@ -110,18 +144,36 @@ function updatePage(existing, amount)
    };
 }
 
-function drawSimpleLine(ctx, x1, y1, x2, y2, width)
+//An object to store a single line
+function LineData(width, paletteIndex, x1, y1, x2, y2)
 {
-   var xdiff = x2 - x1;
-   var ydiff = y2 - y1;
+   this.width = width;
+   this.color = palette[paletteIndex % palette.length];
+   this.paletteIndex = paletteIndex;
+   this.x1 = x1;
+   this.y1 = y1;
+   this.x2 = x2;
+   this.y2 = y2;
+}
+
+function drawSimpleLine(ctx, ld)
+{
+   var xdiff = ld.x2 - ld.x1;
+   var ydiff = ld.y2 - ld.y1;
    var dist = Math.sqrt(xdiff*xdiff+ydiff*ydiff);
    var ang = Math.atan(ydiff/(xdiff===0?0.0001:xdiff))+(xdiff<0?Math.PI:0); 
-   var ofs = (width - 1) / 2;
+   var ofs = (ld.width - 1) / 2;
 
    if(dist === 0) dist=0.001;
 
+   ctx.fillStyle = ld.color;
+
    for(var i=0;i<dist;i+=0.5) 
-      ctx.fillRect(Math.round(x1+Math.cos(ang)*i-ofs), Math.round(y1+Math.sin(ang)*i-ofs), width, width);
+   {
+      ctx.fillRect(Math.round(ld.x1+Math.cos(ang)*i-ofs), 
+                   Math.round(ld.y1+Math.sin(ang)*i-ofs), 
+                   ld.width, ld.width);
+   }
 }
 
 //The draw system needs an easy way to create message nodes.

@@ -1,7 +1,10 @@
 // Carlos Sanchez
 // January, 2020
 
-var system = {};
+var system = 
+{
+   version: "1.3.0 (test 7)"
+};
 
 $(document).ready(function()
 {
@@ -42,8 +45,9 @@ $(document).ready(function()
 
    //Setup main system
    system.signaled = new Queue(20);
-   system.lines = "";
-   system.receivedLines = "";
+   system.lines = [];
+   system.receivedLines = [];
+   system.receivedIndex = 0;
    system.room = window.location.search.substr(1);
    system.rawTool = drawSimpleLine;
    system.drawer = createBaseDrawer(drawing, 3600, 3600);
@@ -68,8 +72,9 @@ $(document).ready(function()
 
       var parsed;
       var d = data.data;
+      var i = 0, j;
 
-      for(var i = 0; i < d.length; i+= lineBytes)
+      while(i < d.length)
       {
          //First, always check for chat messages
          parsed = tryParseMessage(d, i);
@@ -79,11 +84,23 @@ $(document).ready(function()
          {
             messages.append(createMessageElement(parsed));
             mContainer[0].scrollTop = mContainer[0].scrollHeight;
-            i += parsed.shift - lineBytes;
+            i = parsed.jump;
          }
          else
          {
-            system.receivedLines += d.substring(i, i + lineBytes);
+            parsed = tryParseLines(d, i);
+
+            if(parsed)
+            {
+               for(j = 0; j < parsed.lines.length; j++)
+                  system.receivedLines.push(parsed.lines[j]);
+               i = parsed.jump;
+            }
+            else
+            {
+               system.receivedLines.push(parseSingleLine(d, i));
+               i += lineBytes;
+            }
          }
       }
 
@@ -94,7 +111,7 @@ $(document).ready(function()
       stat.text("");
 
       //Oops, we went over the export limit. Fix this one day!
-      if(data.used > 1490000)
+      if(data.used > 1480000)
          exp.addClass("disabled");
 
       return d.length;
@@ -160,6 +177,8 @@ $(document).ready(function()
 
    pDown.click(function() {myUpdatePage(-1);});
    pUp.click(function() {myUpdatePage(1);});
+
+   messages.append($('<div class="version">Version ' + system.version + '</div>'));
 });
 
 function createMessageChunk(username, message)
@@ -206,14 +225,15 @@ function setupFrameDraw(system)
 
    function frameDraw()
    {
+      //First, perform self-lines
       if(system.drawer.currentX !== null)
       {
-         var line = pxCh(drw.lastX) + pxCh(drw.lastY) + pxCh(drw.currentX) + pxCh(drw.currentY) +
-            intToChars(system.lineWidth, 1) + intToChars(system.color, 1);
-
-         system.lines += line;
-
-         drawData(system.rawTool, system.context, line);
+         var line = new LineData(system.lineWidth, system.color,
+            Math.round(drw.lastX), Math.round(drw.lastY), 
+            Math.round(drw.currentX), Math.round(drw.currentY));
+         
+         system.lines.push(line);
+         system.rawTool(system.context, line);
 
          drw.lastX = drw.currentX;
          drw.lastY = drw.currentY;
@@ -221,22 +241,32 @@ function setupFrameDraw(system)
          drw.currentY = null;
       }
 
-      if(system.receivedLines.length > 0)
+      //Then, perform received lines (could also be our own lol)
+      if(system.receivedLines.length > system.receivedIndex)
       {
          drawAccumulator += Math.max(0.5, 
-            Math.pow(system.receivedLines.length, 1.169) / (120 * lineBytes));
+            Math.pow(system.receivedLines.length - system.receivedIndex, 1.169) / 120);
          drawReceiveCount = Math.floor(drawAccumulator);
       
          //Only draw lines if... we've accumulated enough
          if(drawReceiveCount > 0)
          {
             for(var i = 0; i < drawReceiveCount; i++) 
-               drawData(system.rawTool, system.context, system.receivedLines, i * lineBytes);
+               system.rawTool(system.context, system.receivedLines[system.receivedIndex + i]);
             
             //Get rid of what we drew from the accumulator
             drawAccumulator -= drawReceiveCount;
-            system.receivedLines = system.receivedLines.substr(drawReceiveCount * lineBytes);
+            system.receivedIndex += drawReceiveCount;
          }
+      }
+      else
+      {
+         //If we've reached the END of the lines, clear out the array. This
+         //should reduce the number of arrays created significantly, since, as
+         //long as data keeps coming, we'll keep buffering the lines in the
+         //same array. Only when everything gets quiet do we create a new one.
+         system.receivedLines = [];
+         system.receivedIndex = 0;
       }
 
       //While we have pending lines, keep track of frames. We only care about
@@ -244,10 +274,11 @@ function setupFrameDraw(system)
       if(system.lines.length > 0)
          frameCounter++;
 
+      //Post your lines every half a second. Probably ok...
       if(frameCounter >= 30)
       {
-         post(endpoint(system.room), system.lines);
-         system.lines = "";
+         post(endpoint(system.room), createOptimizedLines(system.lines));
+         system.lines = [];
          frameCounter = 0;
       }
 
@@ -255,6 +286,19 @@ function setupFrameDraw(system)
    }
 
    return frameDraw;
+}
+
+function createOptimizedLines(lines)
+{
+   var result = "";
+   for(var i = 0; i < lines.length; i++)
+   {
+      result += pxCh(lines[i].x1) + pxCh(lines[i].y1) + 
+                pxCh(lines[i].x2) + pxCh(lines[i].y2) +
+                intToChars(lines[i].width, 1) + 
+                intToChars(lines[i].paletteIndex, 1);
+   }
+   return result;
 }
 
 function createBaseDrawer(canvas, width, height)
