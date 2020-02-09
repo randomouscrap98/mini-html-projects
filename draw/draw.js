@@ -90,10 +90,10 @@ function tryParseLines(line, i)
       var lastY = chPx(line, i + 5);
       var x = null, y;
 
-      while(data.charAt(index) !== ".")
+      while(line.charAt(index) !== ".")
       {
          x = chPx(line, index);
-         y = chpx(line, index + 2);
+         y = chPx(line, index + 2);
          result.lines.push(new LineData(width, color, lastX, lastY, x, y));
          lastX = x; lastY = y;
          index += 4;
@@ -128,6 +128,48 @@ function tryParseMessage(data, i)
    }
 
    return null;
+}
+
+//Given a set of LineData, produce optimized string data.
+function createOptimizedLines(lines)
+{
+   var result = "";
+   var cc = 0; //Current chunk
+   var j;
+
+   for(var i = 0; i < lines.length; i++)
+   {
+      //If we're at the end, we need to break our chunk anyway. Otherwise, look
+      //ahead to see if the next line is a continuation of ours. If it's NOT,
+      //break the line. Otherwise continue moving forward
+      if(i === lines.length - 1 ||
+         lines[i + 1].paletteIndex !== lines[i].paletteIndex ||
+         lines[i + 1].width !== lines[i].width ||
+         lines[i + 1].x1 !== lines[i].x2 ||
+         lines[i + 1].y1 !== lines[i].y2)
+      {
+         //If it's a single line, produce the old version
+         if(i - cc === 0)
+         {
+            result += pxCh(lines[i].x1) + pxCh(lines[i].y1) + 
+               pxCh(lines[i].x2) + pxCh(lines[i].y2) +
+               intToChars(lines[i].width, 1) + 
+               intToChars(lines[i].paletteIndex, 1);
+         }
+         else
+         {
+            result += "." + intToChars(lines[i].width, 1) + 
+               intToChars(lines[i].paletteIndex, 1) +
+               pxCh(lines[cc].x1) + pxCh(lines[cc].y1);
+            for(j = cc; j <= i; j++)
+               result += pxCh(lines[j].x2) + pxCh(lines[j].y2);
+            result += ".";
+         }
+         cc = i + 1;
+      }
+   }
+
+   return result;
 }
 
 //The draw system is paged, always (basically). And even if it isn't, you don't
@@ -194,6 +236,43 @@ function createMessageElement(parsed)
 
    msgelem.append(document.createTextNode(msg));
    return msgelem;
+}
+
+//A simple method for processing raw data and funelling parsed 
+//lines/messages to the given functions.
+function processRaw(data, lineFunc, messageFunc)
+{
+   var parsed;
+   var i = 0, j;
+
+   while(i < data.length)
+   {
+      //First, always check for chat messages
+      parsed = tryParseMessage(data, i);
+
+      //If there's chat, put it in. Otherwise keep drawing.
+      if(parsed)
+      {
+         messageFunc(parsed);
+         i = parsed.jump;
+      }
+      else
+      {
+         parsed = tryParseLines(data, i);
+
+         if(parsed)
+         {
+            for(j = 0; j < parsed.lines.length; j++)
+               lineFunc(parsed.lines[j]);
+            i = parsed.jump;
+         }
+         else
+         {
+            lineFunc(parseSingleLine(data, i));
+            i += lineBytes;
+         }
+      }
+   }
 }
 
 // Base64 encode/decode  http://www.webtoolkit.info 

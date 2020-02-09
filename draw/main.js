@@ -3,7 +3,7 @@
 
 var system = 
 {
-   version: "1.3.0 (test 7)"
+   version: "1.3.0.9"
 };
 
 $(document).ready(function()
@@ -70,39 +70,14 @@ $(document).ready(function()
    {
       setRunning(statusindicator);
 
-      var parsed;
-      var d = data.data;
-      var i = 0, j;
-
-      while(i < d.length)
-      {
-         //First, always check for chat messages
-         parsed = tryParseMessage(d, i);
-
-         //If there's chat, put it in. Otherwise keep drawing.
-         if(parsed)
+      //automatically parse data and push lines + messages to appropriate places
+      processRaw(data.data, 
+         function(parsed) { system.receivedLines.push(parsed); }, 
+         function(parsed)
          {
             messages.append(createMessageElement(parsed));
             mContainer[0].scrollTop = mContainer[0].scrollHeight;
-            i = parsed.jump;
-         }
-         else
-         {
-            parsed = tryParseLines(d, i);
-
-            if(parsed)
-            {
-               for(j = 0; j < parsed.lines.length; j++)
-                  system.receivedLines.push(parsed.lines[j]);
-               i = parsed.jump;
-            }
-            else
-            {
-               system.receivedLines.push(parseSingleLine(d, i));
-               i += lineBytes;
-            }
-         }
-      }
+         });
 
       percent.text((data.used / data.limit * 100).toFixed(2) + "%");
       system.signaled.Enqueue(data.signalled);
@@ -114,7 +89,7 @@ $(document).ready(function()
       if(data.used > 1480000)
          exp.addClass("disabled");
 
-      return d.length;
+      return data.data.length;
    }, function() { setError(statusindicator); });
 
    //Start the system
@@ -245,7 +220,7 @@ function setupFrameDraw(system)
       if(system.receivedLines.length > system.receivedIndex)
       {
          drawAccumulator += Math.max(0.5, 
-            Math.pow(system.receivedLines.length - system.receivedIndex, 1.169) / 120);
+            Math.pow(system.receivedLines.length - system.receivedIndex, 1.2) / 120);
          drawReceiveCount = Math.floor(drawAccumulator);
       
          //Only draw lines if... we've accumulated enough
@@ -286,19 +261,6 @@ function setupFrameDraw(system)
    }
 
    return frameDraw;
-}
-
-function createOptimizedLines(lines)
-{
-   var result = "";
-   for(var i = 0; i < lines.length; i++)
-   {
-      result += pxCh(lines[i].x1) + pxCh(lines[i].y1) + 
-                pxCh(lines[i].x2) + pxCh(lines[i].y2) +
-                intToChars(lines[i].width, 1) + 
-                intToChars(lines[i].paletteIndex, 1);
-   }
-   return result;
 }
 
 function createBaseDrawer(canvas, width, height)

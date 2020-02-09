@@ -27,19 +27,12 @@ window.onload = function(e)
 
    var messages = document.getElementById("messages");
 
-   for(var i = 0; i < rawdata.length; i+= lineBytes)
-   {
-      //First, always check for chat messages
-      parsed = tryParseMessage(rawdata, i);
-
-      //If there's chat, put it in. Otherwise keep drawing.
-      if(parsed)
+   processRaw(rawdata,
+      function(parsed) { drawSimpleLine(ctx, parsed); },
+      function(parsed)
       {
          messages.appendChild(createMessageElement(parsed));
-         i += parsed.shift - lineBytes;
-      }
-      else { drawData(drawSimpleLine, ctx, rawdata, i); }
-   }
+      });
 };
       </script>
       <style>%DRAWCSS%</style>
