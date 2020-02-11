@@ -72,9 +72,25 @@ function queryEnd(room, start, handle, error)
 
 function post(url, data)
 {
-   var xhr = new XMLHttpRequest();
-   xhr.open('POST', url, true);
-   xhr.send(data);
+   postRetry(url, data, 100, 1000);
+}
+
+function postRetry(url, data, retries, timeout)
+{
+   if(retries <= 0)
+      throw "Ran out of post retries!";
+
+   timeout = timeout || 500;
+
+   fetch(url, 
+   {
+      method: "POST",
+      body: data
+   }).catch(function(error) 
+   {
+      console.log("POST " + url + " failed, retries: " + retries);
+      setTimeout(function() { postRetry(url, data, retries - 1, timeout); }, timeout);
+   });
 }
 
 function enterSubmits(input, form)
