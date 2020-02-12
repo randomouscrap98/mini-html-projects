@@ -3,7 +3,7 @@
 
 var system = 
 {
-   version: "1.3.0.9"
+   version: "1.3.1"
 };
 
 $(document).ready(function()
@@ -18,7 +18,6 @@ $(document).ready(function()
    var context = drawing[0].getContext("2d");
    var pDown = $("#pagedown");
    var pUp = $("#pageup");
-   var pNum = $("#pagenum");
    var exp = $("#export");
 
    //Special
@@ -109,6 +108,16 @@ $(document).ready(function()
       e.target.href = drawing[0].toDataURL();
       e.target.download = system.fileName() + ".png";
    }, false);
+   $("#download1")[0].addEventListener("click", function(e)
+   {
+      var c2 = document.createElement("canvas");
+      c2.width = pageWidth;
+      c2.height = pageHeight;
+      c2.getContext("2d").drawImage(drawing[0], -system.offsetLeft, -system.offsetTop,
+         pageWidth, pageHeight, 0, 0, pageWidth, pageHeight);
+      e.target.href = c2.toDataURL();
+      e.target.download = system.fileName() + "_" + system.page + ".png";
+   }, false);
    exp.click("click", function()
    {
       var js, html, data, css;
@@ -143,15 +152,18 @@ $(document).ready(function()
    //Page turner
    var myUpdatePage = function(amount)
    {
-      var result = updatePage(pNum.data("page"), amount);
+      var result = updatePage(system.page, amount);
       drawing.css("left", result.left);
       drawing.css("top", result.top);
-      pNum.data("page", result.page);
-      pNum.text(result.pageText);
+      system.page = result.page;
+      system.offsetLeft = result.leftRaw;
+      system.offsetTop = result.topRaw;
+      $("#pagenum").text(result.pageText);
    };
 
    pDown.click(function() {myUpdatePage(-1);});
    pUp.click(function() {myUpdatePage(1);});
+   myUpdatePage(0); //This sets up all the page values.
 
    messages.append($('<div class="version">Version ' + system.version + '</div>'));
 });

@@ -178,9 +178,13 @@ function updatePage(existing, amount)
 {
    var newPage = ((existing || 0) + amount + pagesTotal) % pagesTotal;
 
+   var leftRaw = (-600 * (newPage % pagesX));
+   var topRaw = (-600 * Math.floor(newPage / pagesX));
    return {
-      "left": (-600 * (newPage % pagesX)) + "px",
-      "top": (-600 * Math.floor(newPage / pagesX)) + "px",
+      "left": leftRaw + "px",
+      "top": topRaw + "px",
+      "leftRaw": leftRaw,
+      "topRaw": topRaw,
       "page": newPage,
       "pageText": "Page " + (newPage + 1).toString().padStart(Math.ceil(Math.log10(pagesTotal)), '0')
    };
