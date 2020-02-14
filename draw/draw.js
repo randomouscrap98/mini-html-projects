@@ -65,6 +65,38 @@ function charsToInt(chars, start, count)
 function pxCh(int) { return intToChars(int + 16, 2); }
 function chPx(char, offset) { return charsToInt(char, offset, 2) - 16; }
 
+//Find the next safe place within the given length.
+function scanSafe(line, i, length)
+{
+   var j, c;
+
+   for(j = 0; j < length; ++j) 
+   {
+      if(i + j >= line.length)
+         return line.length - 1;
+
+      c = line.charCodeAt(i + j);
+
+      if(c < charStart || c >= charStart + 64) 
+         return i + j; 
+   }
+
+   return true;
+}
+
+function parseMessage(line, i)
+{
+   var l = charsToInt(line, i, 2); //12 bits (2 chars) for message length
+   var result = { full : line.substring(i + 2, i + 2 + l), totalLength: l + 2 };
+   var colon = result.full.indexOf(":");
+   if(colon >= 0)
+   {
+      result.username = result.full.substr(0, colon + 1);
+      result.message = result.full.substr(colon + 1);
+   }
+   return result;
+}
+
 //Parse the next line. Is it REALLY going to be ok creating all these objects?
 function parseSingleLine(line, i)
 {
@@ -76,58 +108,102 @@ function parseSingleLine(line, i)
    );
 }
 
-//Try to parse a line chunk. This is a space optimization for greater versions
-//of the drawing software
-function tryParseLines(line, i)
+//Parse lines from i for the given length. Length must be valid!
+function parseLines(line, i, length)
 {
-   if(line.charAt(i) === ".")
+   if(((length - 6) % 4) !== 0) return null;
+
+   var result = [];
+   var width = charsToInt(line, i, 1);
+   var color = charsToInt(line, i + 1, 1);
+   var lastX = chPx(line, i + 2);
+   var lastY = chPx(line, i + 4);
+   var x = null, y;
+
+   for(var j = 6; j < length; j+=4)
    {
-      var index = i + 7;
-      var result = { lines: [] };
-      var width = charsToInt(line, i + 1, 1);
-      var color = charsToInt(line, i + 2, 1);
-      var lastX = chPx(line, i + 3);
-      var lastY = chPx(line, i + 5);
-      var x = null, y;
-
-      while(line.charAt(index) !== ".")
-      {
-         x = chPx(line, index);
-         y = chPx(line, index + 2);
-         result.lines.push(new LineData(width, color, lastX, lastY, x, y));
-         lastX = x; lastY = y;
-         index += 4;
-      }
-
-      if(x === null) //A strange optimization: single pixel = 1 point
-         result.lines.push(new LineData(width, color, lastX, lastY, lastX, lastY));
-
-      result.jump = index + 1;
-
-      return result;
+      x = chPx(line, i + j);
+      y = chPx(line, i + j + 2);
+      result.push(new LineData(width, color, lastX, lastY, x, y));
+      lastX = x; lastY = y;
    }
 
-   return null;
+   if(x === null) //A strange optimization: single pixel = 1 point
+      result.push(new LineData(width, color, lastX, lastY, lastX, lastY));
+
+   return result;
 }
 
-function tryParseMessage(data, i)
+//Attempt to parse the next usable chunk of data. The "jump" field describes
+//where you can skip to after parsing, and "result" is the data we parsed.
+//"type" says WHAT we parsed. result can be null if nothing of value was read.
+function tryParseNext(line, i)
 {
-   if(data.charAt(i) === "(")
+   var result = null;
+   var type = "lines";
+
+   if(i >= line.length)
    {
-      var l = charsToInt(data, i + 1, 2); //12 bits (2 chars) for message length
-      var result = {};
-      result.jump = i + l + 3;
-      result.full = data.substring(i + 3, i + 3 + l);
-      var colon = result.full.indexOf(":");
-      if(colon >= 0)
-      {
-         result.username = result.full.substr(0, colon + 1);
-         result.message = result.full.substr(colon + 1);
-      }
-      return result;
+      type = "end";
+   }
+   else if(line.charAt(i) === "(")
+   {
+      type = "message";
+      result = parseMessage(line, ++i); //Skip the "(" and parse a message
+      i += result.totalLength;          //Skip the whole message
+   }
+   else if(line.charAt(i) === ".")
+   {
+      var end = line.indexOf(".", ++i); //Skip the "." and find the next "."
+      if(end < 0) return tryParseNext(line, line.length); //there's nothing valid to the end
+      var length = end - i;
+      var n = scanSafe(line, i, length);
+      if(n !== true) return tryParseNext(line, n + 1);
+      result = parseLines(line, i, length);
+      i = end + 1;
+   }
+   else
+   {
+      var n = scanSafe(line, i, lineBytes);
+      if(n !== true) return tryParseNext(line, n + 1);
+      result = [ parseSingleLine(line, i) ];
+      i += lineBytes;
    }
 
-   return null;
+   return {
+      type: type,
+      result: result,
+      jump: i 
+   };
+}
+
+//A simple method for processing raw data and funelling parsed 
+//lines/messages to the given functions.
+function processRaw(data, lineFunc, messageFunc)
+{
+   var result;
+   var i = 0, j;
+
+   while(i < data.length)
+   {
+      result = tryParseNext(data, i);
+
+      if(result.type === "end" || !result)
+      {
+         break;
+      }
+      else if(result.type === "message")
+      {
+         messageFunc(result.result);
+      }
+      else if(result.type === "lines")
+      {
+         for(j = 0; j < result.result.length; j++)
+            lineFunc(result.result[j]);
+      }
+
+      i = result.jump;
+   }
 }
 
 //Given a set of LineData, produce optimized string data.
@@ -240,43 +316,6 @@ function createMessageElement(parsed)
 
    msgelem.append(document.createTextNode(msg));
    return msgelem;
-}
-
-//A simple method for processing raw data and funelling parsed 
-//lines/messages to the given functions.
-function processRaw(data, lineFunc, messageFunc)
-{
-   var parsed;
-   var i = 0, j;
-
-   while(i < data.length)
-   {
-      //First, always check for chat messages
-      parsed = tryParseMessage(data, i);
-
-      //If there's chat, put it in. Otherwise keep drawing.
-      if(parsed)
-      {
-         messageFunc(parsed);
-         i = parsed.jump;
-      }
-      else
-      {
-         parsed = tryParseLines(data, i);
-
-         if(parsed)
-         {
-            for(j = 0; j < parsed.lines.length; j++)
-               lineFunc(parsed.lines[j]);
-            i = parsed.jump;
-         }
-         else
-         {
-            lineFunc(parseSingleLine(data, i));
-            i += lineBytes;
-         }
-      }
-   }
 }
 
 // Base64 encode/decode  http://www.webtoolkit.info 
