@@ -208,24 +208,50 @@ CanvasPerformer.prototype.ShouldCapture = function(data)
    return data.onTarget; //this._canvas && (this._canvas === document.activeElement);   
 };
 
+CanvasPerformer.prototype.TouchEnabled = function(toggle)
+{
+   if(toggle !== undefined)
+   {
+      if(toggle)
+      {
+         this._touchEnabled = true;
+         document.addEventListener("touchstart", this._evTC);
+         document.addEventListener("touchend", this._evTC);
+         document.addEventListener("touchcancel", this._evTC);
+         document.addEventListener("touchmove", this._evTM);
+
+         this._oldStyle = this._canvas.style.touchAction;
+         this._canvas.style.touchAction = "none";
+
+         //Stops initial tuochmove distance cutoff
+         this._canvas.addEventListener("touchstart", this._evPrevent); 
+      }
+      else
+      {
+         this._touchEnabled = false;
+         document.removeEventListener("touchstart", this._evTC);
+         document.removeEventListener("touchend", this._evTC);
+         document.removeEventListener("touchcancel", this._evTC);
+         document.removeEventListener("touchmove", this._evTM);
+         this._canvas.removeEventListener("touchstart", this._evPrevent);
+         this._canvas.style.touchAction = this._oldStyle;
+      }
+   }
+
+   return this._touchEnabled;
+};
+
 CanvasPerformer.prototype.Attach = function(canvas)
 {
    if(this._canvas) throw "This CanvasPerformer is already attached to a canvas!";
 
    this._canvas = canvas;
-   this._oldStyle = canvas.style.touchAction;
-   
-   canvas.style.touchAction = "none";
    document.addEventListener("mousedown", this._evMD);
-   document.addEventListener("touchstart", this._evTC);
-   canvas.addEventListener("touchstart", this._evPrevent); //Stops initial tuochmove distance cutoff
    canvas.addEventListener("wheel", this._evMW);
    canvas.addEventListener("contextmenu", this._evPrevent);
    document.addEventListener("mouseup", this._evMU); 
-   document.addEventListener("touchend", this._evTC);
-   document.addEventListener("touchcancel", this._evTC);
    document.addEventListener("mousemove", this._evMM);
-   document.addEventListener("touchmove", this._evTM);
+   this.TouchEnabled(true);
 };
 
 CanvasPerformer.prototype.Detach = function()
@@ -233,17 +259,12 @@ CanvasPerformer.prototype.Detach = function()
    if(!this._canvas) throw "This CanvasPerformer is is not attached to a canvas!";
 
    document.removeEventListener("mousedown", this._evMD);
-   document.removeEventListener("touchstart", this._evTC);
    canvas.removeEventListener("wheel", this._evMW);
-   canvas.removeEventListener("touchstart", this._evPrevent);
    canvas.removeEventListener("contextmenu", this._evPrevent);
    document.removeEventListener("mouseup", this._evMU); 
-   document.removeEventListener("touchend", this._evTC);
-   document.removeEventListener("touchcancel", this._evTC);
    document.removeEventListener("mousemove", this._evMM);
-   document.removeEventListener("touchmove", this._evTM);
 
-   this._canvas.style.touchAction = this._oldStyle;
+   this.TouchEnabled(false);
    this._canvas = false;
 };
 
@@ -259,30 +280,18 @@ CanvasPerformer.prototype.Perform = function(e, cursorData, canvas)
    if(scalingX <= 0 || scalingY <= 0) return;
 
    cursorData = this.GetModifiedCursorData(cursorData, e);
-   cursorData.x = (cursorData.x - (clientRect.left + parseFloat(clientStyle.borderLeftWidth))) / scalingX;
-   cursorData.y = (cursorData.y - (clientRect.top + parseFloat(clientStyle.borderTopWidth))) / scalingY;
+   cursorData.x = (cursorData.x - 
+      (clientRect.left + parseFloat(clientStyle.borderLeftWidth))) / scalingX;
+   cursorData.y = (cursorData.y - 
+      (clientRect.top + parseFloat(clientStyle.borderTopWidth))) / scalingY;
 
-   //console.log(scalingX + ", " + scalingY + ", " + cursorData.x + ", " + cursorData.y);
    cursorData.targetElement = canvas;
    cursorData.onTarget = (e.target === canvas);
-   //console.log("onTarget: " + cursorData.onTarget);
-   //cursorData.onTarget = (cursorData.x >= 0 && cursorData.y >= 0 &&
-   //   cursorData.x < canvas.width && cursorData.y < canvas.height);
    cursorData.time = Date.now();
 
    if(e && this.ShouldCapture(cursorData)) 
    {
       e.preventDefault();
-      //e.preventDefault();
-      //e.stopPropagation();
-      //console.log("STOP PROP: " + cursorData.Action);
-      //canvas.focus();
-      //if(cursorData.action & CursorActions.End) 
-      //{
-      //   document.body.focus();
-      //   //canvas.parentNode.focus();
-      //   console.log("FUCUSING");
-      //}
    }
 
    if(this.OnAction) this.OnAction(cursorData, context);
