@@ -318,6 +318,16 @@ function createMessageElement(parsed)
    return msgelem;
 }
 
+function getPageCanvas(pageData, canvas)
+{
+   var c2 = document.createElement("canvas");
+   c2.width = pageWidth;
+   c2.height = pageHeight;
+   c2.getContext("2d").drawImage(canvas, -pageData.leftRaw, -pageData.topRaw,
+      pageWidth, pageHeight, 0, 0, pageWidth, pageHeight);
+   return c2;
+}
+
 // Base64 encode/decode  http://www.webtoolkit.info 
 var Base64 = {
     _keyStr: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/="

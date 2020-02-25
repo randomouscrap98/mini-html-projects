@@ -110,12 +110,7 @@ $(document).ready(function()
    }, false);
    $("#download1")[0].addEventListener("click", function(e)
    {
-      var c2 = document.createElement("canvas");
-      c2.width = pageWidth;
-      c2.height = pageHeight;
-      c2.getContext("2d").drawImage(drawing[0], -system.offsetLeft, -system.offsetTop,
-         pageWidth, pageHeight, 0, 0, pageWidth, pageHeight);
-      e.target.href = c2.toDataURL();
+      e.target.href = getPageCanvas(system.rawPageData, drawing[0]).toDataURL();
       e.target.download = system.fileName() + "_" + system.page + ".png";
    }, false);
    exp.click("click", function()
@@ -126,10 +121,10 @@ $(document).ready(function()
       {
          if(!(js && html && data && css)) return;
          exp.removeClass("disabled");
-         var fin = html.replace("%DRAWJS%", js)
-                       .replace("%DRAWCSS%", css)
-                       .replace("%ROOMNAME%", system.room)
-                       .replace("%RAWDATA%", JSON.stringify(data));
+         var fin = html.replace(/%DRAWJS%/g, js)
+                       .replace(/%DRAWCSS%/g, css)
+                       .replace(/%ROOMNAME%/g, system.room)
+                       .replace(/%RAWDATA%/g, JSON.stringify(data));
          var dl = $('<a>Download Export!</a>');
          dl.attr("href","data:text/plain;charset=utf-8;base64," + Base64.encode(fin));
          dl.attr("download", system.fileName() + ".html");
@@ -158,6 +153,7 @@ $(document).ready(function()
       system.page = result.page;
       system.offsetLeft = result.leftRaw;
       system.offsetTop = result.topRaw;
+      system.rawPageData = result;
       $("#pagenum").text(result.pageText);
    };
 

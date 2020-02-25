@@ -10,20 +10,22 @@ window.onload = function(e)
 {
    var canvas = document.getElementById("drawing"), ctx = canvas.getContext("2d");
    canvas.width = totalWidth; canvas.height = totalHeight;
-   var currentPage = 0;
 
    var pNum = document.getElementById("pagenum");
+   var pageData;
+   var currentPage = 0;
 
    var myUpdatePage = function(amount)
    {
-      var result = updatePage(currentPage, amount);
-      canvas.style="left: " + result.left + "; top: " + result.top;
-      currentPage = result.page;
-      pNum.innerHTML = result.pageText;
+      pageData = updatePage(currentPage, amount);
+      canvas.style="left: " + pageData.left + "; top: " + pageData.top;
+      currentPage = pageData.page;
+      pNum.innerHTML = pageData.pageText;
    };
 
    document.getElementById("pagedown").onclick = function () {myUpdatePage(-1);};
    document.getElementById("pageup").onclick = function () {myUpdatePage(1);};
+   myUpdatePage(0);
 
    var messages = document.getElementById("messages");
 
@@ -33,6 +35,17 @@ window.onload = function(e)
       {
          messages.appendChild(createMessageElement(parsed));
       });
+
+   document.getElementById("download").addEventListener("click", function(e)
+   {
+      e.target.href = canvas.toDataURL();
+      e.target.download = "%ROOMNAME%.png";
+   }, false);
+   document.getElementById("download1").addEventListener("click", function(e)
+   {
+      e.target.href = getPageCanvas(pageData, canvas).toDataURL();
+      e.target.download = "%ROOMNAME%_" + currentPage + ".png";
+   }, false);
 };
       </script>
       <style>%DRAWCSS%</style>
@@ -41,6 +54,7 @@ window.onload = function(e)
 #messageContainer { height: 550px; }
 #pagenum { font-size: 1.0em; }
 #controls { margin: 0.3em 0; }
+.downloads { margin: 0.5em 0; }
 #roomname { 
    color: #304d8a; 
    font-weight: bold;
@@ -65,6 +79,10 @@ window.onload = function(e)
                <button class="inert" id="pageup">&gt;</button>
             </div>
             <div id="roomname" class="inline">%ROOMNAME%</div>
+            <div class="downloads">
+               <a id="download" href="#">png</a>
+               <a id="download1" href="#">png1</a>
+            </div>
          </div>
       </div>
    </body>
