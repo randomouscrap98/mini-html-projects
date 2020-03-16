@@ -336,8 +336,9 @@ CanvasZoomer.prototype.DoZoom = function(zoomAmount, cx, cy)
       var oldDim = this.ZoomDimensions();
       this.zoom = newZoom;
       var newDim = this.ZoomDimensions();
-      this.x = (newDim[0] / oldDim[0]) * (this.x - cx) + cx;
-      this.y = (newDim[1] / oldDim[1]) * (this.y - cy) + cy;
+      //I don't know what this is
+      //this.x = (newDim[0] / oldDim[0]) * (this.x - cx) + cx;
+      //this.y = (newDim[1] / oldDim[1]) * (this.y - cy) + cy;
    }
 };
 
@@ -473,17 +474,13 @@ CanvasImageViewer.prototype.UpdatePosition = function(timePass, vx, vy)
    this.y += vy * timePass;
 
    var dims = this.ZoomDimensions();
-   var sc = this.Scale();
+   dims[0] /= 2;
+   dims[1] /= 2;
 
-   //Choose the other side if moving that way.
-   if (this.x > 0) dims[0] = this._canvas.width;
-   if (this.y > 0) dims[1] = this._canvas.height;
-
-   //dims[0] -= this.edgeBumper; dims[1] -= this.edgeBumper;
-
-   //Edge cutoffs
-   if(Math.abs(this.x) > dims[0]) { this.x = dims[0] * Math.sign(this.x); this.vx = 0; }
-   if(Math.abs(this.y) > dims[1]) { this.y = dims[1] * Math.sign(this.y); this.vy = 0; }
+   this.x = MathUtilities.MinMax(this.x, -dims[0] + this.edgeBumper,
+      dims[0] + this._canvas.width - this.edgeBumper);
+   this.y = MathUtilities.MinMax(this.y, -dims[1] + this.edgeBumper,
+      dims[1] + this._canvas.height - this.edgeBumper);
 
    var decay = this.vDecay * timePass;
 
@@ -570,7 +567,7 @@ CanvasGenericViewer.prototype.Refresh = function()
    this._canvas.height = this._canvas.clientHeight;
    this._div.style.left = this.x + "px";
    this._div.style.top = this.y + "px";
-   this._div.style.transform = "scale(" + this.Scale() + ")";// translate(-50%,-50%)";
+   this._div.style.transform = "translate(-50%, -50%) scale(" + this.Scale() + ")";
 };
 
 // --- CanvasMultiImageViewer ---
