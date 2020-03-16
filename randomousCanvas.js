@@ -337,8 +337,8 @@ CanvasZoomer.prototype.DoZoom = function(zoomAmount, cx, cy)
       this.zoom = newZoom;
       var newDim = this.ZoomDimensions();
       //I don't know what this is
-      //this.x = (newDim[0] / oldDim[0]) * (this.x - cx) + cx;
-      //this.y = (newDim[1] / oldDim[1]) * (this.y - cy) + cy;
+      this.x = (newDim[0] / oldDim[0]) * (this.x - cx) + cx;
+      this.y = (newDim[1] / oldDim[1]) * (this.y - cy) + cy;
    }
 };
 
