@@ -12,8 +12,6 @@ function CursorActionData(action, x, y, zoomDelta)
    this.action = action;
    this.x = x;
    this.y = y;
-   //this.realX = x; //The real x and y relative to the canvas.
-   //this.realY = y;
    this.zoomDelta = zoomDelta || false;
    this.onTarget = true;
    this.targetElement = false;
@@ -358,7 +356,6 @@ CanvasZoomer.prototype.GetFixedCursorData = function(data)
 
 function CanvasImageViewer(image)
 {
-   //CanvasPerformer.call(this);
    CanvasZoomer.call(this);
 
    this.image = image;  //User may not supply this. That's fine.
@@ -366,7 +363,7 @@ function CanvasImageViewer(image)
    this.vy = 0;
    this.vDecay = 1.08;  //This is division of velocity per frame
    this.vStop = 0.15;   //This is the speed at which the sliding will stop.
-   this.edgeBumper = 10;//How many pixels to leave on screen when at edge.
+   this.edgeBumper = 20;//How many pixels to leave on screen when at edge.
    this.forceRefreshNextFrame = false;
 
    //"Private" variables
@@ -476,12 +473,13 @@ CanvasImageViewer.prototype.UpdatePosition = function(timePass, vx, vy)
    this.y += vy * timePass;
 
    var dims = this.ZoomDimensions();
+   var sc = this.Scale();
 
    //Choose the other side if moving that way.
    if (this.x > 0) dims[0] = this._canvas.width;
    if (this.y > 0) dims[1] = this._canvas.height;
 
-   dims[0] -= this.edgeBumper; dims[1] -= this.edgeBumper;
+   //dims[0] -= this.edgeBumper; dims[1] -= this.edgeBumper;
 
    //Edge cutoffs
    if(Math.abs(this.x) > dims[0]) { this.x = dims[0] * Math.sign(this.x); this.vx = 0; }
@@ -523,7 +521,6 @@ CanvasImageViewer.prototype.Detach = function()
 function CanvasGenericViewer()
 {
    CanvasImageViewer.call(this);
-   console.log(this.OnAction);
 }
 
 CanvasGenericViewer.prototype = Object.create(CanvasImageViewer.prototype); 
@@ -548,7 +545,6 @@ CanvasGenericViewer.prototype.Attach = function(container, div)
 
    container.appendChild(canvas);
    container.appendChild(div);
-   CanvasZoomer.prototype.Attach.apply(this, [canvas]);
    
    //assume the width/height NOW is the forever width/height
    var width = div.clientWidth;
@@ -556,20 +552,25 @@ CanvasGenericViewer.prototype.Attach = function(container, div)
    this.Width = function() { return width; }
    this.Height = function() { return height; }
 
+   this.x = container.clientWidth / 2;
+   this.y = container.clientHeight / 2;
+
+   CanvasZoomer.prototype.Attach.apply(this, [canvas]);
+   this.Refresh();
+
    requestAnimationFrame(this.DoFrame.bind(this));
    window.addEventListener("resize", this._evResize); 
 };
 
 CanvasGenericViewer.prototype.Refresh = function()
 {
-   console.log(this.x, this.y, this.Scale());
+   console.log(this.x, this.y);
    var clientStyle = window.getComputedStyle(this._canvas);
    this._canvas.width = this._canvas.clientWidth;
    this._canvas.height = this._canvas.clientHeight;
-   var imageDim = this.ZoomDimensions();
    this._div.style.left = this.x + "px";
    this._div.style.top = this.y + "px";
-   this._div.style.transform = "scale(" + this.Scale() + ")";
+   this._div.style.transform = "scale(" + this.Scale() + ")";// translate(-50%,-50%)";
 };
 
 // --- CanvasMultiImageViewer ---
