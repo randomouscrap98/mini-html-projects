@@ -12,8 +12,8 @@ function CursorActionData(action, x, y, zoomDelta)
    this.action = action;
    this.x = x;
    this.y = y;
-   this.realX = x; //The real x and y relative to the canvas.
-   this.realY = y;
+   //this.realX = x; //The real x and y relative to the canvas.
+   //this.realY = y;
    this.zoomDelta = zoomDelta || false;
    this.onTarget = true;
    this.targetElement = false;
@@ -436,7 +436,7 @@ CanvasImageViewer.prototype.Refresh = function()
 //something changed, otherwise just keep track of changes and do the next frame.
 CanvasImageViewer.prototype.DoFrame = function()
 {
-   if(this._canvas && this.image)
+   if(this._canvas)
    { 
       var timePass = 60 * (performance.now() - this._lastFrame) / 1000;
       this._lastFrame = performance.now();
@@ -513,8 +513,63 @@ CanvasImageViewer.prototype.Attach = function(canvas, image)
 
 CanvasImageViewer.prototype.Detach = function()
 {
-   CanvasZoomer.prototype.Detach.apply(this, [canvas]);
+   CanvasZoomer.prototype.Detach.apply(this);
    window.removeEventListener("resize", this._evResize); 
+};
+
+// --- CanvasGenericViewer ---
+// SHould PROBABLY be the other way around, for now it's a "child" of the image
+// viewer. Fix this later!!
+function CanvasGenericViewer()
+{
+   CanvasImageViewer.call(this);
+   console.log(this.OnAction);
+}
+
+CanvasGenericViewer.prototype = Object.create(CanvasImageViewer.prototype); 
+
+CanvasGenericViewer.prototype.Attach = function(container, div)
+{
+   if(!div) throw "No div supplied!";
+   this._div = div;
+
+   container.style.position = "relative";
+
+   var canvas = document.createElement("canvas");
+   canvas.style.width = "100%";
+   canvas.style.height = "100%";
+   canvas.style.position = "absolute";
+   canvas.style.padding = "0";
+   canvas.style.margin = "0";
+   canvas.style.border = "none";
+
+   div.style.zIndex = "-10";
+   div.style.position = "absolute";
+
+   container.appendChild(canvas);
+   container.appendChild(div);
+   CanvasZoomer.prototype.Attach.apply(this, [canvas]);
+   
+   //assume the width/height NOW is the forever width/height
+   var width = div.clientWidth;
+   var height = div.clientHeight;
+   this.Width = function() { return width; }
+   this.Height = function() { return height; }
+
+   requestAnimationFrame(this.DoFrame.bind(this));
+   window.addEventListener("resize", this._evResize); 
+};
+
+CanvasGenericViewer.prototype.Refresh = function()
+{
+   console.log(this.x, this.y, this.Scale());
+   var clientStyle = window.getComputedStyle(this._canvas);
+   this._canvas.width = this._canvas.clientWidth;
+   this._canvas.height = this._canvas.clientHeight;
+   var imageDim = this.ZoomDimensions();
+   this._div.style.left = this.x + "px";
+   this._div.style.top = this.y + "px";
+   this._div.style.transform = "scale(" + this.Scale() + ")";
 };
 
 // --- CanvasMultiImageViewer ---
