@@ -525,7 +525,7 @@ CanvasGenericViewer.prototype = Object.create(CanvasImageViewer.prototype);
 CanvasGenericViewer.prototype.Attach = function(container, div)
 {
    if(!div) throw "No div supplied!";
-   this._div = div;
+   this.SetDiv(div);
    this._container = container;
 
    container.style.position = "relative";
@@ -544,12 +544,6 @@ CanvasGenericViewer.prototype.Attach = function(container, div)
    container.appendChild(canvas);
    container.appendChild(div);
    
-   //assume the width/height NOW is the forever width/height
-   var width = div.clientWidth;
-   var height = div.clientHeight;
-   this.Width = function() { return width; }
-   this.Height = function() { return height; }
-
    this.x = container.clientWidth / 2;
    this.y = container.clientHeight / 2;
 
@@ -558,6 +552,15 @@ CanvasGenericViewer.prototype.Attach = function(container, div)
 
    requestAnimationFrame(this.DoFrame.bind(this));
    window.addEventListener("resize", this._evResize); 
+};
+
+CanvasGenericViewer.prototype.SetDiv = function(div)
+{
+   var width = div.clientWidth;
+   var height = div.clientHeight;
+   this.Width = function() { return width; }
+   this.Height = function() { return height; }
+   this._div = div;
 };
 
 CanvasGenericViewer.prototype.Refresh = function()
@@ -571,62 +574,6 @@ CanvasGenericViewer.prototype.Refresh = function()
    this._div.style.transform = "translate(-50%, -50%) scale(" + this.Scale() + ")";
 };
 
-//// --- CanvasMultiImageViewer ---
-//// Allows multiple images to be panned/zoomed/etc in a canvas (each with their
-//// own opacities). All images are assumed to have the same dimensions as the
-//// first image supplied!
-//
-//function CanvasMultiImageViewer(images)
-//{
-//   CanvasImageViewer.call(this);
-//   this.images = images;
-//   this.blendMode = "source-over";
-//}
-//
-////Inherit from CanvasImageViewer
-//CanvasMultiImageViewer.prototype = Object.create(CanvasImageViewer.prototype); 
-//
-////Our own attach function just applies and checks the "images" array 
-////(which is unique to us)
-//CanvasMultiImageViewer.prototype.Attach = function(canvas, images)
-//{
-//   if(this._canvas)
-//      throw "This CanvasMultiImageViewer is already attached to a canvas!";
-//
-//   if(images) this.images = images;
-//
-//   if(!this.images)
-//      throw "No images supplied! Must be CanvasMultiImage objects";
-//
-//   CanvasImageViewer.prototype.Attach.apply(this, [canvas, this.images[0].image]);
-//};
-//
-////Refresh ONLY the graphics (not any values)
-//CanvasMultiImageViewer.prototype.Refresh = function()
-//{
-//   var ctx = this._canvas.getContext("2d");
-//   var imageDim = this.ZoomDimensions();
-//   CanvasUtilities.AutoSize(this._canvas);
-//   ctx.globalAlpha = 1.0;
-//   ctx.globalCompositeOperation = this.blendMode;
-//   ctx.clearRect(0, 0, this._canvas.width, this._canvas.height);
-//   for(var i = 0; i < this.images.length; i++)
-//   {
-//      if(this.images[i].draw)
-//      {
-//         ctx.globalAlpha = this.images[i].opacity;
-//         CanvasUtilities.OptimizedDrawImage(ctx, this.images[i].image, this.x, this.y, imageDim[0], imageDim[1]);
-//      }
-//   }
-//};
-
-////The image objects used in CanvasMultiImageViewer
-//function CanvasMultiImage(image, opacity)
-//{
-//   this.image = image;
-//   this.opacity = opacity || 1.0;
-//   this.draw = true;
-//}
 
 // --- MultiImageBlender ---
 // Blends a series of images with a slider to pick which images to blend and
@@ -637,15 +584,8 @@ function MultiImageBlender()
    this.blendGranularity = 16;
    CanvasGenericViewer.call(this);
 
-   //this._imageViewer.blendMode = "lighter";
-
-   //this._div = false;
-   //this._canvas = false;
    this._slider = false;
    this._images = false;
-
-   //var blender = this;
-   //this._evResize = function() {blender.Refresh();};
 }
 
 MultiImageBlender.prototype = Object.create(CanvasGenericViewer.prototype); 
@@ -671,54 +611,29 @@ MultiImageBlender.prototype.TrySetDefaultStyles = function()
    mStyle.sheet.insertRule(".imageBlenderSlider { display: block; " +
       "position: absolute; bottom: 0; left: 0; padding: 0; margin: 0; " +
       "width: 100%; z-index: 10; }", 2);
-   //mStyle.sheet.insertRule(".imageBlenderCanvas { display: block; " +
-   //   "padding: 0; margin: 0; width: 100%; }", 3);
+   mStyle.sheet.insertRule(".imageBlenderImages { position: relative; " +
+      "padding: 0; margin: 0; border: 0; }",3);
+   mStyle.sheet.insertRule(".imageBlenderImages img { position: absolute; " +
+      "padding: 0; margin: 0; border: 0; max-width: 100%; max-height: 100%;}",3);
 };
-
-////Changing the size of the div should fix the height of the canvas. The reason
-////we do this is to make sure the canvas fills the div the user gave us.
-//MultiImageBlender.prototype.Refresh = function()
-//{
-//   this._canvas.style.height = "calc(" + this._div.clientHeight + "px - 0.0rem - " +
-//      this._slider.clientHeight + "px)"; 
-//};
 
 //Attach the MultiImageBlender to the given div and fill it with relevant
 //elements. NOTE: the div should have a well defined height! The elements we
 //add (such as canvas, etc.) will fill the entire div.
 MultiImageBlender.prototype.Attach = function(container)
 {
-   //if(this._canvas)
-   //   throw "This MultiImageBlender is already attached!";
    this.TrySetDefaultStyles();
 
    var blender = this;
-   var slider = document.createElement("input");
-   slider.setAttribute("type", "range");
-   slider.className = "imageBlenderSlider";
-   slider.addEventListener("input", function(){blender.UpdateImages();});
+   this._slider = this.CreateSlider();
+   this._slider.addEventListener("input", function(){blender.UpdateImages();});
 
-   var imgdiv = document.createElement("div");
-   imgdiv.style.width = 200;
-   imgdiv.style.height = 200;
-   imgdiv.style.backgroundColor = "red";
+   var imgdiv = this.CreateImageContainer();
+   //imgdiv.style.width = 200;
+   //imgdiv.style.height = 200;
 
-   //var canvas = document.createElement("canvas");
-   //canvas.className = "imageBlenderCanvas";
-
-   //div.style.position = "relative";
-   //div.style.overflow = "hidden";
-   //div.appendChild(canvas);
    CanvasGenericViewer.prototype.Attach.apply(this, [container, imgdiv]);
-   container.appendChild(slider);
-
-   //this._div = div;
-   //this._canvas = canvas;
-   //this._slider = slider;
-
-   //this._imageViewer.Attach(this._canvas, [new CanvasMultiImage(new Image())]);
-   //window.addEventListener("resize", this._evResize); 
-   //this.Refresh();
+   container.appendChild(this._slider);
 };
 
 //Remove the MultiImageBlender from the div it is attached to. This SHOULD
@@ -741,27 +656,28 @@ MultiImageBlender.prototype.Attach = function(container)
 //Update image data in the ImageViewer based on the slider position.
 MultiImageBlender.prototype.UpdateImages = function()
 {
-   var i = Math.floor(this._slider.value / this.blendGranularity);
-   var j = i + 1; 
-   var d = this._slider.value - i * this.blendGranularity;
+   var s = this._slider.value / this.blendGranularity;
 
    for(var k = 0; k < this._images.length; k++)
-   {
-      this._images[k].opacity = 0; //1 - d / this.blendGranularity;
-      //this._images[k].draw = false;
-      if(k == i)
-      {
-         this._images[k].opacity = 1 - d / this.blendGranularity;
-         //this._images[k].draw = true;
-      }
-      if(k == j)
-      {
-         this._images[k].opacity = d / this.blendGranularity;
-         //this._imageViewer.images[k].draw = true;
-      }
-   }
+      this._images[k].style.opacity = MathUtilities.MinMax(s - k, 0, 1);
+};
 
-   //this._imageViewer.forceRefreshNextFrame = true;
+MultiImageBlender.prototype.CreateImageContainer = function()
+{
+   var imgdiv = document.createElement("div");
+   imgdiv.className = "imageBlenderImages";
+   return imgdiv;
+};
+
+MultiImageBlender.prototype.CreateSlider = function()
+{
+   var slider = document.createElement("input");
+   slider.setAttribute("type", "range");
+   slider.className = "imageBlenderSlider";
+   slider.min = this.blendGranularity;
+   slider.value = this.blendGranularity;
+   slider.max = this.blendGranularity;
+   return slider;
 };
 
 //Create/setup the loading bar element and return it. 
@@ -785,41 +701,37 @@ MultiImageBlender.prototype.CreateLoadText = function()
 //imageList is a list of string sources. This function will load them all, YO
 MultiImageBlender.prototype.LoadImages = function(imageList)
 {
-   //this._imageViewer.images = [];
-   var i;
+   this._images = [];
    var loaded = 0;
    var blender = this;
    var progress = this.CreateLoadBar();
    var loadText = this.CreateLoadText();
    loadText.innerHTML = "Loading " + imageList.length + " images...";
-   this._container.appendChild(progress);
-   this._container.appendChild(loadText);
+   blender._container.appendChild(progress);
+   blender._container.appendChild(loadText);
+   blender._slider.value = blender.blendGranularity;
+   blender._slider.max = imageList.length * blender.blendGranularity;
 
-   var imageLoad = function()
-   {
-      loaded++;
-      progress.style.width = (blender._div.clientWidth * loaded / imageList.length) + "px";
-      if(loaded === imageList.length)
-      {
-         blender._div.removeChild(progress);
-         blender._div.removeChild(loadText);
-         blender._slider.value = 0;
-         blender._slider.min = 0;
-         blender._slider.max = (imageList.length - 1) * blender.blendGranularity;
-         blender._imageViewer.image = blender._imageViewer.images[0].image;
-         var dims = blender._imageViewer.ZoomDimensions();
-         blender._imageViewer.x = -(dims[0] - blender._canvas.width) / 2;
-         blender._imageViewer.y = -(dims[1] - blender._canvas.height) / 2;
-         blender.UpdateImages();
-      }
-   };
-
-   for(i = 0; i < imageList.length; i++)
+   for(var i = 0; i < imageList.length; i++)
    {
       var image = new Image();
-      image.addEventListener("load", imageLoad);
+      image.addEventListener("load", function()
+      {
+         loaded++;
+         blender._div.style.width = image.naturalWidth;
+         blender._div.style.height = image.naturalHeight;
+         blender.UpdateImages();
+         progress.style.width = (blender._container.clientWidth * loaded / imageList.length) + "px";
+
+         if(loaded === imageList.length)
+         {
+            blender._container.removeChild(progress);
+            blender._container.removeChild(loadText);
+         }
+      });
       image.src = imageList[i];
-      this._imageViewer.images.push(new CanvasMultiImage(image));
+      blender._div.appendChild(image);
+      blender._images.push(image);
    }
 };
 
