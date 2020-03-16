@@ -330,15 +330,19 @@ CanvasZoomer.prototype.ZoomDimensions = function()
 CanvasZoomer.prototype.DoZoom = function(zoomAmount, cx, cy)
 {
    var newZoom = this.zoom + zoomAmount;
+   console.log(this.x, this.y, cx, cy);
 
    if(newZoom >= this.minZoom && newZoom <= this.maxZoom)
    {
       var oldDim = this.ZoomDimensions();
       this.zoom = newZoom;
       var newDim = this.ZoomDimensions();
-      //I don't know what this is
+      //Warn: this IS the equation, no matter WHERE the positions are~!!
       this.x = (newDim[0] / oldDim[0]) * (this.x - cx) + cx;
       this.y = (newDim[1] / oldDim[1]) * (this.y - cy) + cy;
+      //this.x += (this.x - cx) / oldDim[0] * (newDim[0] - oldDim[0]);
+      //(newDim[0] / oldDim[0]) * (this.x - cx) / 2 + cx;
+      //this.y += (this,y - cy);//(newDim[1] / oldDim[1]) * (this.y - cy) / 2 + cy;
    }
 };
 
