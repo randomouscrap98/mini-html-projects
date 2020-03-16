@@ -629,8 +629,6 @@ MultiImageBlender.prototype.Attach = function(container)
    this._slider.addEventListener("input", function(){blender.UpdateImages();});
 
    var imgdiv = this.CreateImageContainer();
-   //imgdiv.style.width = 200;
-   //imgdiv.style.height = 200;
 
    CanvasGenericViewer.prototype.Attach.apply(this, [container, imgdiv]);
    container.appendChild(this._slider);
@@ -659,7 +657,7 @@ MultiImageBlender.prototype.UpdateImages = function()
    var s = this._slider.value / this.blendGranularity;
 
    for(var k = 0; k < this._images.length; k++)
-      this._images[k].style.opacity = MathUtilities.MinMax(s - k, 0, 1);
+      this._images[k].style.opacity = (s - k < 2) ? MathUtilities.MinMax(s - k, 0, 1) : 0;
 };
 
 MultiImageBlender.prototype.CreateImageContainer = function()
