@@ -11,13 +11,13 @@ $(document).ready(function()
    var drawer = new MultiImageBlender();
    drawer.Attach($("#container")[0]);//, backdrop[0]);
    drawer.LoadImages(["1.jpg", "2.jpg", "3.jpg"]);
+   drawer.maxZoom = 1;
 });
 </script>
 <style>
 body {
    padding: 0;
    margin: 0;
-   background-color: rgba(0,0,255,0.1);
 }
 #container {
    width: 100vw;
@@ -25,7 +25,6 @@ body {
    margin: 0;
    padding: 0;
    overflow: hidden;
-   background-color: rgba(0,255,0,0.1);
 }
 </style>
    </head>

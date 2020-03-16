@@ -718,8 +718,12 @@ MultiImageBlender.prototype.LoadImages = function(imageList)
       image.addEventListener("load", function()
       {
          loaded++;
-         blender._div.style.width = image.naturalWidth;
-         blender._div.style.height = image.naturalHeight;
+         if(loaded === 1)
+         {
+            blender._div.style.width = image.naturalWidth;
+            blender._div.style.height = image.naturalHeight;
+            blender.SetDiv(blender._div);
+         }
          blender.UpdateImages();
          progress.style.width = (blender._container.clientWidth * loaded / imageList.length) + "px";
 
