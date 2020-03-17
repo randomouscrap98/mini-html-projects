@@ -323,26 +323,28 @@ CanvasZoomer.prototype.Scale = function()
 //Get the size of the image for the current zoom.
 CanvasZoomer.prototype.ZoomDimensions = function()
 {
-   return [ this.Width() * this.Scale(), this.Height() * this.Scale() ];
+   return [ Math.max(this.Width(),0.1) * this.Scale(), Math.max(this.Height(),0.1) * this.Scale() ];
 };
 
 //Perform a zoom for the given zoom amount (if possible)
 CanvasZoomer.prototype.DoZoom = function(zoomAmount, cx, cy)
 {
    var newZoom = this.zoom + zoomAmount;
-   console.log(this.x, this.y, cx, cy);
+
+   if(isNaN(cx)) cx = this.x;
+   if(isNaN(cy)) cy = this.y;
+
+   //console.log(this.x, this.y, cx, cy);
 
    if(newZoom >= this.minZoom && newZoom <= this.maxZoom)
    {
       var oldDim = this.ZoomDimensions();
       this.zoom = newZoom;
       var newDim = this.ZoomDimensions();
+
       //Warn: this IS the equation, no matter WHERE the positions are~!!
       this.x = (newDim[0] / oldDim[0]) * (this.x - cx) + cx;
       this.y = (newDim[1] / oldDim[1]) * (this.y - cy) + cy;
-      //this.x += (this.x - cx) / oldDim[0] * (newDim[0] - oldDim[0]);
-      //(newDim[0] / oldDim[0]) * (this.x - cx) / 2 + cx;
-      //this.y += (this,y - cy);//(newDim[1] / oldDim[1]) * (this.y - cy) / 2 + cy;
    }
 };
 
@@ -715,6 +717,7 @@ MultiImageBlender.prototype.LoadImages = function(imageList)
    blender._slider.max = imageList.length * blender.blendGranularity;
    blender._div.style.width = 100;
    blender._div.style.height = 100;
+   blender.SetDiv(blender._div);
 
    for(var i = 0; i < imageList.length; i++)
    {
@@ -722,12 +725,19 @@ MultiImageBlender.prototype.LoadImages = function(imageList)
       image.addEventListener("load", function()
       {
          loaded++;
-         if(image.naturalWidth > blender._div.style.width || image.naturalHeight > blender._div.style.height)
+         //console.log(image.naturalWidth, blender._div.style.width);
+
+         //Yes, we RESCAN all the images. Sometimes it takes a while to load...
+         //it's some dumb browser thing.
+         for(var j = 0; j < blender._images.length; j++)
          {
-            blender._div.style.width = image.naturalWidth;
-            blender._div.style.height = image.naturalHeight;
-            blender.SetDiv(blender._div);
+            blender._div.style.width =
+               Math.max(blender._images[j].naturalWidth, Number(blender._div.style.width.replace("px", "")));
+            blender._div.style.height =
+               Math.max(blender._images[j].naturalHeight, Number(blender._div.style.height.replace("px", "")));
          }
+         
+         blender.SetDiv(blender._div); //This should... maybe be fine while loading?
          blender.UpdateImages();
          progress.style.width = (blender._container.clientWidth * loaded / imageList.length) + "px";
 
