@@ -713,6 +713,8 @@ MultiImageBlender.prototype.LoadImages = function(imageList)
    blender._container.appendChild(loadText);
    blender._slider.value = blender.blendGranularity;
    blender._slider.max = imageList.length * blender.blendGranularity;
+   blender._div.style.width = 100;
+   blender._div.style.height = 100;
 
    for(var i = 0; i < imageList.length; i++)
    {
@@ -720,7 +722,7 @@ MultiImageBlender.prototype.LoadImages = function(imageList)
       image.addEventListener("load", function()
       {
          loaded++;
-         if(loaded === 1)
+         if(image.naturalWidth > blender._div.style.width || image.naturalHeight > blender._div.style.height)
          {
             blender._div.style.width = image.naturalWidth;
             blender._div.style.height = image.naturalHeight;
