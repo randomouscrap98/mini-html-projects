@@ -1,0 +1,64 @@
+<html>
+   <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+      <script src="../jquery-3.4.1.min.js"></script>
+      <script src="../randomous.js"></script>
+      <script src="../randomousCanvas.js"></script>
+      <script>
+$(document).ready(function()
+{
+   console.log('document ready');    
+
+   var container = $("#container");
+   var messages = $("#messages");
+   var status = $("#status");
+
+   var loadFlag = 0;
+
+   function simulateLoading()
+   {
+      loadFlag = container[0].scrollHeight;
+      status.text("Loading...");
+      setTimeout(function()
+      {
+         //Just an example
+         for(var i = 0; i < 10; i++)
+            messages.prepend($("<p>" + new Date() + "</p>"));
+         container.scrollTop(container[0].scrollHeight - loadFlag);
+         loadFlag = 0; //Done loading
+         status.text("");
+      },500);
+   }
+
+   function infiniteScroll() 
+   {
+      if(!loadFlag && container.scrollTop() === 0)
+      {
+         simulateLoading();
+      }
+
+      requestAnimationFrame(infiniteScroll);
+   }
+
+   infiniteScroll();
+});
+
+      </script>
+      <style>
+#container
+{
+   background-color: #F7F7F7;
+   height: 10rem;
+   overflow-y: scroll;
+}
+      </style>
+   </head>
+   <body>
+      <div id="container">
+         <div id="messages">
+         </div>
+      </div>
+      <p id="status"></p>
+   </body>
+</html>
