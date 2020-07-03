@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+   <head>
+      <title>New SBS Module Editor</title>
+      <script src="../ace-builds/src-min/ace.js" type="text/javascript" charset="utf-8"></script>
+      <script>
+window.onload = function()
+{
+   var editor = ace.edit("editor");
+   editor.setTheme("ace/theme/chrome");
+   editor.session.setMode("ace/mode/lua");
+
+   var editorelement = document.getElementById("editor");
+   var endpoint = document.getElementById("endpoint");
+   var token = document.getElementById("token");
+   var modulename = document.getElementById("modulename");
+   var loadbutton = document.getElementById("loadbutton");
+   var savebutton = document.getElementById("savebutton");
+
+   var saveInputs = function()
+   {
+      var data = {
+         "endpoint" : endpoint.value,
+         "modulename" : modulename.value,
+         "token" : token.value
+      };
+      console.log("Caching inputs");
+      window.localStorage.setItem("inputs", JSON.stringify(data));
+      return data;
+   };
+
+   var loadInputs = function()
+   {
+      var data = window.localStorage.getItem("inputs");
+      if(!data) return;
+      console.log("Loading inputs from cache");
+      data = JSON.parse(data);
+      endpoint.value = data.endpoint;
+      modulename.value = data.modulename;
+      token.value = data.token;
+   };
+
+   //Load inputs
+   loadInputs();
+
+   loadbutton.addEventListener("click", function()
+   {
+      var data = saveInputs();
+      var url = data.endpoint + "/" + data.modulename;
+      if(confirm("You will lose saved data. Are you sure you want to load from " + url))
+      {
+         quickGet(url, data.token, function(d) { editor.setValue(d); });
+      }
+   });
+};
+
+function quickGet(url, token, callback, error)
+{
+   error = error || function(e) { alert("Error on " + url + ": " + e.responseText); };
+   var req = new XMLHttpRequest();
+   req.addEventListener("loadend", function(e)
+   {
+      if(e.status <= 299 && e.status >= 200)
+         callback(JSON.parse(e.responseText));
+      else
+         error(e);
+   });
+   //req.addEventListener("error", error);
+   req.open("GET", url);
+   req.setRequestHeader("accept", "application/json");
+   req.setRequestHeader("Authorization", "Bearer " + token);
+   req.send();
+}
+      </script>
+      <style type="text/css">
+#editor
+{
+   width: 90%;
+   height: 30em;
+}
+      </style>
+   </head>
+   <body>
+      <div id="editor"></div>
+   </body>
+   <div id="controls">
+      <div id="endpointcontrols">
+         <input id="endpoint" placeholder="API Endpoint">
+         <input id="token" placeholder="API token" type="password">
+      </div>
+      <div id="loadsavecontrols">
+         <input id="modulename" placeholder="Module name">
+         <button id="loadbutton">Load</button>
+         <button id="savebutton">Save</button>
+      </div>
+   </div>
+</html>
