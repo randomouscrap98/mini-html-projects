@@ -4,6 +4,11 @@
       <title>New SBS Module Editor</title>
       <script src="../ace-builds/src-min/ace.js" type="text/javascript" charset="utf-8"></script>
       <script>
+function modend(url)
+{
+   return url + "/module";
+}
+
 window.onload = function()
 {
    var editor = ace.edit("editor");
@@ -16,6 +21,9 @@ window.onload = function()
    var modulename = document.getElementById("modulename");
    var loadbutton = document.getElementById("loadbutton");
    var savebutton = document.getElementById("savebutton");
+   var commandbutton = document.getElementById("commandbutton");
+   var commandname = document.getElementById("commandname");
+   var commanddata = document.getElementById("commanddata");
 
    var saveInputs = function()
    {
@@ -46,22 +54,80 @@ window.onload = function()
    loadbutton.addEventListener("click", function()
    {
       var data = saveInputs();
-      var url = data.endpoint + "/" + data.modulename;
+      var url = modend(data.endpoint) + "?names=" + data.modulename;
       if(confirm("You will lose saved data. Are you sure you want to load from " + url))
       {
-         quickAJAX(url, data.token, function(d) { editor.setValue(d); });
+         quickAJAX(url, data.token, function(d) { editor.setValue(d[0].code); });
       }
    });
    savebutton.addEventListener("click", function()
    {
       var data = saveInputs();
-      var url = data.endpoint + "/" + data.modulename;
-      if(confirm("You will overwrite the module on the server. Are you sure you want to write " + url))
+      var url = modend(data.endpoint) + "/" + data.modulename;
+      if(confirm("You will overwrite the module on the server. Are you sure you want to write " + 
+                  data.modulename + " to " + url))
       {
-         quickAJAX(url, data.token, null, null, editor.getValue());
+         quickAJAX(url, data.token, null, null, { "name" : data.modulename, "code" : editor.getValue() });
       }
    });
+   commandbutton.addEventListener("click", function()
+   {
+      var data = saveInputs();
+      var url = modend(data.endpoint) + "/" + data.modulename + "/" + commandname.value;
+      quickAJAX(url, data.token, function(d) 
+      { 
+         commandname.value = "";
+         commanddata.value = "";
+         console.log(d); 
+      }, null, commanddata.value || " ");
+   });
+
+   var data = saveInputs();
+   nextListen(data.endpoint, data.token, {"lastModuleId": 0}, document.getElementById("moduleoutput"));
 };
+
+function findUsername(users, uid)
+{
+   for(var i = 0; i < users.length; i++)
+      if(users[i].id == uid)
+         return users[i].username;
+      
+   return "???";
+}
+
+function nextListen(baseUrl, token, result, outputElement)
+{
+   if(result && result.moduleMessages)
+   {
+      console.log("Got module messages");
+      for(var i = 0; i < result.moduleMessages.length; i++)
+      {
+         var elem = document.createElement("div");
+         elem.className = "modulemessage";
+         var elemmod = document.createElement("span");
+         elemmod.className = "messagemodule";
+         elemmod.textContent = "[" + result.moduleMessages[i].module + "]";
+         var elemmsg = document.createElement("span");
+         elemmsg.className = "messagecontent";
+         elemmsg.innerHTML = result.moduleMessages[i].message;
+         var elemusr = document.createElement("span");
+         elemusr.className = "messageuser";
+         elemusr.textContent = "(" + findUsername(result.chains.user, result.moduleMessages[i].senderUid) + ")";
+         elem.appendChild(elemmod);
+         elem.appendChild(elemmsg);
+         elem.appendChild(elemusr);
+         outputElement.insertBefore(elem, outputElement.childNodes[0]);
+      }
+   }
+   else
+   {
+      console.log("Module message timeout, continuing");
+   }
+
+   var moduleListen = { "lastId" : result.lastModuleId, "chains" : ["user.0usersInMessage.0senderUid.0receiverUid"]};
+   var nextCall = function(r) { nextListen(baseUrl, token, r, outputElement); };
+   quickAJAX(baseUrl + "/read/listen?modules="+encodeURIComponent(JSON.stringify(moduleListen)), token, nextCall);
+}
 
 function quickAJAX(url, token, callback, error, postData)
 {
@@ -98,10 +164,25 @@ function quickAJAX(url, token, callback, error, postData)
    height: 50em;
    border: 1px solid rgba(0,0,50,0.1);
 }
-/*html
+#moduleoutput
 {
-   background-color: #FCFCFC;
-}*/
+   background-color: #EEE;
+   width: 90%;
+   min-height: 5em;
+   font-family: monospace;
+   padding: 0.3em 0.5em;
+}
+.messagemodule
+{
+   color: #05F;
+   margin-right: 0.5em;
+}
+.messageuser
+{
+   float: right;
+   font-size: 0.8em;
+   color: #777;
+}
       </style>
    </head>
    <body>
@@ -117,5 +198,12 @@ function quickAJAX(url, token, callback, error, postData)
          <button id="loadbutton">Load</button>
          <button id="savebutton">Save</button>
       </div>
+      <div id="commandcontrols">
+         <input id="commandname" placeholder="command">
+         <input id="commanddata" placeholder="data">
+         <button id="commandbutton">Send</button>
+      </div>
+   </div>
+   <div id="moduleoutput">
    </div>
 </html>
