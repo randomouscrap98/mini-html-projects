@@ -11,9 +11,17 @@ function modend(url)
 
 window.onload = function()
 {
+   var params = new URLSearchParams(location.search.substring(1));
+
    var editor = ace.edit("editor");
-   editor.setTheme("ace/theme/chrome");
+   editor.setTheme("ace/theme/" + (params.get("theme") || "chrome"));
    editor.session.setMode("ace/mode/lua");
+   editor.setOptions({
+      showPrintMargin: false
+   });
+
+   if(params.get("keyboard"))
+      editor.setKeyboardHandler("ace/keyboard/" + params.get('keyboard'));
 
    var editorelement = document.getElementById("editor");
    var endpoint = document.getElementById("endpoint");
@@ -24,6 +32,8 @@ window.onload = function()
    var commandbutton = document.getElementById("commandbutton");
    var commandname = document.getElementById("commandname");
    var commanddata = document.getElementById("commanddata");
+   var debugbutton = document.getElementById("debugbutton");
+   var debugoutput = document.getElementById("debugoutput");
 
    var saveInputs = function()
    {
@@ -87,6 +97,24 @@ window.onload = function()
          console.log(d); 
       }, null, commanddata.value || " ");
    });
+   debugbutton.addEventListener("click", function()
+   {
+      var data = saveInputs();
+      var url = modend(data.endpoint) + "/debug/" + data.modulename;
+      quickAJAX(url, data.token, function(d)
+      {
+         console.log("loaded debug");
+         console.log(d);
+         debugoutput.innerHTML = "";
+         for(var i = 0; i < d.length; i++)
+         {
+            var dbg = document.createElement("div");
+            dbg.className = "messagecontent";
+            dbg.textContent = d[i];
+            debugoutput.appendChild(dbg);
+         }
+      });
+   });
 
    var data = saveInputs();
    nextListen(data.endpoint, data.token, {"lastModuleId": 0}, document.getElementById("moduleoutput"));
@@ -135,7 +163,7 @@ function nextListen(baseUrl, token, result, outputElement)
    }
 
    var moduleListen = { "lastId" : result.lastModuleId, "chains" : ["user.0usersInMessage.0senderUid.0receiverUid"]};
-   var nextCall = function(r) { nextListen(baseUrl, token, r, outputElement); };
+   var nextCall = function(r) { nextListen(baseUrl, token, r || result, outputElement); };
    quickAJAX(baseUrl + "/read/listen?modules="+encodeURIComponent(JSON.stringify(moduleListen)), token, nextCall);
 }
 
@@ -168,20 +196,34 @@ function quickAJAX(url, token, callback, error, postData)
 }
       </script>
       <style type="text/css">
+.expandowidth
+{
+   width: 100%;
+   max-width: 80rem;
+   box-sizing: border-box;
+}
 #editor
 {
-   width: 90%;
-   height: 50em;
+   height: 70vh; /*50em;*/
+   min-height: 30em;
    border: 1px solid rgba(0,0,50,0.1);
 }
 #moduleoutput
 {
    margin-top: 0.2em;
    background-color: #EEE;
-   width: 90%;
-   min-height: 5em;
-   font-family: monospace;
+}
+.messagebox
+{
    padding: 0.3em 0.5em;
+   font-family: monospace;
+   height: 6em;
+   overflow-y: scroll;
+   overflow-x: auto;
+}
+.messagecontent
+{
+   white-space: pre-wrap;
 }
 .messagemodule
 {
@@ -200,10 +242,30 @@ function quickAJAX(url, token, callback, error, postData)
    color: #777;
    margin: 0 0.5em;
 }
+#moduledebug
+{
+   position:relative;
+   background-color: #444;
+   color: #AAA;
+   font-size: 0.8em;
+
+}
+#debugbutton
+{
+   position: absolute;
+   right: 0;
+   top: 0;
+}
+#debugoutput
+{
+   position: absolute;
+   left: 0;
+   top: 0;
+}
       </style>
    </head>
    <body>
-      <div id="editor">--Modules are written in Lua
+      <div id="editor" class="expandowidth">--Modules are written in Lua
 
 --An example command. Commands must start with command_
 --Commands are given the sender uid and string data (perhaps arguments/whatever)
@@ -239,6 +301,12 @@ function command_alert(uid, data)
    return "The data was: " .. data
 end
 
+--You can log debug messages, which are viewable from /api/module/debug/{modname}
+function command_debug(uid, data)
+   prntdbg("This should show the user, command, and data")
+   sendmessage(uid, "Check the debug logs!")
+end
+
 --You can define your own functions as long as they don't start with command_
 function whatever()
    return 4
@@ -269,6 +337,11 @@ end
 -- found in the message, and you can also chain against "senderUid" and
 -- "receiverUid" (although the receiver should technically always be you)
 
+
+-- Add "keyboard=vim" to set keybindings to vim. There may be other options
+-- too, lookup the ace editor for more details
+-- Add "theme=monokai" for a dark theme. There are other options (ace editor)
+
    </div>
    </body>
    <div id="controls">
@@ -288,6 +361,11 @@ end
          <button id="commandbutton">Send</button>
       </div>
    </div>
-   <div id="moduleoutput">
+   <div id="moduleoutput" class="messagebox expandowidth">
+   </div>
+   <div id="moduledebug" class="messagebox expandowidth">
+      <button id="debugbutton">Reload</button>
+      <div id="debugoutput">
+      </div>
    </div>
 </html>
