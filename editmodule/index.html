@@ -244,6 +244,31 @@ function whatever()
    return 4
 end
 
+
+--Extra information:
+
+-- Module endpoint is /api/module. Modules are standard objects like
+-- content/etc, except there are no permissions. You can search for modules to get
+-- the code, POST modules if you're a super user, and delete them (if you're super).
+-- You can also POST data to a command endpoint. To post a command such as:
+--   cgame draw 500
+-- you would POST to endpoint (with body set to "500"):
+--  /api/module/cgame/draw
+-- If a command has no extra arguments, you can simply post an empty body (I think)
+
+-- Modules can only send private messages for now. To listen for your module
+-- messages, you can add ?modules to the listener endpoint along with your
+-- actions/listeners/etc. The json looks like:
+--   { "lastId" : 0, "chains" : ["0.usersInMessage"] }
+-- where lastId uses the MODULE message id space (it's different than actions).
+-- You can chain just like normal, the data are the module messages themselves.
+-- The module messages result will be in "moduleMessages", and your chains are in
+-- "chains" just as with actions and listeners. The result also now has a
+-- "lastModuleId" field next to the "lastId" field so you can construct the next
+-- long poll request more easily. "usersInMessage" will be all the parsed %UID%
+-- found in the message, and you can also chain against "senderUid" and
+-- "receiverUid" (although the receiver should technically always be you)
+
    </div>
    </body>
    <div id="controls">
