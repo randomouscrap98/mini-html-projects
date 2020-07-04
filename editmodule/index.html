@@ -104,7 +104,6 @@ window.onload = function()
       quickAJAX(url, data.token, function(d)
       {
          console.log("loaded debug");
-         console.log(d);
          debugoutput.innerHTML = "";
          for(var i = 0; i < d.length; i++)
          {
@@ -324,10 +323,16 @@ end
 --  /api/module/cgame/draw
 -- If a command has no extra arguments, you can simply post an empty body (I think)
 
+-- Module activity shows up in regular activity, you can chain to "module" to 
+-- get the name/etc. Modules have associated values which can be read IN the
+-- module itself, you can use these as constants to tweak your code without having
+-- to actually change the code (think a config etc). Use "getvalue" to get
+-- strings, you can use lua to convert to numbers etc.
+
 -- Modules can only send private messages for now. To listen for your module
 -- messages, you can add ?modules to the listener endpoint along with your
 -- actions/listeners/etc. The json looks like:
---   { "lastId" : 0, "chains" : ["0.usersInMessage"] }
+--   { "lastId" : 0, "chains" : ["user.0usersInMessage"] }
 -- where lastId uses the MODULE message id space (it's different than actions).
 -- You can chain just like normal, the data are the module messages themselves.
 -- The module messages result will be in "moduleMessages", and your chains are in
