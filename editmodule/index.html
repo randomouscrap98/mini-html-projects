@@ -158,16 +158,23 @@ function nextListen(baseUrl, token, result, outputElement)
          elem.appendChild(elemusr);
          outputElement.insertBefore(elem, outputElement.childNodes[0]);
       }
+      
+      result.chains = false; //clear out the data for the next call
    }
    else
    {
-      console.log("Module message timeout, continuing");
+      console.log("Module message timeout or re-call, polling again");
    }
 
    var moduleListen = { "lastId" : result.lastId, "chains" :
       ["modulemessage.0id", "user.1usersInMessage.1sendUserId.1receiveUserId"]};
    var nextCall = function(r) { nextListen(baseUrl, token, r || result, outputElement); };
-   quickAJAX(baseUrl + "/read/listen?actions="+encodeURIComponent(JSON.stringify(moduleListen)), token, nextCall);
+   quickAJAX(baseUrl + "/read/listen?actions="+encodeURIComponent(JSON.stringify(moduleListen)), 
+      token, nextCall, function(e)
+      {
+         console.log("something errored out: ", e);
+         setTimeout(nextCall, 5000);
+      });
 }
 
 function quickAJAX(url, token, callback, error, postData)
