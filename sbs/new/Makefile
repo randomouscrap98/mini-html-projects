@@ -1,11 +1,10 @@
-index.html: index.convert index.config index_template.html
-	echo "---" | cat index.config - index_template.html | index.convert > index.html
+index.html: myconvert index.config index_template.html
+	echo "---" | cat index.config - index_template.html | ./myconvert > index.html
 
-index.convert: index.c
-	gcc index.c -o index.convert
-	# cat index.config | awk -F` '{ print "s`%$1%`$2`g" }' > index.sed
+myconvert: myconvert.c
+	gcc myconvert.c -o myconvert
 
 .PHONY: clean
 clean:
 	rm index.html
-	rm index.convert
+	rm myconvert
