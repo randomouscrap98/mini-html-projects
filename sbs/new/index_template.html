@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+   <!-- LOC:HEAD -->
+   <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width"><!--,maximum-scale=1">-->
+      <meta name="rating" content="general">
+      <meta name="description" content="New SmileBASIC Source">
+<!-- LOC:STYLE -->
+<style>
+body {
+   margin: 0;
+   padding: 0;
+   position: relative;
+   font-size: 0;
+   background: pink;
+   font-family: sans-serif;
+}
+div {
+   margin: 0;
+   padding: 0;
+   display: block;
+}
+img {
+   max-width: 100%;
+   max-height: 100%;
+}
+.layer {
+   position: absolute;
+   left: 0;
+   top: 0;
+   width: 100%;
+   height: 100%;
+}
+.windowbar {
+   height: 1.8rem;          /* windowbar.height */
+   background-color: #555;
+}
+#mainicon {
+   width: 1.8rem;
+   height: 1.8rem;
+}
+#website {
+   display: block;
+   position: relative;
+   left: 0;
+   height: 100vh;
+   width: 100vw;
+   overflow: hidden;
+}
+#main
+{
+   padding-top: 1.8rem;     /* windowbar.height */
+}
+</style>
+<!-- LOC:SCRIPT -->
+<script>
+</script>
+   </head>
+   <!-- LOC:BODY -->
+   <body>
+      <div id="website">
+         <!-- LOC:TOPBAR -->
+         <div id="topbar" class="layer windowbar">
+            <div id="mainicon">
+               <img src="tempicon.png">
+            </div>
+         </div>
+         <div id="main" class="layer">
+            <!-- LOC:LEFTPANE -->
+            <div id="leftpane"></div>
+            <!-- LOC:RIGHTPANE -->
+            <div id="rightpane"></div>
+         </div>
+      </div>
+   </body>
+</html>
