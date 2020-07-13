@@ -15,6 +15,8 @@ body {
    font-size: 0;
    background: pink;
    font-family: sans-serif;
+   height: 100vh;
+   width: 100vw;
 }
 div {
    margin: 0;
@@ -25,12 +27,16 @@ img {
    max-width: 100%;
    max-height: 100%;
 }
+.container, .layer {
+   width: 100%;
+   height: 100%;
+   position: relative;
+   overflow: hidden;
+}
 .layer {
    position: absolute;
    left: 0;
    top: 0;
-   width: 100%;
-   height: 100%;
 }
 .windowbar {
    height: %windowbar.height%;
@@ -40,17 +46,18 @@ img {
    width: %windowbar.height%;
    height: %windowbar.height%;
 }
-#website {
-   display: block;
-   position: relative;
-   left: 0;
-   height: 100vh;
-   width: 100vw;
-   overflow: hidden;
-}
 #main
 {
    padding-top: %windowbar.height%;
+}
+/* The main pane styling */
+#rightpane
+{
+}
+#leftpane
+{
+   width: 20rem;
+   background-color: %pullout.bgcolor%;
 }
 </style>
 <!-- LOC:SCRIPT -->
@@ -59,7 +66,7 @@ img {
    </head>
    <!-- LOC:BODY -->
    <body>
-      <div id="website">
+      <div id="website" class="container">
          <!-- LOC:TOPBAR -->
          <div id="topbar" class="layer windowbar">
             <div id="mainicon">
@@ -67,10 +74,21 @@ img {
             </div>
          </div>
          <div id="main" class="layer">
-            <!-- LOC:LEFTPANE -->
-            <div id="leftpane"></div>
-            <!-- LOC:RIGHTPANE -->
-            <div id="rightpane"></div>
+            <div id="panes" class="container">
+               <!-- LOC:LEFTPANE -->
+               <div id="leftpane" class="layer"></div>
+               <!-- LOC:RIGHTPANE -->
+               <div id="rightpane" class="layer">
+                  <div class="scroller">
+                     <div id="maincontent">
+                     </div>
+                  </div>
+                  <!-- LOC:POSTING -->
+                  <div id="posting">
+                     <textarea id="posttext"></textarea>
+                  </div>
+               </div>
+            </div>
          </div>
       </div>
    </body>
