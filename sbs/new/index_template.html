@@ -45,19 +45,22 @@ img {
 #mainicon {
    width: %windowbar.height%;
    height: %windowbar.height%;
+   float: right;
 }
 #main
 {
    padding-top: %windowbar.height%;
 }
 /* The main pane styling */
-#rightpane
+#leftpane
 {
 }
-#leftpane
+#rightpane
 {
    width: 20rem;
    background-color: %pullout.bgcolor%;
+   right: 0;
+   left: unset;
 }
 </style>
 <!-- LOC:SCRIPT -->
@@ -76,9 +79,7 @@ img {
          <div id="main" class="layer">
             <div id="panes" class="container">
                <!-- LOC:LEFTPANE -->
-               <div id="leftpane" class="layer"></div>
-               <!-- LOC:RIGHTPANE -->
-               <div id="rightpane" class="layer">
+               <div id="leftpane" class="layer">
                   <div class="scroller">
                      <div id="maincontent">
                      </div>
@@ -87,6 +88,9 @@ img {
                   <div id="posting">
                      <textarea id="posttext"></textarea>
                   </div>
+               </div>
+               <!-- LOC:RIGHTPANE -->
+               <div id="rightpane" class="layer">
                </div>
             </div>
          </div>
