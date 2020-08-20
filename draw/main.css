@@ -1,174 +1,102 @@
-/* Main */
-body
-{
+body {
    font-family: sans-serif;
    background-color: #FCFCFC;
    color: #222;
+   display: flex;
+   flex-wrap: wrap;
 }
-
-form
-{
-   margin-bottom: 0.4em;
-}
-
-.disabled
-{
+#main { margin-bottom: 0.5rem; }
+form { margin-bottom: 0.4em; }
+.disabled {
    pointer-events: none;
    opacity: 0.5;
    text-decoration: none;
    cursor: wait;
 }
-
-.version
-{
+.version {
    font-style: italic;
    color: #777;
 }
-
-.right { float: right; }
+.right { flex-direction: row-reverse; }
 .inline { display: inline-block; }
 .inline > * { vertical-align: middle; }
-.inert
-{
+.inert {
    touch-action: manipulation;
    -webkit-touch-callout: none;
    -webkit-user-select: none;
    user-select: none;
 }
-
-/* Canvas stuff? */
-#window
-{
+#window {
    border: 1px solid #222;
    width: 600px;
    height: 600px;
    overflow: hidden;
    position: relative;
 }
-
-#window > *
-{
+#window > * {
    padding: 0;
    margin: 0;
 }
-
-#drawing
-{
+#drawing {
    position: absolute;
    cursor: crosshair;
 }
-
-#line
-{
+#line {
    display: inline-block;
    background-color: #F7F7F7;
    padding: 0.1em;
 }
-
-#lineNumber
-{
+#lineNumber {
    display: inline-block;
    width: 1.3em;
    text-align: center;
 }
-
-input[type="range"]
-{
-   width: 100px;
-}
-
-#controls > *
-{
-   vertical-align: top;
-}
-
-#pages button
-{
-   font-weight: bold;
-}
-
-#pagenum
-{
-   font-size: 0.8em;
-}
-
-#palette
-{
+input[type="range"] { width: 100px; }
+#controls > * { vertical-align: top; }
+#pages button { font-weight: bold; }
+#pagenum { font-size: 0.8em; }
+#palette {
    background-color: #EEE;
    padding: 0.2em;
 }
-
-#palette button
-{
+#palette button {
    width: 20px;
    height: 10px;
    border: 1px solid rgb(0,0,0,0.2);
    cursor: pointer;
    padding: 0;
 }
-
-#palette button[data-selected]
-{
-   /*border: 1px solid #EEE;
-   border-left: 3px solid #EEE;
-   border-right: 3px solid #EEE;*/
-   /*border-radius: 20px;*/
-   /*border-left: 8px solid #66CCFF;*/
-}
-
-#palette > div
-{
-   display: block;
-}
-
-
+#palette > div { display: block; }
 /* Chat styling */
-
-#chat
-{
-   width: 20em;
+#chat {
+   min-width: 20em;
    vertical-align: top;
    font-size: 0.8em;
+   flex-grow: 1;
+   flex-basis: 20em;
 }
-
-#mainForm, #mainForm > *, #messageContainer
-{
-   width: 100%;
-}
-
-#messageContainer
-{
+#mainForm, #mainForm > *, #messageContainer { width: 100%; }
+#messageContainer {
    height: 400px;
    overflow-y: scroll;
    overflow-x: hidden;
    background-color: #FFF;
 }
-
-#messages
-{
+#messages {
    display: block;
    white-space: pre-wrap;
    padding: 0.25em;
 }
-
-.message:nth-child(even)
-{
-   background-color: #F7F7F7;
-}
-
-.username
-{
-   font-weight: bold;
-}
-
-#username, #message
-{
+.message:nth-child(even) { background-color: #F7F7F7; }
+.username { font-weight: bold; }
+#usernamee { display: block; }
+#message {
    display: block;
+   resize: vertical;
+   height: 5em;
 }
-
 /* Data */
-#statusindicator
-{
+#statusindicator {
    display: inline-block;
    width: 1.5em;
    height: 1.5em;
@@ -178,30 +106,14 @@ input[type="range"]
    font-size: 0.7em;
    color: rgba(0,0,0,0.25);
 }
-
-#status
-{
-   color: gray;
-}
-
-#data > *
-{
-   margin-bottom: 0.5em;
-}
-
-#data a
-{
+#status { color: gray; }
+#data > * { margin-bottom: 0.5em; }
+#data a {
    padding: 0.2em;
    cursor: pointer;
 }
-
-.right #swapside
-{
+.right #swapside {
    transform: scaleX(-1);
    display: inline-block;
 }
-
-#info
-{
-   padding: 0 0.2em;
-}
+#info { padding: 0 0.2em; }

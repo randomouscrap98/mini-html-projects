@@ -3,7 +3,7 @@
 
 var system = 
 {
-   version: "1.4.0"
+   version: "1.4.1"
 };
 
 $(document).ready(function()
@@ -139,7 +139,7 @@ $(document).ready(function()
    });
    $("#swapside").click(function()
    {
-      $("body > .inline").toggleClass("right");
+      $("body").toggleClass("right");
       return false;
    });
    $("#newroom").attr("href", randomRoomLink());
