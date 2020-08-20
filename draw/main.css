@@ -5,7 +5,10 @@ body {
    display: flex;
    flex-wrap: wrap;
 }
-#main { margin-bottom: 0.5rem; }
+#main { 
+   margin-bottom: 0.5rem; 
+   margin-right: 0.2rem; 
+}
 form { margin-bottom: 0.4em; }
 .disabled {
    pointer-events: none;
