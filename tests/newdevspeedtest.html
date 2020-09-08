@@ -2,12 +2,11 @@
 <head></head>
 <body>
 <script>
-function runtest()
+
+function finalize(req, item, data)
 {
-   console.log("runtest called");
-   let testingId = testid.value;
-   let req = new XMLHttpRequest();
    let start = 0;
+
    req.addEventListener("loadend", function()
    {
       if(req.status <= 299 && req.status >= 200)
@@ -15,7 +14,7 @@ function runtest()
          let end = performance.now();
          output.textContent = req.responseText;
          let result = document.createElement("p");
-         result.textContent = testingId + " took: " + (end - start) + "ms";
+         result.textContent = item + " took: " + (end - start) + "ms";
          results.append(result);
       }
       else
@@ -24,7 +23,26 @@ function runtest()
       }
    });
 
-   var baseUrl = "https://newdev.smilebasicsource.com/api/read/chain";
+   req.setRequestHeader("accept", "application/json");
+   req.setRequestHeader("Content-Type", "application/json");
+
+   if(token.value)
+      req.setRequestHeader("Authorization", "Bearer " + token.value);
+
+   start = performance.now();
+
+   if(data)
+      req.send(JSON.stringify(data));
+   else
+      req.send();
+}
+
+function runtest()
+{
+   console.log("runtest called");
+   let testingId = testid.value;
+   let req = new XMLHttpRequest();
+
    var params = new URLSearchParams();
    params.append("requests", "comment-" + JSON.stringify({"ids":[Number(testid.value)]}));
    params.append("requests", "comment.0id");
@@ -34,24 +52,39 @@ function runtest()
    params.append("requests", "user.1createUserId.2userId.1editUserid.2contentId");
    params.append("requests", "category.2contentId");
 
-   var url = baseUrl + "?" + params.toString();
+   var url = baseUrl.value + "read/chain?" + params.toString();
    console.log('URL: ' + url);
    req.open("GET", url);
-   req.setRequestHeader("accept", "application/json");
-   req.setRequestHeader("Content-Type", "application/json");
 
-   if(token.value)
-      req.setRequestHeader("Authorization", "Bearer " + token.value);
+   finalize(req, testingId);
+}
 
-   start = performance.now();
-   req.send();
+function runwrite()
+{
+   console.log("runtest called");
+   let testingId = testid.value;
+   let req = new XMLHttpRequest();
+
+   var url = baseUrl.value + "comment";
+   console.log('URL: ' + url);
+   req.open("POST", url);
+   finalize(req, "write " + parentid.value, {
+      "parentId" : parentid.value,
+      "content" : JSON.stringify({"t" : comment.value, "m" : "plaintext"})
+   });
 }
 
 </script>
+   <input id="token" placeholder="token (optional)">
+   <input id="baseUrl" value="https://newdev.smilebasicsource.com/api/">
    <form id="mainform">
       <input id="testid" placeholder="id">
-      <input id="token" placeholder="token (optional)">
-      <button onclick="runtest();" type="button">Run</button>
+      <button onclick="runtest();" type="button">Read test</button>
+   </form>
+   <form id="writeform">
+      <input id="comment" placeholder="comment">
+      <input id="parentid" placeholder="parentid">
+      <button onclick="runwrite();" type="button">Write test</button>
    </form>
    <div id="results">
    </div>
