@@ -209,7 +209,7 @@ function setupFrameDraw(system)
    function frameDraw()
    {
       //First, perform self-lines
-      if(system.drawer.currentX !== null)
+      if(drw.currentX !== null)
       {
          var line = new LineData(system.lineWidth, system.color,
             Math.round(drw.lastX), Math.round(drw.lastY), 
@@ -218,6 +218,9 @@ function setupFrameDraw(system)
          system.lines.push(line);
          system.rawTool(system.context, line);
 
+         //These are NOT performed every frame because the drawing events are
+         //NOT synchronized to the frame, so we could be removing that very
+         //important "lastX lastY" data
          drw.lastX = drw.currentX;
          drw.lastY = drw.currentY;
          drw.currentX = null;
@@ -279,6 +282,7 @@ function createBaseDrawer(canvas, width, height)
    drawer.currentY = null;
 
    var ignore;
+   var lastOffTarget = false;
 
    drawer.OnAction = function(data, context)
    {
@@ -289,16 +293,19 @@ function createBaseDrawer(canvas, width, height)
       //this line, store the position for later (animation frames pick it up)
       if(data.onTarget && (data.action & CursorActions.Drag) > 0 && !ignore)
       {
-         if(data.action & CursorActions.Start)
+         if(data.action & CursorActions.Start || lastOffTarget)
          {
             drawer.lastX = data.x;
             drawer.lastY = data.y;
          }
 
+         //console.log("DRAG", data.x, data.y);
          //Always store current position.
          drawer.currentX = data.x;
          drawer.currentY = data.y;
       }
+
+      lastOffTarget = !data.onTarget;
 
       //If you're ending a drag and not interrupting (meaning a TRUE drag end),
       //we can stop ignoring the stroke. Honestly though, the performer should
