@@ -3,7 +3,7 @@
 
 var system = 
 {
-   version: "1.4.1"
+   version: "1.4.2"
 };
 
 $(document).ready(function()
