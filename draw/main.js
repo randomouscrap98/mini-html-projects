@@ -47,9 +47,9 @@ $(document).ready(function()
    system.lines = [];
    system.receivedLines = [];
    system.receivedIndex = 0;
-   system.room = window.location.search.substr(1);
+   system.room = system.room || window.location.search.substr(1);
    system.rawTool = drawSimpleLine;
-   system.drawer = createBaseDrawer(drawing, 3600, 3600);
+   system.drawer = system.drawer || createBaseDrawer(drawing, 3600, 3600);
    system.context = context;
    system.frameDraw = setupFrameDraw(system);
 
@@ -94,7 +94,8 @@ $(document).ready(function()
    //Start the system
    system.frameDraw();
 
-   system.fileName = function() { return system.room + "_" + (Math.floor(new Date().getTime()/1000)); };
+   system.fileName = system.fileName || function() { 
+      return system.room + "_" + (Math.floor(new Date().getTime()/1000)); };
 
    //Now setup some elements or whatever.
    //Setting up controls puts everything in the controls in a "ready" state.
