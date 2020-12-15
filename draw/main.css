@@ -1,7 +1,4 @@
 body {
-   font-family: sans-serif;
-   background-color: #FCFCFC;
-   color: #222;
    display: flex;
    flex-wrap: wrap;
 }
@@ -10,25 +7,6 @@ body {
    margin-right: 0.2rem; 
 }
 form { margin-bottom: 0.4em; }
-.disabled {
-   pointer-events: none;
-   opacity: 0.5;
-   text-decoration: none;
-   cursor: wait;
-}
-.version {
-   font-style: italic;
-   color: #777;
-}
-.right { flex-direction: row-reverse; }
-.inline { display: inline-block; }
-.inline > * { vertical-align: middle; }
-.inert {
-   touch-action: manipulation;
-   -webkit-touch-callout: none;
-   -webkit-user-select: none;
-   user-select: none;
-}
 #window {
    border: 1px solid #222;
    width: 600px;
@@ -90,7 +68,6 @@ input[type="range"] { width: 100px; }
    white-space: pre-wrap;
    padding: 0.25em;
 }
-.message:nth-child(even) { background-color: #F7F7F7; }
 .username { font-weight: bold; }
 #usernamee { display: block; }
 #message {

@@ -303,7 +303,7 @@ function createMessageElement(parsed)
 {
    var msg = parsed.full;
    var msgelem = document.createElement("div");
-   msgelem.className = "message";
+   msgelem.className = "message striped";
 
    if(parsed.username)
    {

@@ -1,15 +1,29 @@
-body
-{
+body {
    font-family: sans-serif;
+   background-color: #FCFCFC;
+   color: #222;
 }
 
-#result
-{
-   white-space: pre;
-}
+#result { white-space: pre; }
 
-.error
-{
-   color: darkred;
+.error { color: darkred; }
+.version {
+   font-style: italic;
+   color: #777;
 }
-
+.disabled {
+   pointer-events: none;
+   opacity: 0.5;
+   text-decoration: none;
+   cursor: wait;
+}
+.right { flex-direction: row-reverse; }
+.inline { display: inline-block; }
+.inline > * { vertical-align: middle; }
+.inert {
+   touch-action: manipulation;
+   -webkit-touch-callout: none;
+   -webkit-user-select: none;
+   user-select: none;
+}
+.striped:nth-child(even) { background-color: rgba(0,0,0,0.03); }

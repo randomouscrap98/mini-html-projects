@@ -124,6 +124,7 @@ $(document).ready(function()
          exp.removeClass("disabled");
          var fin = html.replace(/%DRAWJS%/g, js)
                        .replace(/%DRAWCSS%/g, css)
+                       .replace(/%MINICSS%/g, minicss)
                        .replace(/%ROOMNAME%/g, system.room)
                        .replace(/%RAWDATA%/g, JSON.stringify(data));
          var dl = $('<a>Download Export!</a>');
@@ -137,6 +138,7 @@ $(document).ready(function()
       $.get("export.html", function(d) { html = d; finalize(); });
       $.get("draw.js", function(d) { js = d; finalize(); });
       $.get("main.css", function(d) { css = d; finalize(); });
+      $.get("../mini.css", function(d) { minicss = d; finalize(); });
    });
    $("#swapside").click(function()
    {
