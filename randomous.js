@@ -249,6 +249,57 @@ var HTMLUtilities =
          fakeRadios[i].removeAttribute(selectedAttribute);
       selected.setAttribute(selectedAttribute, selectedValue);
    },
+   //Make "scrollbar" a real scrollbar, using scrollnub as the little thing you
+   //drag, scrollbar as the bar itself, and scrollitem as the thing that is
+   //absolutely positioned within its parent
+   SimulateScrollbar : function(scrollbar, scrollnub, scrollitem, allowJump)
+   {
+      var target = false;
+      var srect = false;
+      var sirect = false;
+      var snheight = false;
+      var wheight = false;
+      var min = false;
+      var max = false;
+
+      var down = e =>
+      {
+         e.preventDefault();
+         //var pos = EventUtilities.GetPosition(e);
+
+         //We ASSUME these won't change during the duration of the scroll...
+         target = e.target;
+         srect = scrollbar.getBoundingClientRect();
+         sirect = scrollitem.getBoundingClientRect();
+         snheight = scrollnub.clientHeight;
+         wheight = window.innerHeight;
+         min = srect.top;
+         max = srect.bottom - snheight;
+      };
+      var up = e =>
+      {
+         target = false;
+      };
+      var move = e =>
+      {
+         //We need a target and either allowing jumps or the target is the nub
+         if(!(target && (allowJump || target.isSameNode(scrollnub))))
+            return;
+
+         var pos = EventUtilities.GetPosition(e);
+         var newpos = MathUtilities.MinMax(pos.y, min, max);
+         var relpos = newpos - min;
+         scrollnub.style.top = relpos;
+         scrollitem.style.top = - (relpos / (max - min)) * (sirect.bottom - sirect.top - wheight);
+      };
+      scrollbar.addEventListener("mousedown", down);
+      scrollbar.addEventListener("touchstart", down);
+      //These are permanent
+      document.addEventListener("mouseup", up);
+      document.addEventListener("touchend", up);
+      document.addEventListener("mousemove", move);
+      document.addEventListener("touchmove", move);
+   },
    CreateUnsubmittableButton : function(text)
    {
       var button = document.createElement('button');
@@ -1440,6 +1491,13 @@ var EventUtilities =
    MouseButtonToButtons : function(button)
    {
       return EventUtilities.mButtonMap[button];
+   },
+   GetPosition : function(e) 
+   {
+      if (e.touches)
+         return {x:e.touches[0].pageX, y:e.touches[0].pageY}
+      else
+         return {x:e.clientX, y:e.clientY}
    },
    //This is a NON-BLOCKING function that simply "schedules" the function to be
    //performed later if the signal is in the "WAIT" phase.

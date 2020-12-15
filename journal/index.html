@@ -14,17 +14,22 @@
    </head>
    <body class="collapseall">
       <div id="window">
-         <div id="textbox">
-            <div id="messages" class="messages"></div>
-            <form id="messageform">
-               <div class="inputblock">
-                  <input tabindex="1" type="text" id="username" placeholder="username" required="">
-                  <input tabindex="2" type="submit">
-               </div>
-               <textarea tabindex="1" id="message" maxlength="3500" placeholder="message" required=""></textarea>
-            </form>
+         <div id="scrollblock">
+            <canvas width="1000" height="16000" id="drawing"></canvas>
          </div>
-         <canvas width="1000" height="16000" id="drawing"></canvas>
+      </div>
+      <div id="scrollbar">
+         <div id="scrollbarbar"></div>
+      </div>
+      <div id="chat" data-hidden>
+         <div id="messagecontainer">
+            <div id="messages" class="messages"></div>
+         </div>
+         <form id="messageform">
+            <input tabindex="1" type="text" id="username" placeholder="username" required="">
+            <textarea tabindex="1" id="message" maxlength="3500" placeholder="message" required=""></textarea>
+            <input tabindex="2" type="submit">
+         </form>
       </div>
       <div id="sidebar" class="inertall">
          <div id="controls">
@@ -37,6 +42,10 @@
                <button id="tool_eraser">Er</button>
                <button id="tool_fill">Fi</button>
             </div>
+         </div>
+         <div id="pagecontrols">
+            <label><input type="checkbox" id="pageflip"></input>Flip</label>
+            <label><input type="checkbox" id="pagechat"></input>Chat</label>
          </div>
             <!--<div id="line" class="inline inert">
                <input class="inert" id="lineSlider" type="range" min="1" max="20">

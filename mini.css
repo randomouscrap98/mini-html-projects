@@ -15,6 +15,7 @@ body {
    text-decoration: none;
    cursor: wait;
 }
+[data-hidden] { display: none; }
 .right { flex-direction: row-reverse; }
 .inline { display: inline-block; }
 .inline > * { vertical-align: middle; }

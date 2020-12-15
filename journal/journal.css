@@ -7,7 +7,7 @@ body {
    flex-direction: row;
 }
 
-body[data-reversed] {
+body[data-flipped] {
    flex-direction: row-reverse;
 }
 
@@ -16,11 +16,18 @@ canvas {
 }
 
 #window {
-   flex: 0 1 auto;
+   flex: 0 1 1000px; /*auto; /*1000px;*/
    background-color: #EEE;
-   border-right: 1px solid #999;
-   overflow-x: hidden;
-   overflow-y: auto;
+   overflow: hidden;
+   position: relative;
+   /*overflow-x: hidden;
+   overflow-y: auto;*/
+}
+
+#scrollblock {
+   position: absolute;
+   left: 0;
+   width: 100%;
 }
 
 #textbox {
@@ -47,6 +54,23 @@ canvas {
    flex: auto;
 }
 
+/* Scrollbar */
+#scrollbar {
+   position: relative;
+   background-color: #DDD;
+   width: 10px;
+   flex: none;
+}
+
+#scrollbarbar {
+   position: absolute;
+   left: 0;
+   background-color: #AAA;
+   height: 25px;
+   width: 100%;
+   touch-action: none;
+}
+
 /* Sidebar */
 #sidebar {
    flex: none;
@@ -55,10 +79,7 @@ canvas {
    overflow-x: hidden;
 }
 
-/*#sidebar[data-expanded] {
-   width: 180px;
-}*/
-
+/* Controls */
 #controls > * {
    width: 100%;
 }
@@ -78,20 +99,20 @@ canvas {
 #tools [data-selected] {
    background-color: skyblue;
 }
-/* Special */
-/*.expanding {
-   display: flex;
-}
 
-.expanding > *:nth-child(1) {
-   width: 60px;
-   flex: 0 0 60px;
+#pagecontrols {
+   font-size: 0.8em;
+   padding: 0.2em;
 }
-.expanding > *:nth-child(2) {
-   flex: 1 1 auto;
-   min-width: 0;
-   min-height: 0;
-   overflow: hidden;
+/*::-webkit-scrollbar {
+   -webkit-appearance: none;
+   width: 7px;
+   height: 7px;
+   -webkit-overflow-scrolling: auto;
 }
-
-*/
+::-webkit-scrollbar-thumb {
+   border-radius: 4px;
+   background-color: rgba(0,0,0,.5);
+   -webkit-box-shadow: 0 0 1px
+   rgba(255,255,255,.5);
+}*/
