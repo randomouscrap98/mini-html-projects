@@ -1,0 +1,64 @@
+<html>
+   <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+      <script id="script_jquery" src="../jquery-3.4.1.min.js"></script>
+      <script id="script_randomous" src="../randomous.js"></script>
+      <script id="script_canvas" src="../randomousCanvas.js"></script>
+      <script id="script_mini" src="../mini.js"></script>
+      <script id="script_journal" src="journal.js"></script>
+      <!--<script id="script_index" src="index.js"></script>-->
+      <link rel="stylesheet" href="../mini.css">
+      <link rel="stylesheet" href="journal.css">
+      <!--<link rel="stylesheet" href="index.css">-->
+   </head>
+   <body class="collapseall">
+      <div id="window">
+         <div id="textbox">
+            <div id="messages" class="messages"></div>
+            <form id="messageform">
+               <div class="inputblock">
+                  <input tabindex="1" type="text" id="username" placeholder="username" required="">
+                  <input tabindex="2" type="submit">
+               </div>
+               <textarea tabindex="1" id="message" maxlength="3500" placeholder="message" required=""></textarea>
+            </form>
+         </div>
+         <canvas width="1000" height="16000" id="drawing"></canvas>
+      </div>
+      <div id="sidebar" class="inertall">
+         <div id="controls">
+            <input type="color" id="color" value="#333333" data-link="colortext">
+            <input type="text" id="colortext" value="#333333" data-link="color">
+            <input type="range" id="size" min="1" max="60" value="3" data-link="sizetext">
+            <input type="text" id="sizetext" value="3" data-link="size">
+            <div id="tools" data-radio class="collapseall">
+               <button data-selected id="tool_pen">Pe</button>
+               <button id="tool_eraser">Er</button>
+               <button id="tool_fill">Fi</button>
+            </div>
+         </div>
+            <!--<div id="line" class="inline inert">
+               <input class="inert" id="lineSlider" type="range" min="1" max="20">
+               <span class="inert" id="lineNumber"></span>
+            </div>
+            <div id="pages" class="inline inert">
+               <button class="inert" id="pagedown">&lt;</button>
+               <span class="inert" id="pagenum">Page 01</span>
+               <button class="inert" id="pageup">&gt;</button>
+            </div>
+            <div id="extracontrols">
+               <a id="download" href="#">png</a>
+               <a id="download1" href="#">png1</a>
+               <a id="export" href="#">html</a>
+               <a id="newroom">New Room</a>
+               <a id="swapside">&#x270B;</a>
+            </div>
+            <div id="info" class="inline">
+               <div id="statusindicator"></div>
+               <span id="percent">???</span>
+               <div id="status" class="inline"></div>
+            </div>-->
+      </div>
+   </body>
+</html>

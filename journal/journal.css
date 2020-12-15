@@ -1,0 +1,97 @@
+/* 12-15-2020 */
+
+body {
+   display: flex;
+   width: 100%;
+   height: 100%;
+   flex-direction: row;
+}
+
+body[data-reversed] {
+   flex-direction: row-reverse;
+}
+
+canvas {
+   background-color: white;
+}
+
+#window {
+   flex: 0 1 auto;
+   background-color: #EEE;
+   border-right: 1px solid #999;
+   overflow-x: hidden;
+   overflow-y: auto;
+}
+
+#textbox {
+   width: 100%;
+   border-bottom: 1px solid #999;
+}
+
+#messages {
+   background-color: white;
+}
+
+/* Message form */
+#messageform {
+   margin: 0;
+   display: flex;
+}
+
+#messageform .inputblock {
+   display: flex;
+   flex-direction: column;
+}
+
+#messageform textarea {
+   flex: auto;
+}
+
+/* Sidebar */
+#sidebar {
+   flex: none;
+   width: 75;
+   background-color: #F0F0F0;
+   overflow-x: hidden;
+}
+
+/*#sidebar[data-expanded] {
+   width: 180px;
+}*/
+
+#controls > * {
+   width: 100%;
+}
+
+#tools {
+   display: flex;
+   flex-flow: row wrap;
+}
+
+#tools button {
+   width: 25px;
+   height: 25px;
+   cursor: pointer;
+   padding: 0;
+}
+
+#tools [data-selected] {
+   background-color: skyblue;
+}
+/* Special */
+/*.expanding {
+   display: flex;
+}
+
+.expanding > *:nth-child(1) {
+   width: 60px;
+   flex: 0 0 60px;
+}
+.expanding > *:nth-child(2) {
+   flex: 1 1 auto;
+   min-width: 0;
+   min-height: 0;
+   overflow: hidden;
+}
+
+*/

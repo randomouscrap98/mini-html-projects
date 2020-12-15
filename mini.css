@@ -6,11 +6,9 @@ body {
 
 #result { white-space: pre; }
 
+.collapse, .collapseall, .collapseall * { margin: 0; }
 .error { color: darkred; }
-.version {
-   font-style: italic;
-   color: #777;
-}
+.version { font-style: italic; color: #777; }
 .disabled {
    pointer-events: none;
    opacity: 0.5;
@@ -20,10 +18,22 @@ body {
 .right { flex-direction: row-reverse; }
 .inline { display: inline-block; }
 .inline > * { vertical-align: middle; }
-.inert {
+.inert, .inertall, .inertall * {
    touch-action: manipulation;
    -webkit-touch-callout: none;
    -webkit-user-select: none;
    user-select: none;
 }
 .striped:nth-child(even) { background-color: rgba(0,0,0,0.03); }
+
+input, textarea, button {
+   border-radius: none;
+   border: 1px solid #AAA;
+   outline: none;
+}
+input[type="color"] {
+   padding: 0px;
+}
+input:focus, textarea:focus {
+   border: 1px solid blue;
+}
