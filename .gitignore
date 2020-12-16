@@ -1,3 +1,4 @@
 drawlegacy*
 *.jpg
 dwatch/
+.*.sw?
