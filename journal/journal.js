@@ -24,8 +24,11 @@ window.onload = function()
    {
       var url = new URL(location.href);
 
+      if(!globals.roomname)
+         globals.roomname = url.searchParams.get("room");
+
       if(url.searchParams.get("export") == 1)
-         performExport();
+         performExport(globals.roomname);
 
       setupToggleSetting("pageflip", pageflip, 
          () => document.body.setAttribute("data-flipped", ""),
@@ -36,11 +39,9 @@ window.onload = function()
 
       if(!document.body.hasAttribute("data-export"))
       {
-         globals.roomname = url.searchParams.get("room");
-
          if(!globals.roomname)
          {
-            alert("No room provided; must be: ?room=name (all rooms are public!)");
+            noroomscreen.removeAttribute("data-hidden");
             return;
          }
 
@@ -69,6 +70,9 @@ window.onload = function()
 function getSetting(name) { return StorageUtilities.ReadLocal("mini_journal_" + name) }
 function setSetting(name, value) { StorageUtilities.WriteLocal("mini_journal_" + name, value); }
 function safety(func) { try { func(); } catch(ex) { console.log(ex); } }
+
+//Perform initial setup that's ALWAYS done regardless of load type (export/etc)
+//function alwaysSetup() { }
 
 function setupValueLinks(element)
 {
@@ -119,7 +123,55 @@ function setupExport(exp)
    exp.href = url.toString();
 }
 
-function performExport()
+function performExport(room)
 {
-   //First, 
+   //First, throw up the cover screen
+   exportscreen.removeAttribute("data-hidden");
+
+   //Then, go download all the header stuff and jam them into their respective elements
+   var styles = document.head.querySelectorAll('link[rel="stylesheet"]');
+   var scripts = document.head.querySelectorAll('script');
+
+   var data, stylesLeft = styles.length, scriptsLeft = scripts.length;
+
+   var finalize = () =>
+   {
+      console.log(scriptsLeft, stylesLeft);
+      if(!(data && stylesLeft == 0 && scriptsLeft == 0)) return;
+
+      document.body.setAttribute("data-export", "");
+      exportscreen.setAttribute("data-hidden", "");
+      alert("Export complete! You can now save this webpage (in Chrome, you select 'Webpage, Complete' in the dialog).");
+   };
+
+   $.get(endpoint(room), function(d) { data = d; finalize(); });
+   [...styles].forEach(x =>
+   {
+      $.get(x.href, d =>
+      { 
+         var s = document.createElement("style");
+         s.innerHTML = d;
+         document.head.appendChild(s);
+         x.parentNode.removeChild(x);
+         stylesLeft--;
+         finalize(); 
+      });
+   });
+   [...scripts].forEach(x =>
+   {
+      $.get(x.src, d =>
+      { 
+         if(x.src.indexOf("journal.js") >= 0)
+         {
+            console.log("MATCH: ", x.src);
+            d = d.replace('roomname: ""', 'roomname: ' + JSON.stringify(room))
+               .replace('roomdata: ""', 'roomdata: ' + JSON.stringify(data));
+         }
+
+         x.innerHTML = d;
+         x.removeAttribute("src");
+         scriptsLeft--;
+         finalize(); 
+      });
+   });
 }

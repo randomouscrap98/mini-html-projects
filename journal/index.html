@@ -2,15 +2,13 @@
    <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-      <script id="script_jquery" src="../jquery-3.4.1.min.js?v=1608078720"></script>
-      <script id="script_randomous" src="../randomous.js?v=1608078720"></script>
-      <script id="script_canvas" src="../randomousCanvas.js?v=1608078720"></script>
-      <script id="script_mini" src="../mini.js?v=1608078720"></script>
-      <script id="script_journal" src="journal.js?v=1608078720"></script>
-      <!--<script id="script_index" src="index.js"></script>-->
+      <script src="../jquery-3.4.1.min.js?v=1608078720"></script>
+      <script src="../randomous.js?v=1608078720"></script>
+      <script src="../randomousCanvas.js?v=1608078720"></script>
+      <script src="../mini.js?v=1608078720"></script>
+      <script src="journal.js?v=1608078720"></script>
       <link rel="stylesheet" href="../mini.css?v=1608078720">
       <link rel="stylesheet" href="journal.css?v=1608078720">
-      <!--<link rel="stylesheet" href="index.css">-->
    </head>
    <body class="collapseall">
       <div id="window">
@@ -53,6 +51,12 @@
                <span id="percent">???</span>
             </div>
          </div>
+      </div>
+      <div id="exportscreen" class="coverscreen" data-hidden>
+         <span>Exporting...</span>
+      </div>
+      <div id="noroomscreen" class="coverscreen" data-hidden>
+         <span>No room provided, must param "room" in query. All rooms are public!<span>
       </div>
    </body>
 </html>

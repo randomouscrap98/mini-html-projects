@@ -5,6 +5,7 @@ body {
    width: 100%;
    height: 100%;
    flex-direction: row;
+   overflow: hidden;
 }
 
 body[data-flipped] {
@@ -144,6 +145,20 @@ canvas {
    background-color: #DDD;
    display: block;
 }
+
+/* Screens */
+.coverscreen {
+   position: absolute;
+   width: 100vw;
+   height: 100vh;
+   background: #333;
+   font-weight: bold;
+   font-size: 1.5em;
+   color: white;
+   padding: 1em;
+   box-sizing: border-box;
+}
+
 /*::-webkit-scrollbar {
    -webkit-appearance: none;
    width: 7px;
