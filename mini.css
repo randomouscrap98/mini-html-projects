@@ -9,6 +9,7 @@ body {
 .collapse, .collapseall, .collapseall * { margin: 0; }
 .error { color: darkred; }
 .version { font-style: italic; color: #777; }
+.muted { color: #777; }
 .disabled, [data-disabled] {
    pointer-events: none;
    opacity: 0.5;
@@ -17,6 +18,7 @@ body {
 }
 [data-hidden] { display: none !important; }
 .right { flex-direction: row-reverse; }
+.center { text-align: center; }
 .inline { display: inline-block; }
 .inline > * { vertical-align: middle; }
 .inert, .inertall, .inertall * {

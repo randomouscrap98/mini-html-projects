@@ -138,13 +138,15 @@ canvas {
 }
 
 #systemcontrols > * {
+}
+
+#info > * {
+   display: block;
    padding: 0.2em;
 }
 
-#info {
-   background-color: #DDD;
-   display: block;
-}
+#percent { background-color: #DDD; }
+#version { font-size: 0.75em; }
 
 /* Screens */
 .coverscreen {

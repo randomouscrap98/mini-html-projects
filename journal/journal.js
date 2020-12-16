@@ -140,19 +140,46 @@ function performExport(room)
    var styles = document.head.querySelectorAll('link[rel="stylesheet"]');
    var scripts = document.head.querySelectorAll('script');
 
-   var data, stylesLeft = styles.length, scriptsLeft = scripts.length;
+   var stylesLeft = styles.length, scriptsLeft = scripts.length;
 
    var finalize = () =>
    {
       console.log(scriptsLeft, stylesLeft);
-      if(!(data && stylesLeft == 0 && scriptsLeft == 0)) return;
+      if(!(stylesLeft == 0 && scriptsLeft == 0)) return;
 
       document.body.setAttribute("data-export", "");
       hide(exportscreen);
       alert("Export complete! You can now save this webpage (in Chrome, you select 'Webpage, Complete' in the dialog).");
    };
 
-   $.get(endpoint(room), function(d) { data = d; finalize(); });
+   $.get(endpoint(room), data => 
+   { 
+      //Scripts MUST come AFTER data (since we need to insert it INTO a script)
+      [...scripts].forEach(x =>
+      {
+         $.get(x.src, d =>
+         { 
+            if(x.src.indexOf("journal.js") >= 0)
+            {
+               console.log("MATCH: ", x.src);
+               var preamble = parsePreamble(data);
+               d = d.replace('roomname: ""', 'roomname: ' + JSON.stringify(room))
+                  .replace('roomdata: ""', 'roomdata: ' + JSON.stringify(data))
+                  .replace('preamble: {}', 'preamble: ' + JSON.stringify(preamble));
+            }
+
+            x.innerHTML = d;
+            x.removeAttribute("src");
+            scriptsLeft--;
+            finalize(); 
+         });
+      });
+
+      //This won't do anything, but we should always make sure...
+      //what if there are NO scripts and NO styles?
+      finalize(); 
+   });
+
    [...styles].forEach(x =>
    {
       $.get(x.href, d =>
@@ -165,28 +192,12 @@ function performExport(room)
          finalize(); 
       });
    });
-   [...scripts].forEach(x =>
-   {
-      $.get(x.src, d =>
-      { 
-         if(x.src.indexOf("journal.js") >= 0)
-         {
-            console.log("MATCH: ", x.src);
-            d = d.replace('roomname: ""', 'roomname: ' + JSON.stringify(room))
-               .replace('roomdata: ""', 'roomdata: ' + JSON.stringify(data));
-         }
-
-         x.innerHTML = d;
-         x.removeAttribute("src");
-         scriptsLeft--;
-         finalize(); 
-      });
-   });
 }
 
 function refreshInfo(data)
 {
    percent.innerHTML = (100 * (data.used / data.limit)).toFixed(2) + "%";
+   version.innerHTML = system.version;
 }
 
 function setupInitialStream()

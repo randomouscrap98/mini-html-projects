@@ -128,7 +128,7 @@ function parsePreamble(data)
    if(end < 0) return null;
 
    var preamble = data.substr(1, end);
-   var parts = preamble.split(":");
+   var parts = preamble.split("|");
 
    if(parts.length < 2) return null;
 
@@ -140,7 +140,7 @@ function parsePreamble(data)
 
 function createPreamble(name, version)
 {
-   return "#" + name + ":" + version + ":" + (new Date()).toISOString() + "#";
+   return "#" + [name, version, (new Date()).toISOString()].join("|") + "#";
 }
 
 function setRunning(element) { element.css("background-color", "lightgreen"); }
