@@ -42,6 +42,14 @@ function getChecked(form, name) { return getInput(form, name)[0].checked; }
 function getValue(form, name) { return getInput(form, name).val(); }
 function getLines(form, name) { return getValue(form, name).split('\n'); }
 
+function setHidden(elm, hidden) {if(hidden)elm.setAttribute("data-hidden", "");else elm.removeAttribute("data-hidden");}
+function hide(elm) { setHidden(elm, true); }
+function show(elm) { setHidden(elm, false); }
+
+function setDisabled(elm, disabled) {if(disabled)elm.setAttribute("data-disabled", "");else elm.removeAttribute("data-disabled");}
+function disable(elm) { setDisabled(elm, true); }
+function enable(elm) { setDisabled(elm, false); }
+
 function any(array, check)
 {
    for(var i = 0; i < array.length; i++)
@@ -70,26 +78,32 @@ function queryEnd(room, start, handle, error)
       });
 }
 
-function post(url, data)
+function post(url, data, then)
 {
-   postRetry(url, data, 100, 1000);
+   postRetry(url, data, then, 100, 1000);
 }
 
-function postRetry(url, data, retries, timeout)
+function postRetry(url, data, then, retries, timeout)
 {
    if(retries <= 0)
       throw "Ran out of post retries!";
 
    timeout = timeout || 500;
+   //then = then || d => { console.log("POST:",d); return d; };
 
    fetch(url, 
    {
       method: "POST",
       body: data
+   }).then(d =>
+   {
+      if(then)
+         then(d);
+      return d;
    }).catch(function(error) 
    {
       console.log("POST " + url + " failed, retries: " + retries);
-      setTimeout(function() { postRetry(url, data, retries - 1, timeout); }, timeout);
+      setTimeout(function() { postRetry(url, data, then, retries - 1, timeout); }, timeout);
    });
 }
 
@@ -175,4 +189,33 @@ function randomLetters(count, r)
    }
    return result;
 }
+
+var StreamConvert =
+{
+   charStart : 48,
+   IntToChars : function (int, chars)
+   {
+      chars = chars || 1;
+      var max = ((1 << (chars * 6)) - 1);
+
+      if(int < 0) int = 0;
+      if(int > max) int = max;
+
+      var result = "";
+
+      for(var i = 0; i < chars; i++)
+         result += String.fromCharCode(StreamConvert.charStart + ((int >> (i * 6)) & 63));
+
+      return result;
+   },
+   CharsToInt : function (chars, start, count)
+   {
+      start = start || 0;
+      count = count || chars.length - start;
+      var result = 0;
+      for(var i = 0; i < count; i++)
+         result += (chars.charCodeAt(i + start) - StreamConvert.charStart) << (i * 6);
+      return result;
+   }
+};
 

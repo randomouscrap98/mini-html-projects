@@ -3,13 +3,14 @@
 var system = 
 {
    name: "journal",
-   version: "0.1.0"
+   version: "0.1.0_f1" //format 1
 };
 
 var globals = 
 {
    roomdata: "",
-   roomname: ""
+   roomname: "",
+   preamble: {}
 };
 
 function toolData(tool, size, color) {
@@ -34,14 +35,14 @@ window.onload = function()
          () => document.body.setAttribute("data-flipped", ""),
          () => document.body.removeAttribute("data-flipped"));
       setupToggleSetting("pagechat", pagechat, 
-         () => chat.removeAttribute("data-hidden"),
-         () => chat.setAttribute("data-hidden", ""));
+         () => show(chat),
+         () => hide(chat));
 
       if(!document.body.hasAttribute("data-export"))
       {
          if(!globals.roomname)
          {
-            noroomscreen.removeAttribute("data-hidden");
+            show(noroomscreen);
             return;
          }
 
@@ -52,14 +53,47 @@ window.onload = function()
          HTMLUtilities.SimulateScrollbar(scrollbar, scrollbarbar, scrollblock, false);
 
          setupScrollTest();
+
+         //Go out and get initial data. If it's empty, we alert to creating the
+         //new data, then reload the page (it's just easier). Otherwise, we
+         //pull the (maybe huge) initial blob 
+         $.getJSON(endpoint(globals.roomname) + "/json?nonblocking=true")
+            .done(data =>
+            {
+               if(data.used == 0)
+               {
+                  if(confirm("This appears to be a brand new journal, are you sure you want to create one here?"))
+                  {
+                     //POST the preamble and move on to reload
+                     post(endpoint(globals.roomname), createPreamble(system.name, system.version), d => location.reload());
+                     return;
+                  }
+               }
+               else
+               {
+                  globals.roomdata = data.data;
+                  globals.preamble = parsePreamble(globals.roomdata);
+
+                  if(!(globals.preamble && globals.preamble.version && globals.preamble.version.endsWith("f1")))
+                  {
+                     show(incompatibleformatscreen);
+                     return;
+                  }
+
+                  refreshInfo(data);
+                  enable(sidebar);
+               }
+
+            })
+            .fail(data =>
+            {
+               show(initialchunkfailscreen);
+            });
       }
       else
       {
          //Exported, load data from attribute.
       }
-
-      //Have to move this to after querying the room + doing all that preamble crap
-      sidebar.removeAttribute("data-disabled");
    }
    catch(ex)
    {
@@ -126,7 +160,7 @@ function setupExport(exp)
 function performExport(room)
 {
    //First, throw up the cover screen
-   exportscreen.removeAttribute("data-hidden");
+   show(exportscreen);
 
    //Then, go download all the header stuff and jam them into their respective elements
    var styles = document.head.querySelectorAll('link[rel="stylesheet"]');
@@ -140,7 +174,7 @@ function performExport(room)
       if(!(data && stylesLeft == 0 && scriptsLeft == 0)) return;
 
       document.body.setAttribute("data-export", "");
-      exportscreen.setAttribute("data-hidden", "");
+      hide(exportscreen);
       alert("Export complete! You can now save this webpage (in Chrome, you select 'Webpage, Complete' in the dialog).");
    };
 
@@ -174,4 +208,9 @@ function performExport(room)
          finalize(); 
       });
    });
+}
+
+function refreshInfo(data)
+{
+   percent.innerHTML = (100 * (data.used / data.limit)).toFixed(2) + "%";
 }
