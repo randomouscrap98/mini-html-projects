@@ -11,9 +11,12 @@ body[data-flipped] {
    flex-direction: row-reverse;
 }
 
+body[data-export] [data-hideexport] {
+   display: none !important;
+}
+
 canvas {
    background-color: white;
-   background-color: red;
 }
 
 #window {
@@ -81,14 +84,24 @@ canvas {
 
 /* Sidebar */
 #sidebar {
+   display: flex;
+   flex-direction: column;
    flex: none;
    width: 75;
    background-color: #F0F0F0;
    overflow-x: hidden;
 }
 
+#sidebar[data-error] {
+   background-color: #F05050;
+}
+
 /* Controls */
-#controls > * {
+#paintcontrols {
+   flex: none;
+}
+
+#paintcontrols > * {
    width: 100%;
 }
 
@@ -109,11 +122,26 @@ canvas {
 }
 
 #pagecontrols {
+   flex: auto;
    font-size: 0.8em;
    padding: 0.2em;
 }
 
 #pagecontrols label {
+   display: block;
+}
+
+#systemcontrols {
+   flex: none;
+   font-size: 0.8em;
+}
+
+#systemcontrols > * {
+   padding: 0.2em;
+}
+
+#info {
+   background-color: #DDD;
    display: block;
 }
 /*::-webkit-scrollbar {

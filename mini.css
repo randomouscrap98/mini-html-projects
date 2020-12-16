@@ -9,7 +9,7 @@ body {
 .collapse, .collapseall, .collapseall * { margin: 0; }
 .error { color: darkred; }
 .version { font-style: italic; color: #777; }
-.disabled {
+.disabled, [data-disabled] {
    pointer-events: none;
    opacity: 0.5;
    text-decoration: none;

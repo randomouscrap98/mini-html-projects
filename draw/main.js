@@ -120,7 +120,7 @@ $(document).ready(function()
       exp.addClass("disabled");
       var finalize = function()
       {
-         if(!(js && html && data && css)) return;
+         if(!(js && html && data && css && minicss)) return;
          exp.removeClass("disabled");
          var fin = html.replace(/%DRAWJS%/g, js)
                        .replace(/%DRAWCSS%/g, css)

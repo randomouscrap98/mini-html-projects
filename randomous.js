@@ -287,7 +287,7 @@ var HTMLUtilities =
             return;
 
          var pos = EventUtilities.GetPosition(e);
-         var newpos = MathUtilities.MinMax(pos.y, min, max);
+         var newpos = MathUtilities.MinMax(pos.y - snheight / 2, min, max);
          var relpos = newpos - min;
          scrollnub.style.top = relpos;
          scrollitem.style.top = - (relpos / (max - min)) * (sirect.bottom - sirect.top - wheight);

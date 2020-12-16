@@ -6,6 +6,12 @@ var system =
    version: "0.1.0"
 };
 
+var globals = 
+{
+   roomdata: "",
+   roomname: ""
+};
+
 function toolData(tool, size, color) {
    this.tool = tool;    //"none";
    this.size = size;    //0;
@@ -16,8 +22,11 @@ window.onload = function()
 {
    try
    {
-      setupValueLinks(document);   
-      setupRadioEmulators(document);
+      var url = new URL(location.href);
+
+      if(url.searchParams.get("export") == 1)
+         performExport();
+
       setupToggleSetting("pageflip", pageflip, 
          () => document.body.setAttribute("data-flipped", ""),
          () => document.body.removeAttribute("data-flipped"));
@@ -25,9 +34,31 @@ window.onload = function()
          () => chat.removeAttribute("data-hidden"),
          () => chat.setAttribute("data-hidden", ""));
 
-      HTMLUtilities.SimulateScrollbar(scrollbar, scrollbarbar, scrollblock, false);
+      if(!document.body.hasAttribute("data-export"))
+      {
+         globals.roomname = url.searchParams.get("room");
 
-      setupScrollTest();
+         if(!globals.roomname)
+         {
+            alert("No room provided; must be: ?room=name (all rooms are public!)");
+            return;
+         }
+
+         setupValueLinks(document);   
+         setupRadioEmulators(document);
+         setupExport(document.getElementById("export"));
+
+         HTMLUtilities.SimulateScrollbar(scrollbar, scrollbarbar, scrollblock, false);
+
+         setupScrollTest();
+      }
+      else
+      {
+         //Exported, load data from attribute.
+      }
+
+      //Have to move this to after querying the room + doing all that preamble crap
+      sidebar.removeAttribute("data-disabled");
    }
    catch(ex)
    {
@@ -37,6 +68,7 @@ window.onload = function()
 
 function getSetting(name) { return StorageUtilities.ReadLocal("mini_journal_" + name) }
 function setSetting(name, value) { StorageUtilities.WriteLocal("mini_journal_" + name, value); }
+function safety(func) { try { func(); } catch(ex) { console.log(ex); } }
 
 function setupValueLinks(element)
 {
@@ -69,35 +101,25 @@ function setupScrollTest()
 function setupToggleSetting(name, checkbox, checktrue, checkfalse)
 {
    var change = e => {
-      setSetting(name, checkbox.checked);
+      safety(() => setSetting(name, checkbox.checked));
       if(checkbox.checked)
          checktrue(checkbox, name);
       else
          checkfalse(checkbox, name);
    };
    checkbox.oninput = change;
-   checkbox.checked = getSetting(name);
+   safety(() => checkbox.checked = getSetting(name));
    change();
 }
 
-function setupFlip(flipper)
+function setupExport(exp)
 {
+   var url = new URL(location.href);
+   url.searchParams.set("export", "1");
+   exp.href = url.toString();
 }
 
-function setupChat(thechat, chatelement)
+function performExport()
 {
-   var chatchange = e => {
-      setSetting("pagechat", thechat.checked);
-      if(thechat.checked)
-         chatelement.removeAttribute("data-hidden");
-      else
-         chatelement.setAttribute("data-hidden", "");
-   };
-   thechat.oninput = chatchange;
-
-   if(getSetting("pagechat"))
-   {
-      flipper.checked = true;
-      flipchange();
-   }
+   //First, 
 }
