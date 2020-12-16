@@ -127,17 +127,20 @@ function parsePreamble(data)
 
    if(end < 0) return null;
 
-   var preamble = data.substr(1, end + 1);
+   var preamble = data.substr(1, end);
    var parts = preamble.split(":");
 
    if(parts.length < 2) return null;
 
-   return { skip: end + 1, name: parts[0], version: parts[1]};
+   var result = { skip: end + 1, preamble : preamble, name: parts[0], version: parts[1],
+      date : parts[2] };
+   
+   return result;
 }
 
 function createPreamble(name, version)
 {
-   return "#" + name + ":" + version + "#";
+   return "#" + name + ":" + version + ":" + (new Date()).toISOString() + "#";
 }
 
 function setRunning(element) { element.css("background-color", "lightgreen"); }

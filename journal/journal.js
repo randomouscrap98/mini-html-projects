@@ -13,6 +13,14 @@ var globals =
    preamble: {}
 };
 
+var symbols = 
+{
+   newpage : "+",
+   text : "\"",
+   tool : "$",
+   stroke : "-"
+};
+
 function toolData(tool, size, color) {
    this.tool = tool;    //"none";
    this.size = size;    //0;
@@ -54,41 +62,7 @@ window.onload = function()
 
          setupScrollTest();
 
-         //Go out and get initial data. If it's empty, we alert to creating the
-         //new data, then reload the page (it's just easier). Otherwise, we
-         //pull the (maybe huge) initial blob 
-         $.getJSON(endpoint(globals.roomname) + "/json?nonblocking=true")
-            .done(data =>
-            {
-               if(data.used == 0)
-               {
-                  if(confirm("This appears to be a brand new journal, are you sure you want to create one here?"))
-                  {
-                     //POST the preamble and move on to reload
-                     post(endpoint(globals.roomname), createPreamble(system.name, system.version), d => location.reload());
-                     return;
-                  }
-               }
-               else
-               {
-                  globals.roomdata = data.data;
-                  globals.preamble = parsePreamble(globals.roomdata);
-
-                  if(!(globals.preamble && globals.preamble.version && globals.preamble.version.endsWith("f1")))
-                  {
-                     show(incompatibleformatscreen);
-                     return;
-                  }
-
-                  refreshInfo(data);
-                  enable(sidebar);
-               }
-
-            })
-            .fail(data =>
-            {
-               show(initialchunkfailscreen);
-            });
+         setupInitialStream();
       }
       else
       {
@@ -213,4 +187,53 @@ function performExport(room)
 function refreshInfo(data)
 {
    percent.innerHTML = (100 * (data.used / data.limit)).toFixed(2) + "%";
+}
+
+function setupInitialStream()
+{
+   //Go out and get initial data. If it's empty, we alert to creating the
+   //new data, then reload the page (it's just easier). Otherwise, we
+   //pull the (maybe huge) initial blob 
+   $.getJSON(endpoint(globals.roomname) + "/json?nonblocking=true")
+      .done(data =>
+      {
+         if(data.used == 0)
+         {
+            if(confirm("This appears to be a brand new journal, are you sure you want to create one here?"))
+            {
+               //POST the preamble and move on to reload
+               post(endpoint(globals.roomname), 
+                  createPreamble(system.name, system.version) + newPageString(), 
+                  d => location.reload());
+               return;
+            }
+         }
+         else
+         {
+            globals.roomdata = data.data;
+            globals.preamble = parsePreamble(globals.roomdata);
+
+            if(!(globals.preamble && globals.preamble.version && globals.preamble.name == system.name &&
+               globals.preamble.version.endsWith("f1")))
+            {
+               show(incompatibleformatscreen);
+               return;
+            }
+
+            refreshInfo(data);
+            enable(sidebar);
+         }
+
+      })
+      .fail(data =>
+      {
+         show(initialchunkfailscreen);
+      });
+}
+
+function newPageString()
+{
+   var pageData = { date : (new Date()).toISOString() };
+   var pdatastr = JSON.stringify(pageData);
+   return symbols.newpage + StreamConvert.IntToChars(pdatastr.length, 2) + pdatastr;
 }
