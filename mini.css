@@ -15,7 +15,7 @@ body {
    text-decoration: none;
    cursor: wait;
 }
-[data-hidden] { display: none; }
+[data-hidden] { display: none !important; }
 .right { flex-direction: row-reverse; }
 .inline { display: inline-block; }
 .inline > * { vertical-align: middle; }
@@ -28,7 +28,7 @@ body {
 .striped:nth-child(even) { background-color: rgba(0,0,0,0.03); }
 
 input, textarea, button {
-   border-radius: none;
+   border-radius: 0;
    border: 1px solid #AAA;
    outline: none;
 }

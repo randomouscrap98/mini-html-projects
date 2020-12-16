@@ -14,18 +14,25 @@ function toolData(tool, size, color) {
 
 window.onload = function()
 {
-   setupValueLinks(document);   
-   setupRadioEmulators(document);
-   setupToggleSetting("pageflip", pageflip, 
-      () => document.body.setAttribute("data-flipped", ""),
-      () => document.body.removeAttribute("data-flipped"));
-   setupToggleSetting("pagechat", pagechat, 
-      () => chat.removeAttribute("data-hidden"),
-      () => chat.setAttribute("data-hidden", ""));
+   try
+   {
+      setupValueLinks(document);   
+      setupRadioEmulators(document);
+      setupToggleSetting("pageflip", pageflip, 
+         () => document.body.setAttribute("data-flipped", ""),
+         () => document.body.removeAttribute("data-flipped"));
+      setupToggleSetting("pagechat", pagechat, 
+         () => chat.removeAttribute("data-hidden"),
+         () => chat.setAttribute("data-hidden", ""));
 
-   HTMLUtilities.SimulateScrollbar(scrollbar, scrollbarbar, scrollblock, false);
+      HTMLUtilities.SimulateScrollbar(scrollbar, scrollbarbar, scrollblock, false);
 
-   setupScrollTest();
+      setupScrollTest();
+   }
+   catch(ex)
+   {
+      alert("Exception during load: " + ex.message);
+   }
 };
 
 function getSetting(name) { return StorageUtilities.ReadLocal("mini_journal_" + name) }
@@ -54,8 +61,9 @@ function setupRadioEmulators(element)
 function setupScrollTest()
 {
    var ctx = drawing.getContext("2d");
+   ctx.font = "10px Arial";
    for(var i = 0; i < 16000; i += 100)
-      ctx.fillText(i, 10, i);
+      ctx.fillText(String(i), 10, i);
 }
 
 function setupToggleSetting(name, checkbox, checktrue, checkfalse)

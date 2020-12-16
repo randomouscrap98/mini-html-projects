@@ -13,6 +13,7 @@ body[data-flipped] {
 
 canvas {
    background-color: white;
+   background-color: red;
 }
 
 #window {
@@ -30,34 +31,41 @@ canvas {
    width: 100%;
 }
 
-#textbox {
-   width: 100%;
-   border-bottom: 1px solid #999;
+/* Chat */
+#chat {
+   display: flex;
+   flex-direction: column;
+   width: 600px;
+   min-width: 300px;
+   flex: 0 1 auto;
 }
 
-#messages {
-   background-color: white;
+#messagecontainer {
+   flex: auto;
+   overflow-x: hidden;
+   overflow-y: auto;
 }
 
 /* Message form */
 #messageform {
-   margin: 0;
-   display: flex;
+   flex: none;
 }
 
-#messageform .inputblock {
-   display: flex;
-   flex-direction: column;
+#messageform > * {
+   width: 100%;
 }
 
 #messageform textarea {
-   flex: auto;
+   resize: vertical;
+   height: 5rem;
+   max-height: 15rem;
+   min-height: 2rem;
 }
 
 /* Scrollbar */
 #scrollbar {
    position: relative;
-   background-color: #DDD;
+   background-color: #E7E7E7;
    width: 10px;
    flex: none;
 }
@@ -103,6 +111,10 @@ canvas {
 #pagecontrols {
    font-size: 0.8em;
    padding: 0.2em;
+}
+
+#pagecontrols label {
+   display: block;
 }
 /*::-webkit-scrollbar {
    -webkit-appearance: none;
