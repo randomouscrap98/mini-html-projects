@@ -21,12 +21,10 @@ canvas {
 }
 
 #window {
-   flex: 0 2 1000px; /*auto; /*1000px;*/
+   flex: 0 2 1000px;
    background-color: #EEE;
    overflow: hidden;
    position: relative;
-   /*overflow-x: hidden;
-   overflow-y: auto;*/
 }
 
 #scrollblock {
@@ -51,12 +49,9 @@ canvas {
    font-size: 0.8em;
 }
 
-.wholemessage {
-   padding: 0.05em 0.2em;
-}
-.message {
-   white-space: pre-wrap;
-}
+#messages { padding: 0.1em 0; }
+.wholemessage { padding: 0.05em 0.2em; }
+.message { white-space: pre-wrap; }
 .username { font-weight: bold; }
 .username::after { content: ":"; }
 
@@ -131,11 +126,12 @@ canvas {
 #pagecontrols {
    flex: auto;
    font-size: 0.8em;
-   padding: 0.2em;
+   padding: 0.2em 0;
 }
 
-#pagecontrols label {
+#pagecontrols > * {
    display: block;
+   margin: 0.2em 0.2em;
 }
 
 #systemcontrols {

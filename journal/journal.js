@@ -12,7 +12,8 @@ var globals =
    roomname: "",
    preamble: {},
    chatpointer: 0,
-   drawpointer: 0
+   drawpointer: 0,
+   scheduledScrolls: []
 };
 
 var constants =
@@ -20,7 +21,8 @@ var constants =
    roomPrepend : "journal_",
    settingPrepend : "mini_journal_",
    messageLengthBytes : 2,
-   maxMessageRender : 20, //per frame
+   maxMessageRender : 100, //per frame
+   maxStrokeRender : 1000, //per frame
 };
 
 var symbols = 
@@ -42,6 +44,8 @@ window.onload = function()
 {
    try
    {
+      setupComputedConstants();
+
       var url = new URL(location.href);
 
       if(!globals.roomname)
@@ -97,9 +101,7 @@ window.onload = function()
 function getSetting(name) { return StorageUtilities.ReadLocal(constants.settingPrepend + name) }
 function setSetting(name, value) { StorageUtilities.WriteLocal(constants.settingPrepend + name, value); }
 function safety(func) { try { func(); } catch(ex) { console.log(ex); } }
-
-//Perform initial setup that's ALWAYS done regardless of load type (export/etc)
-//function alwaysSetup() { }
+function setStatus(status) { percent.setAttribute("data-status", status); }
 
 function setupValueLinks(element)
 {
@@ -141,6 +143,11 @@ function setupToggleSetting(name, checkbox, checktrue, checkfalse)
    checkbox.oninput = change;
    safety(() => checkbox.checked = getSetting(name));
    change();
+}
+
+function setupComputedConstants()
+{
+   constants.messageHeaderLength = 1 + constants.messageLengthBytes;
 }
 
 function setupChat()
@@ -253,8 +260,7 @@ function pullInitialStream(continuation)
          }
          else
          {
-            globals.roomdata = data.data;
-            globals.preamble = parsePreamble(globals.roomdata);
+            globals.preamble = parsePreamble(data.data);
 
             if(!(globals.preamble && globals.preamble.version && globals.preamble.name == system.name &&
                globals.preamble.version.endsWith("f2")))
@@ -263,9 +269,11 @@ function pullInitialStream(continuation)
                return;
             }
 
-            refreshInfo(data);
+            handleIncomingData(data);
             enable(sidebar);
-            if(continuation) continuation();
+
+            if(continuation) 
+               continuation();
          }
 
       })
@@ -279,9 +287,7 @@ function startLongPoller()
 {
    queryEnd(globals.roomname, globals.roomdata.length, (data, start) =>
    {
-      setStatus("ok");
-      refreshInfo(data);
-      globals.roomdata += data.data;
+      handleIncomingData(data);
       return data.data.length;
    }, () =>
    { 
@@ -289,9 +295,12 @@ function startLongPoller()
    });
 }
 
-function setStatus(status)
+
+function handleIncomingData(data)
 {
-   percent.setAttribute("data-status", status);
+   globals.roomdata += data.data;
+   setStatus("ok");
+   refreshInfo(data);
 }
 
 function newMessageChunk(username, message)
@@ -349,6 +358,12 @@ function dataScan(start, func)
 
 function frameFunction()
 {
+   if(globals.scheduledScrolls.length > 0)
+   {
+      globals.scheduledScrolls.forEach(x => x.scrollTop = x.scrollHeight);
+      globals.scheduledScrolls = [];
+   }
+
    //First, perform self-lines
    //if(drw.currentX !== null)
    //{
@@ -396,48 +411,32 @@ function frameFunction()
    //   system.receivedIndex = 0;
    //}
 
-   ////While we have pending lines, keep track of frames. We only care about
-   ////frames to post these lines anyway.
-   //if(system.lines.length > 0)
-   //   frameCounter++;
-
-   ////Post your lines every half a second. Probably ok...
-   //if(frameCounter >= 30)
-   //{
-   //   post(endpoint(system.room), createOptimizedLines(system.lines));
-   //   system.lines = [];
-   //   frameCounter = 0;
-   //}
 
    //The message handler
    var totalMessages = 0;
-   var messagesFragment = new DocumentFragment();
-   var msgHeaderLength = 1 + constants.messageLengthBytes;
+   var messagesFragment;
 
    dataScan(globals.chatpointer, (start, length, cc) =>
    {
-      console.log("chat datascan", start, length, cc);
-
       if(cc != symbols.text)
          return;
 
+      //A small optimization so we're not creating a document fragment every frame
+      if(!messagesFragment)
+         messagesFragment = new DocumentFragment();
+
       messagesFragment.appendChild(createMessageElement(parseMessage(
-         globals.roomdata.substr(start + msgHeaderLength, length - msgHeaderLength))));
+         globals.roomdata.substr(start + constants.messageHeaderLength, length - constants.messageHeaderLength))));
 
       globals.chatpointer = start + length;
 
-      console.log("chat datascan FOUND", globals.chatpointer, totalMessages);
-
-      if(++totalMessages > constants.maxMessageRender)
-      {
-         return true;
-      }
+      return ++totalMessages > constants.maxMessageRender;
    });
 
    if(totalMessages > 0)
    {
       messages.appendChild(messagesFragment);
-      messagecontainer.scrollTop = messagecontainer.scrollHeight;
+      globals.scheduledScrolls.push(messagecontainer);
    }
 
    requestAnimationFrame(frameFunction);
