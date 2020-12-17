@@ -23,6 +23,7 @@ var constants =
    messageLengthBytes : 2,
    maxMessageRender : 100, //per frame
    maxStrokeRender : 1000, //per frame
+   maxScan : 5000,         //per frame
 };
 
 var symbols = 
@@ -165,6 +166,8 @@ function changePage(increment)
 {
    globals.drawpointer = 0;
    setPageNumber(getPageNumber() + increment);
+   CanvasUtilities.Clear(drawing);
+
    if(getPageNumber() <= 0)
       pagebackward.setAttribute("data-disabled", "");
    else
@@ -343,12 +346,13 @@ function dataScan(start, func)
 
    var current = start;
    var clength = 0;
+   var scanned = 0;
    var cc;
 
    //Now start looping
    while(true)
    {
-      if(current >= globals.roomdata.length)
+      if(current >= globals.roomdata.length || scanned > constants.maxScan)
          return;
 
       cc = globals.roomdata.charAt(current);
@@ -360,7 +364,7 @@ function dataScan(start, func)
       }
       else if(cc == symbols.stroke || cc == symbols.lines)
       {
-         clength = globals.roomdata.indexOf(symobls.cap, current);
+         clength = globals.roomdata.indexOf(symobls.cap, current) - current + 1;
       }
       else
       {
@@ -375,6 +379,7 @@ function dataScan(start, func)
          return;
       
       current += clength;
+      scanned++;
    }
 }
 
