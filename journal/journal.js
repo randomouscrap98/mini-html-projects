@@ -24,6 +24,7 @@ var constants =
    roomPrepend : "journal_",
    settingPrepend : "mini_journal_",
    messageLengthBytes : 2,
+   maxLines : 5000,        //A single stroke (or fill) can't have more than this
    maxMessageRender : 100, //per frame
    maxStrokeRender : 1000, //per frame
    maxScan : 5000,         //per frame
@@ -84,7 +85,7 @@ window.onload = function()
 
          HTMLUtilities.SimulateScrollbar(scrollbar, scrollbarbar, scrollblock, false);
 
-         setupScrollTest();
+         //setupScrollTest();
 
          pullInitialStream(() =>
          {
@@ -402,8 +403,12 @@ function dataScan(start, func)
    }
 }
 
+//For now, the big function that generates the generic "lines" the journal
+//uses. The journal doesn't care about alpha or aliasing or any of that, it
+//only draws collections of pixel perfect lines.
 function generatePendingLines(drw, pending)
 {
+   //If the pending stroke isn't active, activate it (since they're asking for generation)
    if(!pending.active)
    {
       pending.active = true;
@@ -416,24 +421,94 @@ function generatePendingLines(drw, pending)
 
    var currentLines = [];
 
+   //There are times when an active stroke will not accept new lines (because
+   //it's too long or something, for instance a huge flood fill)
    if(pending.accepting)
    {
+      //Simple stroke
       if(pending.tool == "eraser" || pending.tool == "pen")
       {
          currentLines.push(new MiniDraw.LineData(pending.size, pending.color,
             Math.round(drw.lastX), Math.round(drw.lastY), 
             Math.round(drw.currentX), Math.round(drw.currentY)));
       }
+      //Complex big boy fill
       else if(pending.tool == "fill")
       {
-         //Do the east/west thing, generate the lines, IGNORE future strokes
+         flood(drw, currentLines, pending.color);
          pending.accepting = false; //DON'T do any more fills on this stroke!!
+      }
+
+      //if the amount of lines we're about to add is too much, remove from the
+      //current lines
+      if(pending.lines.length + currentLines.length > constants.maxLines)
+      {
+         console.log("Too many lines! Pending: ", pending.lines.length, " Next: ", currentLines.length);
+         currentLines.splice(constants.maxLines - pending.lines.length);
+         pending.accepting = false;
       }
 
       pending.lines.concat(currentLines);
    }
 
    return currentLines;
+}
+
+function flood(drw, currentLines, color)
+{
+   //Do the east/west thing, generate the lines, IGNORE future strokes
+   var context = drw._canvas.getContext("2d");
+   var iData = context.getImageData(0, 0, drw._canvas.width, drw._canvas.height);
+   var img = iData.data;
+   var queue = [[Math.round(drw.currentX), Math.round(drw.currentY)]];
+   var rIndex = MiniDraw.GetIndex(iData, drw.currentX, drw.currentY);
+   var replaceColor = [img[rIndex], img[rIndex+1], img[rIndex+2], img[rIndex+3]];
+   console.log("Flood into color: ", replaceColor, drw.currentX, drw.currentY);
+   var west, east, i, j;
+   var shouldFill = (x, y) =>
+   {
+      if(x < 0 || y < 0 || x >= drw._canvas.width || y >= drw._canvas.height)
+         return false;
+      var i = MiniDraw.GetIndex(iData, x, y);
+      return img[i] == replaceColor[0] && img[i + 1] == replaceColor[1] &&
+         img[i + 2] == replaceColor[2] && img[i + 3] == replaceColor[3];
+   };
+   while(queue.length)
+   {
+      var p = queue.pop();
+      if(shouldFill(p[0],p[1]))
+      {
+         //March left until not should fill, march right
+         for(west = p[0] - 1; west >= 0 && shouldFill(west, p[1]); west--);
+         for(east = p[0] + 1; west < drw._canvas.width && shouldFill(east, p[1]); east++);
+
+         //Bring them back in range
+         west++; east--;
+
+         currentLines.push(new MiniDraw.LineData(1, color, west, p[1], east, p[1]));
+
+         //Don't allow huge fills at all, just quit
+         if(currentLines.length > constants.maxLines)
+         {
+            alert("Flood fill area too large!");
+            currentLines.length = 0;
+            break;
+         }
+
+         //Now travel from west to east, adding all pixels (we check later anyway)
+         for(i = west; i <= east; i++)
+         {
+            //Just has to be DIFFERENT, not the color we're filling.
+            j = MiniDraw.GetIndex(iData, i, p[1]);
+            img[j + 3] = (img[j + 3] + 10) & 255;
+            //Queue the north and south (regardless of fill requirement)
+            queue.push([i, p[1] + 1]);
+            queue.push([i, p[1] - 1]);
+         }
+      }
+   }
+
+   console.log("Flood lines: ", currentLines.length);
 }
 
 function frameFunction()

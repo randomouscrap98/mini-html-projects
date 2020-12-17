@@ -285,6 +285,10 @@ var MiniDraw =
                ld.width, ld.width);
          }
       }
+   },
+   GetIndex : function(idata, x, y)
+   {
+      return 4 * (x + y * idata.width);
    }
 };
 
