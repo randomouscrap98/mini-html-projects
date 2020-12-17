@@ -39,13 +39,6 @@ var symbols =
    cap : "'"
 };
 
-//function toolData(tool, size, color, page) {
-//   this.tool = tool;    //"none";
-//   this.size = size;    //0;
-//   this.color = color;  //"#XXXXXX";
-//   this.page = page;    //
-//}
-
 window.onload = function()
 {
    try
