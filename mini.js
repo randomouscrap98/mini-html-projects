@@ -196,6 +196,10 @@ function randomLetters(count, r)
 var StreamConvert =
 {
    charStart : 48,
+   MaxValue : function(bytes)
+   {
+      return Math.pow(2, 6 * bytes);
+   },
    IntToChars : function (int, chars)
    {
       chars = chars || 1;

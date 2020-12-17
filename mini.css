@@ -40,3 +40,11 @@ input[type="color"] {
 input:focus, textarea:focus {
    border: 1px solid blue;
 }
+
+.pixelated {
+   image-rendering: moz-crisp-edges;
+   image-rendering: crisp-edges;
+   image-rendering: optimizespeed;
+   image-rendering: pixelated;
+}
+

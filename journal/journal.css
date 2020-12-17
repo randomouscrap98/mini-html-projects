@@ -21,7 +21,7 @@ canvas {
 }
 
 #window {
-   flex: 0 1 1000px; /*auto; /*1000px;*/
+   flex: 0 2 1000px; /*auto; /*1000px;*/
    background-color: #EEE;
    overflow: hidden;
    position: relative;
