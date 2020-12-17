@@ -15,6 +15,7 @@ var globals =
    drawpointer: 0,
    drawer: null,
    context: null,
+   pendingStroke: {},
    scheduledScrolls: []
 };
 
@@ -36,12 +37,12 @@ var symbols =
    cap : "'"
 };
 
-function toolData(tool, size, color, page) {
-   this.tool = tool;    //"none";
-   this.size = size;    //0;
-   this.color = color;  //"#XXXXXX";
-   this.page = page;    //
-}
+//function toolData(tool, size, color, page) {
+//   this.tool = tool;    //"none";
+//   this.size = size;    //0;
+//   this.color = color;  //"#XXXXXX";
+//   this.page = page;    //
+//}
 
 window.onload = function()
 {
@@ -113,6 +114,7 @@ function getPageNumber() { return Number(pagenumber.textContent) - 1; }
 function setPageNumber(v) { pagenumber.textContent = v+1; }
 function getLineSize() { return Number(sizetext.value); }
 function getLineColor() { return colortext.value; }
+function getTool() { return tools.querySelector("[data-selected]").id.replace("tool_", ""); }
 
 function setupComputedConstants()
 {
@@ -145,6 +147,8 @@ function setupScrollTest()
    ctx.font = "10px Arial";
    for(var i = 0; i < 8000; i += 100)
       ctx.fillText(String(i), 10, i);
+   for(var i = 0; i < 1000; i += 100)
+      ctx.fillRect(i, 0, 1, 8000);
 }
 
 function setupToggleSetting(name, checkbox, checktrue, checkfalse)
@@ -398,6 +402,40 @@ function dataScan(start, func)
    }
 }
 
+function generatePendingLines(drw, pending)
+{
+   if(!pending.active)
+   {
+      pending.active = true;
+      pending.accepting = true;
+      pending.size = getLineSize();
+      pending.tool = getTool();
+      pending.color = pending.tool == "eraser" ? null : getLineColor();
+      pending.lines = [];
+   }
+
+   var currentLines = [];
+
+   if(pending.accepting)
+   {
+      if(pending.tool == "eraser" || pending.tool == "pen")
+      {
+         currentLines.push(new MiniDraw.LineData(pending.size, pending.color,
+            Math.round(drw.lastX), Math.round(drw.lastY), 
+            Math.round(drw.currentX), Math.round(drw.currentY)));
+      }
+      else if(pending.tool == "fill")
+      {
+         //Do the east/west thing, generate the lines, IGNORE future strokes
+         pending.accepting = false; //DON'T do any more fills on this stroke!!
+      }
+
+      pending.lines.concat(currentLines);
+   }
+
+   return currentLines;
+}
+
 function frameFunction()
 {
    if(globals.scheduledScrolls.length > 0)
@@ -409,12 +447,9 @@ function frameFunction()
    //First, perform self-lines
    if(globals.drawer.currentX !== null)
    {
-      var line = new MiniDraw.LineData(getLineSize(), getLineColor(),
-         Math.round(globals.drawer.lastX), Math.round(globals.drawer.lastY), 
-         Math.round(globals.drawer.currentX), Math.round(globals.drawer.currentY));
-      
-      //system.lines.push(line);
-      MiniDraw.SimpleLine(globals.context, line);
+      var lines = generatePendingLines(globals.drawer, globals.pendingStroke);
+
+      lines.forEach(x => MiniDraw.SimpleLine(globals.context, x));
 
       //These are NOT performed every frame because the drawing events are
       //NOT synchronized to the frame, so we could be removing that very
@@ -423,6 +458,14 @@ function frameFunction()
       globals.drawer.lastY = globals.drawer.currentY;
       globals.drawer.currentX = null;
       globals.drawer.currentY = null;
+   }
+
+   //Post lines when we're done (why is this in the frame drawer again?)
+   if(!globals.drawer.currentlyDrawing && globals.pendingStroke.active)
+   {
+      //Usually you'd post here
+      console.log("Posting stroke!");
+      globals.pendingStroke.active = false;
    }
 
    ////Then, perform received lines (could also be our own lol)

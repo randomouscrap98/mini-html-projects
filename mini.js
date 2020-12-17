@@ -193,10 +193,13 @@ function randomLetters(count, r)
    return result;
 }
 
+//This assume all ACTUAL draw actions happen on frame rather than 
+//on instantaneous input.
 function attachBasicDrawerAction(drawer)
 {
    drawer.currentX = null;
    drawer.currentY = null;
+   drawer.currentlyDrawing = false;
 
    var ignore;
    var lastOffTarget = false;
@@ -221,6 +224,7 @@ function attachBasicDrawerAction(drawer)
          //Always store current position.
          drawer.currentX = data.x;
          drawer.currentY = data.y;
+         drawer.currentlyDrawing = true;
       }
 
       lastOffTarget = !data.onTarget;
@@ -230,7 +234,10 @@ function attachBasicDrawerAction(drawer)
       //keep track of a like "stroke id" for us. Consider doing this.
       if ((data.action & (CursorActions.Drag | CursorActions.End | CursorActions.Interrupt)) == 
          (CursorActions.End | CursorActions.Drag))
+      {
          ignore = false;
+         drawer.currentlyDrawing = false;
+      }
    };
 }
 
