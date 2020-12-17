@@ -483,7 +483,7 @@ function parseMessage(fullMessage)
    return result;
 }
 
-function createMessageElement(parsed) //start, length, cc)
+function createMessageElement(parsed)
 {
    var msgelem = document.createElement("span");
    msgelem.className = "message";
@@ -501,9 +501,3 @@ function createMessageElement(parsed) //start, length, cc)
    return msgcontainer;
 }
 
-//function newPageString()
-//{
-//   var pageData = { date : (new Date()).toISOString() };
-//   var pdatastr = JSON.stringify(pageData);
-//   return symbols.newpage + StreamConvert.IntToChars(pdatastr.length, 2) + pdatastr;
-//}

@@ -196,6 +196,7 @@ function randomLetters(count, r)
 var StreamConvert =
 {
    charStart : 48,
+   varVal : 32,
    MaxValue : function(bytes)
    {
       return Math.pow(2, 6 * bytes);
@@ -222,6 +223,52 @@ var StreamConvert =
       var result = 0;
       for(var i = 0; i < count; i++)
          result += (chars.charCodeAt(i + start) - StreamConvert.charStart) << (i * 6);
+      return result;
+   },
+   //A dumb form of 2's compliment that doesn't carry the leading 1's
+   SpecialToSigned : function(special)
+   {
+      if(special & 1)
+         return ((special >> 1) * -1) -1
+      else
+         return special >> 1;
+   },
+   SignedToSpecial : function(value)
+   {
+      if(value >= 0)
+         return value << 1;
+      else
+         return ((value << 1) * -1) - 1;
+   },
+   IntToVariableWidth : function(value)
+   {
+      var result = "";
+      var c = 0;
+
+      do 
+      {
+         c = value & (StreamConvert.varVal - 1);
+         value = value >> 5;
+         if(value) c += StreamConvert.varVal;
+         result += String.fromCharCode(StreamConvert.charStart + c);
+      } 
+      while(value > 0);
+
+      return result;
+   },
+   VariableWidthToInt : function(chars, start)
+   {
+      var result = {value:0,length:0};
+      var c = 0;
+
+      do 
+      {
+         c = chars.charCodeAt(start + result.length) - StreamConvert.charStart;
+         result.value += (c & (StreamConvert.varVal - 1)) << (5 * result.length);
+         result.length++;
+      } 
+      while(c & StreamConvert.varVal);
+
       return result;
    }
 };
