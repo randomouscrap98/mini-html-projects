@@ -61,6 +61,8 @@ window.onload = function()
          () => show(chat),
          () => hide(chat));
 
+      setupPageControls();
+
       if(!document.body.hasAttribute("data-export"))
       {
          if(!globals.roomname)
@@ -102,6 +104,13 @@ function getSetting(name) { return StorageUtilities.ReadLocal(constants.settingP
 function setSetting(name, value) { StorageUtilities.WriteLocal(constants.settingPrepend + name, value); }
 function safety(func) { try { func(); } catch(ex) { console.log(ex); } }
 function setStatus(status) { percent.setAttribute("data-status", status); }
+function getPageNumber() { return Number(pagenumber.textContent) - 1; }
+function setPageNumber(v) { pagenumber.textContent = v+1; }
+
+function setupComputedConstants()
+{
+   constants.messageHeaderLength = 1 + constants.messageLengthBytes;
+}
 
 function setupValueLinks(element)
 {
@@ -145,10 +154,23 @@ function setupToggleSetting(name, checkbox, checktrue, checkfalse)
    change();
 }
 
-function setupComputedConstants()
+function setupPageControls()
 {
-   constants.messageHeaderLength = 1 + constants.messageLengthBytes;
+   pagebackward.onclick = () => changePage(-1);
+   pageforward.onclick = () => changePage(1);
 }
+
+//This might be a dumb function idk
+function changePage(increment)
+{
+   globals.drawpointer = 0;
+   setPageNumber(getPageNumber() + increment);
+   if(getPageNumber() <= 0)
+      pagebackward.setAttribute("data-disabled", "");
+   else
+      pagebackward.removeAttribute("data-disabled");
+}
+
 
 function setupChat()
 {

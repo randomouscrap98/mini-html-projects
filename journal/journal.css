@@ -123,13 +123,13 @@ canvas {
    background-color: skyblue;
 }
 
-#pagecontrols {
+#webcontrols {
    flex: auto;
    font-size: 0.8em;
    padding: 0.2em 0;
 }
 
-#pagecontrols > * {
+#webcontrols > * {
    display: block;
    margin: 0.2em 0.2em;
 }
@@ -139,12 +139,26 @@ canvas {
    font-size: 0.8em;
 }
 
-#systemcontrols > * {
-}
-
-#info > * {
+#systemcontrols .text {
    display: block;
    padding: 0.2em;
+}
+
+#pagenumberdisplay {
+   padding: 0.2em;
+   font-family: monospace;
+   font-size: 1.1em;
+   background: #F7F7F7;
+   border-top: 1px solid #AAA;
+}
+
+#pagemovement { 
+   display: flex; 
+}
+
+#pagemovement button {
+   flex: auto;
+   cursor: pointer;
 }
 
 #percent { background-color: #DDD; }
