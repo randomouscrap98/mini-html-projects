@@ -132,7 +132,7 @@ function parsePreamble(data)
 
    if(parts.length < 2) return null;
 
-   var result = { skip: end + 1, preamble : preamble, name: parts[0], version: parts[1],
+   var result = { skip: end + 2, preamble : preamble, name: parts[0], version: parts[1],
       date : parts[2] };
    
    return result;

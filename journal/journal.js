@@ -11,11 +11,16 @@ var globals =
    roomdata: "",
    roomname: "",
    preamble: {},
+   chatpointer: 0,
+   drawpointer: 0
 };
 
 var constants =
 {
-   messageLengthBytes : 2
+   roomPrepend : "journal_",
+   settingPrepend : "mini_journal_",
+   messageLengthBytes : 2,
+   maxMessageRender : 20, //per frame
 };
 
 var symbols = 
@@ -40,7 +45,7 @@ window.onload = function()
       var url = new URL(location.href);
 
       if(!globals.roomname)
-         globals.roomname = url.searchParams.get("room");
+         globals.roomname = constants.roomPrepend + url.searchParams.get("room");
 
       if(url.searchParams.get("export") == 1)
          performExport(globals.roomname);
@@ -63,16 +68,24 @@ window.onload = function()
          setupValueLinks(document);   
          setupRadioEmulators(document);
          setupExport(document.getElementById("export"));
+         setupChat();
 
          HTMLUtilities.SimulateScrollbar(scrollbar, scrollbarbar, scrollblock, false);
 
          setupScrollTest();
 
-         setupInitialStream();
+         pullInitialStream(() =>
+         {
+            //DON'T start the frame function until we have the initial stream, this isn't an export!
+            startLongPoller();
+            frameFunction(); 
+         });
       }
       else
       {
-         //Exported, load data from attribute.
+         //Exported, disable some stuff and don't set up listeners/etc. Can
+         //instantly setup the frame function!
+         frameFunction();
       }
    }
    catch(ex)
@@ -81,8 +94,8 @@ window.onload = function()
    }
 };
 
-function getSetting(name) { return StorageUtilities.ReadLocal("mini_journal_" + name) }
-function setSetting(name, value) { StorageUtilities.WriteLocal("mini_journal_" + name, value); }
+function getSetting(name) { return StorageUtilities.ReadLocal(constants.settingPrepend + name) }
+function setSetting(name, value) { StorageUtilities.WriteLocal(constants.settingPrepend + name, value); }
 function safety(func) { try { func(); } catch(ex) { console.log(ex); } }
 
 //Perform initial setup that's ALWAYS done regardless of load type (export/etc)
@@ -128,6 +141,19 @@ function setupToggleSetting(name, checkbox, checktrue, checkfalse)
    checkbox.oninput = change;
    safety(() => checkbox.checked = getSetting(name));
    change();
+}
+
+function setupChat()
+{
+   var form = $("#messageform");
+   enterSubmits($("#message"), form);
+
+   form.submit(function()
+   {
+      post(endpoint(globals.roomname), newMessageChunk(username.value, message.value));
+      message.value = "";
+      return false;
+   });
 }
 
 function setupExport(exp)
@@ -206,7 +232,7 @@ function refreshInfo(data)
    version.innerHTML = system.version;
 }
 
-function setupInitialStream()
+function pullInitialStream(continuation)
 {
    //Go out and get initial data. If it's empty, we alert to creating the
    //new data, then reload the page (it's just easier). Otherwise, we
@@ -239,6 +265,7 @@ function setupInitialStream()
 
             refreshInfo(data);
             enable(sidebar);
+            if(continuation) continuation();
          }
 
       })
@@ -246,6 +273,25 @@ function setupInitialStream()
       {
          show(initialchunkfailscreen);
       });
+}
+
+function startLongPoller()
+{
+   queryEnd(globals.roomname, globals.roomdata.length, (data, start) =>
+   {
+      setStatus("ok");
+      refreshInfo(data);
+      globals.roomdata += data.data;
+      return data.data.length;
+   }, () =>
+   { 
+      setStatus("error");
+   });
+}
+
+function setStatus(status)
+{
+   percent.setAttribute("data-status", status);
 }
 
 function newMessageChunk(username, message)
@@ -271,7 +317,7 @@ function dataScan(start, func)
    //Now start looping
    while(true)
    {
-      if(current > globals.roomdata.length)
+      if(current >= globals.roomdata.length)
          return;
 
       cc = globals.roomdata.charAt(current);
@@ -285,6 +331,11 @@ function dataScan(start, func)
       {
          clength = globals.roomdata.indexOf(symobls.cap, current);
       }
+      else
+      {
+         console.log("Unrecoverable data error! Unknown character in stream!");
+         return;
+      }
 
       if(clength <= 0)
          clength = globals.roomdata.length - current;
@@ -294,6 +345,134 @@ function dataScan(start, func)
       
       current += clength;
    }
+}
+
+function frameFunction()
+{
+   //First, perform self-lines
+   //if(drw.currentX !== null)
+   //{
+   //   var line = new LineData(system.lineWidth, system.color,
+   //      Math.round(drw.lastX), Math.round(drw.lastY), 
+   //      Math.round(drw.currentX), Math.round(drw.currentY));
+   //   
+   //   system.lines.push(line);
+   //   system.rawTool(system.context, line);
+
+   //   //These are NOT performed every frame because the drawing events are
+   //   //NOT synchronized to the frame, so we could be removing that very
+   //   //important "lastX lastY" data
+   //   drw.lastX = drw.currentX;
+   //   drw.lastY = drw.currentY;
+   //   drw.currentX = null;
+   //   drw.currentY = null;
+   //}
+
+   ////Then, perform received lines (could also be our own lol)
+   //if(system.receivedLines.length > system.receivedIndex)
+   //{
+   //   drawAccumulator += Math.max(0.5, 
+   //      Math.pow(system.receivedLines.length - system.receivedIndex, 1.2) / 120);
+   //   drawReceiveCount = Math.floor(drawAccumulator);
+   //
+   //   //Only draw lines if... we've accumulated enough
+   //   if(drawReceiveCount > 0)
+   //   {
+   //      for(var i = 0; i < drawReceiveCount; i++) 
+   //         system.rawTool(system.context, system.receivedLines[system.receivedIndex + i]);
+   //      
+   //      //Get rid of what we drew from the accumulator
+   //      drawAccumulator -= drawReceiveCount;
+   //      system.receivedIndex += drawReceiveCount;
+   //   }
+   //}
+   //else
+   //{
+   //   //If we've reached the END of the lines, clear out the array. This
+   //   //should reduce the number of arrays created significantly, since, as
+   //   //long as data keeps coming, we'll keep buffering the lines in the
+   //   //same array. Only when everything gets quiet do we create a new one.
+   //   system.receivedLines = [];
+   //   system.receivedIndex = 0;
+   //}
+
+   ////While we have pending lines, keep track of frames. We only care about
+   ////frames to post these lines anyway.
+   //if(system.lines.length > 0)
+   //   frameCounter++;
+
+   ////Post your lines every half a second. Probably ok...
+   //if(frameCounter >= 30)
+   //{
+   //   post(endpoint(system.room), createOptimizedLines(system.lines));
+   //   system.lines = [];
+   //   frameCounter = 0;
+   //}
+
+   //The message handler
+   var totalMessages = 0;
+   var messagesFragment = new DocumentFragment();
+   var msgHeaderLength = 1 + constants.messageLengthBytes;
+
+   dataScan(globals.chatpointer, (start, length, cc) =>
+   {
+      console.log("chat datascan", start, length, cc);
+
+      if(cc != symbols.text)
+         return;
+
+      messagesFragment.appendChild(createMessageElement(parseMessage(
+         globals.roomdata.substr(start + msgHeaderLength, length - msgHeaderLength))));
+
+      globals.chatpointer = start + length;
+
+      console.log("chat datascan FOUND", globals.chatpointer, totalMessages);
+
+      if(++totalMessages > constants.maxMessageRender)
+      {
+         return true;
+      }
+   });
+
+   if(totalMessages > 0)
+   {
+      messages.appendChild(messagesFragment);
+      messagecontainer.scrollTop = messagecontainer.scrollHeight;
+   }
+
+   requestAnimationFrame(frameFunction);
+}
+
+function parseMessage(fullMessage)
+{
+   var colon = fullMessage.indexOf(":");
+   var result = { username : "???", message : fullMessage };
+
+   if(colon >= 0)
+   {
+      result.username = fullMessage.substr(0, colon);
+      result.message = fullMessage.substr(colon + 1);
+   }
+
+   return result;
+}
+
+function createMessageElement(parsed) //start, length, cc)
+{
+   var msgelem = document.createElement("span");
+   msgelem.className = "message";
+   msgelem.textContent = parsed.message;
+
+   var username = document.createElement("span");
+   username.className = "username";
+   username.textContent = parsed.username;
+
+   var msgcontainer = document.createElement("div");
+   msgcontainer.className = "striped wholemessage";
+   msgcontainer.appendChild(username);
+   msgcontainer.appendChild(msgelem);
+
+   return msgcontainer;
 }
 
 //function newPageString()

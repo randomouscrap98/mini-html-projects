@@ -17,6 +17,8 @@ body {
    cursor: wait;
 }
 [data-hidden] { display: none !important; }
+[data-status="error"] { background-color: #F05050 !important; }
+[data-status="ok"] { background-color: #90F090 !important; }
 .right { flex-direction: row-reverse; }
 .center { text-align: center; }
 .inline { display: inline-block; }
@@ -27,7 +29,7 @@ body {
    -webkit-user-select: none;
    user-select: none;
 }
-.striped:nth-child(even) { background-color: rgba(0,0,0,0.03); }
+.striped:nth-child(even) { background-color: rgba(0,0,0,0.02); }
 
 input, textarea, button {
    border-radius: 0;

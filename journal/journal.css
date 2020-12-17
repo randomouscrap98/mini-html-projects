@@ -48,7 +48,17 @@ canvas {
    flex: auto;
    overflow-x: hidden;
    overflow-y: auto;
+   font-size: 0.8em;
 }
+
+.wholemessage {
+   padding: 0.05em 0.2em;
+}
+.message {
+   white-space: pre-wrap;
+}
+.username { font-weight: bold; }
+.username::after { content: ":"; }
 
 /* Message form */
 #messageform {
@@ -91,10 +101,6 @@ canvas {
    width: 75;
    background-color: #F0F0F0;
    overflow-x: hidden;
-}
-
-#sidebar[data-error] {
-   background-color: #F05050;
 }
 
 /* Controls */
