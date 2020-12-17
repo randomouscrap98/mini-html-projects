@@ -75,7 +75,7 @@ canvas {
 #scrollbar {
    position: relative;
    background-color: #E7E7E7;
-   width: 10px;
+   width: 15px;
    flex: none;
 }
 
@@ -83,7 +83,7 @@ canvas {
    position: absolute;
    left: 0;
    background-color: #AAA;
-   height: 25px;
+   height: 35px;
    width: 100%;
    touch-action: none;
 }

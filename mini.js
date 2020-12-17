@@ -193,6 +193,95 @@ function randomLetters(count, r)
    return result;
 }
 
+function attachBasicDrawerAction(drawer)
+{
+   drawer.currentX = null;
+   drawer.currentY = null;
+
+   var ignore;
+   var lastOffTarget = false;
+
+   drawer.OnAction = function(data, context)
+   {
+      if((data.action & CursorActions.Interrupt) || 
+         ((data.action & CursorActions.Start) && !data.onTarget))
+         ignore = true;
+
+      //If you're drawing on the canvas by dragging and we don't want to ignore
+      //this line, store the position for later (animation frames pick it up)
+      if(data.onTarget && (data.action & CursorActions.Drag) > 0 && !ignore)
+      {
+         if(data.action & CursorActions.Start || lastOffTarget)
+         {
+            drawer.lastX = data.x;
+            drawer.lastY = data.y;
+         }
+
+         //console.log("DRAG", data.x, data.y);
+         //Always store current position.
+         drawer.currentX = data.x;
+         drawer.currentY = data.y;
+      }
+
+      lastOffTarget = !data.onTarget;
+
+      //If you're ending a drag and not interrupting (meaning a TRUE drag end),
+      //we can stop ignoring the stroke. Honestly though, the performer should
+      //keep track of a like "stroke id" for us. Consider doing this.
+      if ((data.action & (CursorActions.Drag | CursorActions.End | CursorActions.Interrupt)) == 
+         (CursorActions.End | CursorActions.Drag))
+         ignore = false;
+   };
+}
+
+var MiniDraw = 
+{
+   //An object to store a single line
+   LineData : function (width, color, x1, y1, x2, y2)
+   {
+      this.width = width;
+      this.color = color;
+      this.x1 = x1;
+      this.y1 = y1;
+      this.x2 = x2;
+      this.y2 = y2;
+   },
+   SimpleLine : function (ctx, ld)
+   {
+      var xdiff = ld.x2 - ld.x1;
+      var ydiff = ld.y2 - ld.y1;
+      var dist = Math.sqrt(xdiff*xdiff+ydiff*ydiff);
+      var ang = Math.atan(ydiff/(xdiff===0?0.0001:xdiff))+(xdiff<0?Math.PI:0); 
+      var ofs = (ld.width - 1) / 2;
+
+      if(dist === 0) dist=0.001;
+
+      //Duplicate code for faster execution (no added function call or if
+      //statements in critical loop)
+      if(ld.color)
+      {
+         ctx.fillStyle = ld.color;
+
+         for(var i=0;i<dist;i+=0.5) 
+         {
+            ctx.fillRect(Math.round(ld.x1+Math.cos(ang)*i-ofs), 
+               Math.round(ld.y1+Math.sin(ang)*i-ofs), 
+               ld.width, ld.width);
+         }
+      }
+      else
+      {
+         for(var i=0;i<dist;i+=0.5) 
+         {
+            ctx.clearRect(Math.round(ld.x1+Math.cos(ang)*i-ofs), 
+               Math.round(ld.y1+Math.sin(ang)*i-ofs), 
+               ld.width, ld.width);
+         }
+      }
+   }
+};
+
+
 var StreamConvert =
 {
    charStart : 48,

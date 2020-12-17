@@ -13,6 +13,8 @@ var globals =
    preamble: {},
    chatpointer: 0,
    drawpointer: 0,
+   drawer: null,
+   context: null,
    scheduledScrolls: []
 };
 
@@ -63,6 +65,7 @@ window.onload = function()
          () => hide(chat));
 
       setupPageControls();
+      globals.context = drawing.getContext("2d");
 
       if(!document.body.hasAttribute("data-export"))
       {
@@ -76,6 +79,7 @@ window.onload = function()
          setupRadioEmulators(document);
          setupExport(document.getElementById("export"));
          setupChat();
+         globals.drawer = setupDrawer(drawing);
 
          HTMLUtilities.SimulateScrollbar(scrollbar, scrollbarbar, scrollblock, false);
 
@@ -107,6 +111,8 @@ function safety(func) { try { func(); } catch(ex) { console.log(ex); } }
 function setStatus(status) { percent.setAttribute("data-status", status); }
 function getPageNumber() { return Number(pagenumber.textContent) - 1; }
 function setPageNumber(v) { pagenumber.textContent = v+1; }
+function getLineSize() { return Number(sizetext.value); }
+function getLineColor() { return colortext.value; }
 
 function setupComputedConstants()
 {
@@ -186,6 +192,15 @@ function setupChat()
       message.value = "";
       return false;
    });
+}
+
+function setupDrawer(canvas)
+{
+   var drawer = new CanvasPerformer();
+   attachBasicDrawerAction(drawer);
+   drawer.Attach(canvas);
+   CanvasUtilities.Clear(canvas);
+   return drawer;
 }
 
 function setupExport(exp)
@@ -392,23 +407,23 @@ function frameFunction()
    }
 
    //First, perform self-lines
-   //if(drw.currentX !== null)
-   //{
-   //   var line = new LineData(system.lineWidth, system.color,
-   //      Math.round(drw.lastX), Math.round(drw.lastY), 
-   //      Math.round(drw.currentX), Math.round(drw.currentY));
-   //   
-   //   system.lines.push(line);
-   //   system.rawTool(system.context, line);
+   if(globals.drawer.currentX !== null)
+   {
+      var line = new MiniDraw.LineData(getLineSize(), getLineColor(),
+         Math.round(globals.drawer.lastX), Math.round(globals.drawer.lastY), 
+         Math.round(globals.drawer.currentX), Math.round(globals.drawer.currentY));
+      
+      //system.lines.push(line);
+      MiniDraw.SimpleLine(globals.context, line);
 
-   //   //These are NOT performed every frame because the drawing events are
-   //   //NOT synchronized to the frame, so we could be removing that very
-   //   //important "lastX lastY" data
-   //   drw.lastX = drw.currentX;
-   //   drw.lastY = drw.currentY;
-   //   drw.currentX = null;
-   //   drw.currentY = null;
-   //}
+      //These are NOT performed every frame because the drawing events are
+      //NOT synchronized to the frame, so we could be removing that very
+      //important "lastX lastY" data
+      globals.drawer.lastX = globals.drawer.currentX;
+      globals.drawer.lastY = globals.drawer.currentY;
+      globals.drawer.currentX = null;
+      globals.drawer.currentY = null;
+   }
 
    ////Then, perform received lines (could also be our own lol)
    //if(system.receivedLines.length > system.receivedIndex)

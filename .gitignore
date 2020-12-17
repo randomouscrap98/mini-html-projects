@@ -2,3 +2,4 @@ drawlegacy*
 *.jpg
 dwatch/
 .*.sw?
+*.bak
