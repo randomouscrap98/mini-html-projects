@@ -51,7 +51,10 @@ window.onload = function()
          globals.roomname = constants.roomPrepend + url.searchParams.get("room");
 
       if(url.searchParams.get("export") == 1)
+      {
          performExport(globals.roomname);
+         return;
+      }
 
       setupToggleSetting("pageflip", pageflip, 
          () => document.body.setAttribute("data-flipped", ""),
@@ -91,6 +94,8 @@ window.onload = function()
          //Exported, disable some stuff and don't set up listeners/etc. Can
          //instantly setup the frame function!
          frameFunction();
+         enable(sidebar);
+         refreshInfo();
       }
    }
    catch(ex)
@@ -284,8 +289,12 @@ function performExport(room)
 
 function refreshInfo(data)
 {
-   percenttext.innerHTML = (100 * (data.used / data.limit)).toFixed(2) + "%";
-   percentbar.style.width = (75 * data.used / data.limit) + "px";
+   if(data)
+   {
+      percenttext.innerHTML = (100 * (data.used / data.limit)).toFixed(2) + "%";
+      percentbar.style.width = (75 * data.used / data.limit) + "px";
+   }
+
    version.innerHTML = system.version;
 }
 

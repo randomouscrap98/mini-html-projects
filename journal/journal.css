@@ -27,6 +27,8 @@ canvas {
    position: relative;
 }
 
+#drawing { cursor: crosshair; }
+
 #scrollblock {
    position: absolute;
    left: 0;
@@ -40,6 +42,7 @@ canvas {
    width: 600px;
    min-width: 300px;
    flex: 0 1 auto;
+   border-right: 1px solid #BBB;
 }
 
 #messagecontainer {
