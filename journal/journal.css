@@ -77,6 +77,8 @@ canvas {
    background-color: #E7E7E7;
    width: 15px;
    flex: none;
+   border-left: 1px solid #BBB;
+   border-right: 1px solid #BBB;
 }
 
 #scrollbarbar {
@@ -171,8 +173,18 @@ button[data-selected] {
    cursor: pointer;
 }
 
-#percent { background-color: #DDD; }
 #version { font-size: 0.75em; }
+
+#percent { 
+   background-color: #DDD; 
+   position: relative;
+}
+/*#percentbar {
+   position: absolute;
+   height: 100%;
+   width: 10%;
+   color: red;
+}*/
 
 /* Screens */
 .coverscreen {

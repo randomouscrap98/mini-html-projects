@@ -78,12 +78,12 @@ function queryEnd(room, start, handle, error)
       });
 }
 
-function post(url, data, then)
+function post(url, data, then, error)
 {
-   postRetry(url, data, then, 100, 1000);
+   postRetry(url, data, then, error, 100, 1000);
 }
 
-function postRetry(url, data, then, retries, timeout)
+function postRetry(url, data, then, error, retries, timeout)
 {
    if(retries <= 0)
       throw "Ran out of post retries!";
@@ -100,10 +100,11 @@ function postRetry(url, data, then, retries, timeout)
       if(then)
          then(d);
       return d;
-   }).catch(function(error) 
+   }).catch(function(err)
    {
-      console.log("POST " + url + " failed, retries: " + retries);
-      setTimeout(function() { postRetry(url, data, then, retries - 1, timeout); }, timeout);
+      console.log("POST " + url + " failed, retries left: " + retries);
+      if(error) error(err, retries);
+      setTimeout(function() { postRetry(url, data, then, error, retries - 1, timeout); }, timeout);
    });
 }
 

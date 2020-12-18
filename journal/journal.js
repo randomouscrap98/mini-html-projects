@@ -284,7 +284,7 @@ function performExport(room)
 
 function refreshInfo(data)
 {
-   percent.innerHTML = (100 * (data.used / data.limit)).toFixed(2) + "%";
+   percenttext.innerHTML = (100 * (data.used / data.limit)).toFixed(2) + "%";
    version.innerHTML = system.version;
 }
 
@@ -392,7 +392,7 @@ function dataScan(start, func)
       }
       else
       {
-         console.log("Unrecoverable data error! Unknown character in stream!");
+         console.error("Unrecoverable data error! Unknown character in stream!");
          return;
       }
 
@@ -451,7 +451,7 @@ function generatePendingLines(drw, pending)
       //current lines
       if(pending.lines.length + currentLines.length > constants.maxLines)
       {
-         console.log("Too many lines! Pending: ", pending.lines.length, " Next: ", currentLines.length);
+         console.warn("Too many lines! Pending: ", pending.lines.length, " Next: ", currentLines.length);
          currentLines.splice(constants.maxLines - pending.lines.length);
          pending.accepting = false;
       }
@@ -722,7 +722,7 @@ function frameFunction()
          {
             var ctx = copyToBackbuffer(globals.drawer._canvas);
             var color = CanvasUtilities.GetColor(ctx, globals.drawer.currentX, globals.drawer.currentY);
-            console.log(color);
+            console.log("Dropper: ", color);
 
             //This is a lot just to stop the stroke
             globals.drawer.ignoreStroke = true;
@@ -756,7 +756,7 @@ function frameFunction()
          {
             var ldata = createLineData(globals.pendingStroke);
             //console.log("Posting stroke: " + ldata);
-            post(endpoint(globals.roomname), ldata);
+            post(endpoint(globals.roomname), ldata, () => setStatus("ok"), () => setStatus("error"));
             //drawLines(parseLineData(ldata, 2, ldata.length - 3, ldata.charAt(0)), "#FF0000");
          }
          globals.pendingStroke.active = false;
