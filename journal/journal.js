@@ -4,7 +4,7 @@
 var system = 
 {
    name: "journal",
-   version: "0.3.0_f2" //format 2
+   version: "0.3.1_f2" //format 2
 };
 
 var globals = 
@@ -197,7 +197,7 @@ function setupChat()
 
    form.submit(function()
    {
-      post(endpoint(globals.roomname), newMessageChunk(username.value, message.value));
+      post(endpoint(globals.roomname), createMessageChunk(username.value, message.value));
       message.value = "";
       return false;
    });
@@ -285,6 +285,7 @@ function performExport(room)
 function refreshInfo(data)
 {
    percenttext.innerHTML = (100 * (data.used / data.limit)).toFixed(2) + "%";
+   percentbar.style.width = (75 * data.used / data.limit) + "px";
    version.innerHTML = system.version;
 }
 
@@ -350,15 +351,6 @@ function handleIncomingData(data)
    globals.roomdata += data.data;
    setStatus("ok");
    refreshInfo(data);
-}
-
-function newMessageChunk(username, message)
-{
-   var m = username + ": " + message;
-   var max = StreamConvert.MaxValue(constants.messageLengthBytes);
-   if(m.length > max)
-      m = m.substr(0, max);
-   return symbols.text + StreamConvert.IntToChars(m.length, constants.messageLengthBytes) + m;
 }
 
 //Scan data starting at start until func returns true or data ends
@@ -531,6 +523,16 @@ function flood(drw, currentLines, color)
    img = null;
    console.log("Flood lines: ", currentLines.length);
 }
+
+function createMessageChunk(username, message)
+{
+   var m = username + ": " + message;
+   var max = StreamConvert.MaxValue(constants.messageLengthBytes);
+   if(m.length > max)
+      m = m.substr(0, max);
+   return symbols.text + StreamConvert.IntToChars(m.length, constants.messageLengthBytes) + m;
+}
+
 
 function createStandardPoint(x, y, extra)
 {
