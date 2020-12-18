@@ -27,7 +27,7 @@ var constants =
    messageLengthBytes : 2,
    maxLines : 5000,        //A single stroke (or fill) can't have more than this
    maxMessageRender : 100, //per frame
-   maxStrokeRender : 1000, //per frame
+   maxLineRender : 1000,   //per frame (all lines in stroke count)
    maxScan : 5000,         //per frame
 };
 
@@ -405,10 +405,12 @@ function generatePendingLines(drw, pending)
    //If the pending stroke isn't active, activate it (since they're asking for generation)
    if(!pending.active)
    {
+      console.log("reset pending");
       pending.active = true;
       pending.accepting = true;
       pending.size = getLineSize();
       pending.tool = getTool();
+      pending.page = getPageNumber();
       pending.color = pending.tool == "eraser" ? null : getLineColor();
       pending.lines = [];
    }
@@ -422,6 +424,7 @@ function generatePendingLines(drw, pending)
       //Simple stroke
       if(pending.tool == "eraser" || pending.tool == "pen")
       {
+         pending.type = symbols.stroke;
          currentLines.push(new MiniDraw.LineData(pending.size, pending.color,
             Math.round(drw.lastX), Math.round(drw.lastY), 
             Math.round(drw.currentX), Math.round(drw.currentY)));
@@ -429,6 +432,7 @@ function generatePendingLines(drw, pending)
       //Complex big boy fill
       else if(pending.tool == "fill")
       {
+         pending.type = symbols.lines;
          flood(drw, currentLines, pending.color);
          pending.accepting = false; //DON'T do any more fills on this stroke!!
       }
@@ -451,8 +455,11 @@ function generatePendingLines(drw, pending)
 function flood(drw, currentLines, color)
 {
    //Do the east/west thing, generate the lines, IGNORE future strokes
-   var context = drw._canvas.getContext("2d");
-   var iData = context.getImageData(0, 0, drw._canvas.width, drw._canvas.height);
+   var context = buffer1.getContext("2d"); //drw._canvas.getContext("2d");
+   CanvasUtilities.CopyInto(context, drw._canvas);
+   var width = buffer1.width;
+   var height = buffer1.height;
+   var iData = context.getImageData(0, 0, width, height);
    var img = iData.data;
    var queue = [[Math.round(drw.currentX), Math.round(drw.currentY)]];
    var rIndex = MiniDraw.GetIndex(iData, drw.currentX, drw.currentY);
@@ -461,7 +468,7 @@ function flood(drw, currentLines, color)
    var west, east, i, j;
    var shouldFill = (x, y) =>
    {
-      if(x < 0 || y < 0 || x >= drw._canvas.width || y >= drw._canvas.height)
+      if(x < 0 || y < 0 || x >= width || y >= height)
          return false;
       var i = MiniDraw.GetIndex(iData, x, y);
       return img[i] == replaceColor[0] && img[i + 1] == replaceColor[1] &&
@@ -474,7 +481,7 @@ function flood(drw, currentLines, color)
       {
          //March left until not should fill, march right
          for(west = p[0] - 1; west >= 0 && shouldFill(west, p[1]); west--);
-         for(east = p[0] + 1; west < drw._canvas.width && shouldFill(east, p[1]); east++);
+         for(east = p[0] + 1; west < width && shouldFill(east, p[1]); east++);
 
          //Bring them back in range
          west++; east--;
@@ -502,7 +509,59 @@ function flood(drw, currentLines, color)
       }
    }
 
+   iData = null;
+   img = null;
    console.log("Flood lines: ", currentLines.length);
+}
+
+function createLineData(pending)
+{
+   var result = pending.type + StreamConvert.IntToVariableWidth(pending.page);
+
+   if(pending.type == symbols.stroke)
+   {
+   }
+   else if(pending.type == symbols.lines)
+   {
+
+   }
+   else
+   {
+      throw "Unknown pending lines type!";
+   }
+
+   return result;
+}
+
+//Get a collection of lines from the given data. Assume start starts at actual
+//line data and not page/type/etc (type is given)
+function parseLineData(data, start, length, type)
+{
+   //Assume end includes the cap. Most line data has these standard fields,
+   //color MAY be ommitted. 
+   //var color = ;
+   //var size = ;
+   var i;
+
+   if(type == symbols.stroke)
+   {
+
+   }
+   else if(type == symbols.lines)
+   {
+      //This one is actually simpler, it's just blobs of lines
+      for(i = start; i < start + length; i += 8)
+      {
+         console.log('what are we doing');
+      }
+   }
+}
+
+function drawLines(lines) 
+{ 
+   console.log("drawing " + lines.length + " lines");
+   lines.forEach(x => MiniDraw.SimpleLine(globals.context, x));
+   return lines; 
 }
 
 function frameFunction()
@@ -516,9 +575,7 @@ function frameFunction()
    //First, perform self-lines
    if(globals.drawer.currentX !== null)
    {
-      var lines = generatePendingLines(globals.drawer, globals.pendingStroke);
-
-      lines.forEach(x => MiniDraw.SimpleLine(globals.context, x));
+      drawLines(generatePendingLines(globals.drawer, globals.pendingStroke));
 
       //These are NOT performed every frame because the drawing events are
       //NOT synchronized to the frame, so we could be removing that very
@@ -537,34 +594,6 @@ function frameFunction()
       globals.pendingStroke.active = false;
    }
 
-   ////Then, perform received lines (could also be our own lol)
-   //if(system.receivedLines.length > system.receivedIndex)
-   //{
-   //   drawAccumulator += Math.max(0.5, 
-   //      Math.pow(system.receivedLines.length - system.receivedIndex, 1.2) / 120);
-   //   drawReceiveCount = Math.floor(drawAccumulator);
-   //
-   //   //Only draw lines if... we've accumulated enough
-   //   if(drawReceiveCount > 0)
-   //   {
-   //      for(var i = 0; i < drawReceiveCount; i++) 
-   //         system.rawTool(system.context, system.receivedLines[system.receivedIndex + i]);
-   //      
-   //      //Get rid of what we drew from the accumulator
-   //      drawAccumulator -= drawReceiveCount;
-   //      system.receivedIndex += drawReceiveCount;
-   //   }
-   //}
-   //else
-   //{
-   //   //If we've reached the END of the lines, clear out the array. This
-   //   //should reduce the number of arrays created significantly, since, as
-   //   //long as data keeps coming, we'll keep buffering the lines in the
-   //   //same array. Only when everything gets quiet do we create a new one.
-   //   system.receivedLines = [];
-   //   system.receivedIndex = 0;
-   //}
-
 
    //The message handler
    var totalMessages = 0;
@@ -572,6 +601,8 @@ function frameFunction()
 
    dataScan(globals.chatpointer, (start, length, cc) =>
    {
+      globals.chatpointer = start + length;
+
       if(cc != symbols.text)
          return;
 
@@ -582,8 +613,6 @@ function frameFunction()
       messagesFragment.appendChild(createMessageElement(parseMessage(
          globals.roomdata.substr(start + constants.messageHeaderLength, length - constants.messageHeaderLength))));
 
-      globals.chatpointer = start + length;
-
       return ++totalMessages > constants.maxMessageRender;
    });
 
@@ -592,6 +621,39 @@ function frameFunction()
       messages.appendChild(messagesFragment);
       globals.scheduledScrolls.push(messagecontainer);
    }
+
+   //The incoming draw data handler
+   var page = getPageNumber();
+   var totalLines = 0;
+
+   //Note: start DOES include the type, it's the true whole fragment
+   dataScan(globals.drawpointer, (start, length, cc) =>
+   {
+      console.log("TRYING LINES??");
+
+      globals.drawpointer = start + length;
+
+      //We only handle certain things in draw
+      if(cc != symbols.lines && cc != symbols.stroke)
+         return;
+
+      //We ALSO only handle the draw if it's the right PAGE.
+      var pageDat = StreamConvert.VariableWidthToInt(globals.roomdata, start + 1);
+
+      if(pageDat.value != page)
+         return;
+
+      console.log("DRAWING LINES??");
+
+      //Parse the lines, draw them, and update the line count all in one
+      //(drawLines returns the lines again)
+      totalLines += drawLines(
+         parseLineData(globals.roomdata, start + 1 + pageDat.length, length - pageDat.length - 1, cc)
+      ).length;
+
+
+      return totalLines > constants.maxLineRender;
+   });
 
    requestAnimationFrame(frameFunction);
 }
