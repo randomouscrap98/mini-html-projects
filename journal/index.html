@@ -2,13 +2,13 @@
    <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-      <script src="../jquery-3.4.1.min.js?v=1608248624"></script>
-      <script src="../randomous.js?v=1608248624"></script>
-      <script src="../randomousCanvas.js?v=1608248624"></script>
-      <script src="../mini.js?v=1608248624"></script>
-      <script src="journal.js?v=1608248624"></script>
-      <link rel="stylesheet" href="../mini.css?v=1608248624">
-      <link rel="stylesheet" href="journal.css?v=1608248624">
+      <script src="../jquery-3.4.1.min.js?v=1608268063"></script>
+      <script src="../randomous.js?v=1608268063"></script>
+      <script src="../randomousCanvas.js?v=1608268063"></script>
+      <script src="../mini.js?v=1608268063"></script>
+      <script src="journal.js?v=1608268063"></script>
+      <link rel="stylesheet" href="../mini.css?v=1608268063">
+      <link rel="stylesheet" href="journal.css?v=1608268063">
    </head>
    <body class="collapseall">
       <div id="window">
@@ -33,7 +33,10 @@
       </div>
       <div id="sidebar" class="inertall" data-disabled>
          <div id="paintcontrols" data-hideexport>
-            <input type="color" id="color" value="#333333" data-link="colortext">
+            <div id="colortools">
+               <input type="color" id="color" value="#333333" data-link="colortext">
+               <button id="dropper">💧</button>
+            </div>
             <input type="text" id="colortext" value="#333333" data-link="color">
             <input type="range" id="size" min="1" max="60" value="3" data-link="sizetext">
             <input type="text" id="sizetext" value="3" data-link="size">

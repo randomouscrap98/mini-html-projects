@@ -275,6 +275,9 @@ var HTMLUtilities =
          wheight = window.innerHeight;
          min = srect.top;
          max = srect.bottom - snheight;
+
+         if(allowJump)
+            move(e);
       };
       var up = e =>
       {

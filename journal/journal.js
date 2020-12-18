@@ -4,7 +4,7 @@
 var system = 
 {
    name: "journal",
-   version: "0.2.0_f2" //format 2
+   version: "0.3.0_f2" //format 2
 };
 
 var globals = 
@@ -61,7 +61,7 @@ window.onload = function()
          () => hide(chat));
 
       setupPageControls();
-      HTMLUtilities.SimulateScrollbar(scrollbar, scrollbarbar, scrollblock, false);
+      HTMLUtilities.SimulateScrollbar(scrollbar, scrollbarbar, scrollblock, true);
       globals.context = drawing.getContext("2d");
 
       if(!document.body.hasAttribute("data-export"))
@@ -72,6 +72,7 @@ window.onload = function()
             return;
          }
 
+         setupColorControls();
          setupValueLinks(document);   
          setupRadioEmulators(document);
          setupExport(document.getElementById("export"));
@@ -106,7 +107,14 @@ function getPageNumber() { return Number(pagenumber.textContent) - 1; }
 function setPageNumber(v) { pagenumber.textContent = v+1; }
 function getLineSize() { return Number(sizetext.value); }
 function getLineColor() { return colortext.value; }
+function setLineColor(color) { colortext.value = color; doValueLink(colortext); }
 function getTool() { return tools.querySelector("[data-selected]").id.replace("tool_", ""); }
+function isDropperActive() { return dropper.hasAttribute("data-selected"); }
+function setDropperActive(active) 
+{ 
+   if(active) { dropper.setAttribute("data-selected",""); } 
+   else { dropper.removeAttribute("data-selected"); }
+}
 
 function setupComputedConstants()
 {
@@ -123,6 +131,11 @@ function doValueLink(target)
    var linked = target.getAttribute("data-link");
    var update = document.getElementById(linked);
    update.value = target.value;
+}
+
+function setupColorControls()
+{
+   dropper.onclick = () => setDropperActive(!isDropperActive()) ;
 }
 
 function setupRadioEmulators(element)
@@ -224,7 +237,7 @@ function performExport(room)
 
       document.body.setAttribute("data-export", "");
       hide(exportscreen);
-      alert("Export complete! You can now save this webpage (in Chrome, you select 'Webpage, Complete' in the dialog).");
+      alert("Export complete! You can now save this webpage (in Chrome, you select 'Webpage, Complete' in the dialog). Depending on the browser, this page may not function until you open it locally.");
    };
 
    $.get(endpoint(room), data => 
@@ -449,13 +462,19 @@ function generatePendingLines(drw, pending)
    return currentLines;
 }
 
+function copyToBackbuffer(canvas)
+{
+   var context = buffer1.getContext("2d");
+   CanvasUtilities.CopyInto(context, canvas);
+   return context;
+}
+
 function flood(drw, currentLines, color)
 {
    //Do the east/west thing, generate the lines, IGNORE future strokes
    //Using a buffer because working with image data can (does) cause it to go
    //into software rendering mode, which is very slow
-   var context = buffer1.getContext("2d");
-   CanvasUtilities.CopyInto(context, drw._canvas);
+   var context = copyToBackbuffer(drw._canvas);
    var width = buffer1.width;
    var height = buffer1.height;
    var iData = context.getImageData(0, 0, width, height);
@@ -545,6 +564,14 @@ function createLineData(pending)
       //Now do all relative points until we run out
       for(var i = 0; i < pending.lines.length; i++)
       {
+         if(pending.lines[i].x1 != lastx || pending.lines[i].y1 != lasty)
+         {
+            //Oof, we have to stop and recurse!
+            console.warn("Stroke break, recursing at ", i);
+            pending.lines.splice(0, i);
+            return result + symbols.cap + createLineData(pending);
+         }
+
          ofsx = pending.lines[i].x2 - lastx;
          ofsy = pending.lines[i].y2 - lasty;
 
@@ -691,25 +718,44 @@ function frameFunction()
    {
       if(globals.drawer.currentX !== null)
       {
-         drawLines(generatePendingLines(globals.drawer, globals.pendingStroke));
+         if(isDropperActive())
+         {
+            var ctx = copyToBackbuffer(globals.drawer._canvas);
+            var color = CanvasUtilities.GetColor(ctx, globals.drawer.currentX, globals.drawer.currentY);
+            console.log(color);
 
-         //These are NOT performed every frame because the drawing events are
-         //NOT synchronized to the frame, so we could be removing that very
-         //important "lastX lastY" data
-         globals.drawer.lastX = globals.drawer.currentX;
-         globals.drawer.lastY = globals.drawer.currentY;
-         globals.drawer.currentX = null;
-         globals.drawer.currentY = null;
+            //This is a lot just to stop the stroke
+            globals.drawer.ignoreStroke = true;
+            globals.drawer.currentX = null;
+
+            //Don't activate the dropper on non-colors
+            if(color.a)
+            {
+               setLineColor(color.ToHexString());
+               setDropperActive(false);
+            }
+         }
+         else
+         {
+            drawLines(generatePendingLines(globals.drawer, globals.pendingStroke));
+
+            //These are NOT performed every frame because the drawing events are
+            //NOT synchronized to the frame, so we could be removing that very
+            //important "lastX lastY" data
+            globals.drawer.lastX = globals.drawer.currentX;
+            globals.drawer.lastY = globals.drawer.currentY;
+            globals.drawer.currentX = null;
+            globals.drawer.currentY = null;
+         }
       }
 
       //Post lines when we're done (why is this in the frame drawer again?)
       if(!globals.drawer.currentlyDrawing && globals.pendingStroke.active)
       {
-         //Usually you'd post here
          if(globals.pendingStroke.lines.length > 0)
          {
             var ldata = createLineData(globals.pendingStroke);
-            console.log("Posting stroke: " + ldata);
+            //console.log("Posting stroke: " + ldata);
             post(endpoint(globals.roomname), ldata);
             //drawLines(parseLineData(ldata, 2, ldata.length - 3, ldata.charAt(0)), "#FF0000");
          }
@@ -763,10 +809,6 @@ function frameFunction()
 
       if(pageDat.value != page)
          return;
-
-      //TODO: don't draw ALL the lines, that's really laggy! keep it real low,
-      //based on how many are pending (up to a theoretical maximum)
-      console.log("GOT A LINE! DRAWING");
 
       //Parse the lines, draw them, and update the line count all in one
       //(drawLines returns the lines again)

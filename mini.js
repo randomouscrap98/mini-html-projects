@@ -201,20 +201,20 @@ function attachBasicDrawerAction(drawer)
    drawer.currentY = null;
    drawer.currentlyDrawing = false;
 
-   var ignore;
-   var lastOffTarget = false;
+   drawer.ignoreStroke = false;
+   drawer.lastOffTarget = false;
 
    drawer.OnAction = function(data, context)
    {
       if((data.action & CursorActions.Interrupt) || 
          ((data.action & CursorActions.Start) && !data.onTarget))
-         ignore = true;
+         drawer.ignoreStroke = true;
 
       //If you're drawing on the canvas by dragging and we don't want to ignore
       //this line, store the position for later (animation frames pick it up)
-      if(data.onTarget && (data.action & CursorActions.Drag) > 0 && !ignore)
+      if(data.onTarget && (data.action & CursorActions.Drag) > 0 && !drawer.ignoreStroke)
       {
-         if(data.action & CursorActions.Start || lastOffTarget)
+         if(data.action & CursorActions.Start || drawer.lastOffTarget)
          {
             drawer.lastX = data.x;
             drawer.lastY = data.y;
@@ -227,7 +227,7 @@ function attachBasicDrawerAction(drawer)
          drawer.currentlyDrawing = true;
       }
 
-      lastOffTarget = !data.onTarget;
+      drawer.lastOffTarget = !data.onTarget;
 
       //If you're ending a drag and not interrupting (meaning a TRUE drag end),
       //we can stop ignoring the stroke. Honestly though, the performer should
@@ -235,7 +235,7 @@ function attachBasicDrawerAction(drawer)
       if ((data.action & (CursorActions.Drag | CursorActions.End | CursorActions.Interrupt)) == 
          (CursorActions.End | CursorActions.Drag))
       {
-         ignore = false;
+         drawer.ignoreStroke = false;
          drawer.currentlyDrawing = false;
       }
    };
@@ -253,6 +253,15 @@ var MiniDraw =
       this.x2 = x2;
       this.y2 = y2;
    },
+   SimpleRect : function(ctx, x, y, w, h, clear)
+   {
+      //LOTS of if statements, but hopefully those are supremely outshadowed by
+      //the drawing time
+      if(clear)
+         ctx.clearRect(Math.round(x), Math.round(y), w, h);
+      else
+         ctx.fillRect(Math.round(x), Math.round(y), w, h);
+   },
    SimpleLine : function (ctx, ld)
    {
       var xdiff = ld.x2 - ld.x1;
@@ -263,26 +272,21 @@ var MiniDraw =
 
       if(dist === 0) dist=0.001;
 
-      //Duplicate code for faster execution (no added function call or if
-      //statements in critical loop)
       if(ld.color)
-      {
          ctx.fillStyle = ld.color;
 
-         for(var i=0;i<dist;i+=0.5) 
-         {
-            ctx.fillRect(Math.round(ld.x1+Math.cos(ang)*i-ofs), 
-               Math.round(ld.y1+Math.sin(ang)*i-ofs), 
-               ld.width, ld.width);
-         }
+      //A nice optimization for flood fill (and perhaps other things?)
+      if(Math.abs(ydiff) < 0.1) //A 0.1 diff shouldn't change anything...
+      {
+         MiniDraw.SimpleRect(ctx, Math.min(ld.x1, ld.x2) - ofs, ld.y1 - ofs, 
+            Math.abs(xdiff) + ld.width, ld.width, !ld.color);
       }
       else
       {
          for(var i=0;i<dist;i+=0.5) 
          {
-            ctx.clearRect(Math.round(ld.x1+Math.cos(ang)*i-ofs), 
-               Math.round(ld.y1+Math.sin(ang)*i-ofs), 
-               ld.width, ld.width);
+            MiniDraw.SimpleRect(ctx, ld.x1+Math.cos(ang)*i-ofs, 
+               ld.y1+Math.sin(ang)*i-ofs, ld.width, ld.width, !ld.color);
          }
       }
    },

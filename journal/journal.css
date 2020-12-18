@@ -107,6 +107,16 @@ canvas {
    width: 100%;
 }
 
+#colortools { display: flex; flex-flow: row nowrap; }
+#color { flex: auto; }
+#dropper { 
+   flex: none; 
+   width: 25px; 
+   padding: 0;
+   cursor: pointer;
+}
+
+
 #tools {
    display: flex;
    flex-flow: row wrap;
@@ -119,7 +129,7 @@ canvas {
    padding: 0;
 }
 
-#tools [data-selected] {
+button[data-selected] {
    background-color: skyblue;
 }
 
