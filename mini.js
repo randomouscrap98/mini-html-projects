@@ -288,7 +288,7 @@ var MiniDraw =
    },
    GetIndex : function(idata, x, y)
    {
-      return 4 * (x + y * idata.width);
+      return 4 * (Math.round(x) + Math.round(y) * idata.width);
    }
 };
 

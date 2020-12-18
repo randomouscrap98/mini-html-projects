@@ -4,7 +4,7 @@
 var system = 
 {
    name: "journal",
-   version: "0.1.1_f2" //format 2
+   version: "0.2.0_f2" //format 2
 };
 
 var globals = 
@@ -429,8 +429,9 @@ function generatePendingLines(drw, pending)
       else if(pending.tool == "fill")
       {
          pending.type = symbols.lines;
-         flood(drw, currentLines, pending.color);
+         pending.size = 1;
          pending.accepting = false; //DON'T do any more fills on this stroke!!
+         flood(drw, currentLines, pending.color);
       }
 
       //if the amount of lines we're about to add is too much, remove from the
@@ -451,7 +452,9 @@ function generatePendingLines(drw, pending)
 function flood(drw, currentLines, color)
 {
    //Do the east/west thing, generate the lines, IGNORE future strokes
-   var context = buffer1.getContext("2d"); //drw._canvas.getContext("2d");
+   //Using a buffer because working with image data can (does) cause it to go
+   //into software rendering mode, which is very slow
+   var context = buffer1.getContext("2d");
    CanvasUtilities.CopyInto(context, drw._canvas);
    var width = buffer1.width;
    var height = buffer1.height;
@@ -510,6 +513,16 @@ function flood(drw, currentLines, color)
    console.log("Flood lines: ", currentLines.length);
 }
 
+function createStandardPoint(x, y, extra)
+{
+   return StreamConvert.IntToChars((extra ? 1 : 0) + ((x & 1023) << 1) + ((y & 8191) << 11), 4);
+}
+
+function createColorData(color)
+{
+   return StreamConvert.IntToChars(parseInt((color || "#000000").replace("#", "0x")),4);
+}
+
 //Consider moving some of this out of here so the line data portion (the
 //"payload" so to speak) can be abstracted away from the idea of pages? but why?
 function createLineData(pending)
@@ -519,13 +532,11 @@ function createLineData(pending)
    if(pending.type == symbols.stroke)
    {
       //lowest bit erase, next 10 x, next 13 y of START point
-      result += StreamConvert.IntToChars(
-            (pending.color ? 1 : 0) + ((pending.lines[0].x1 & 1023) << 1) +
-            ((pending.lines[0].y1 & 8191) << 11), 4) +
+      result += createStandardPoint(pending.lines[0].x1, pending.lines[0].y1, pending.color) +
          StreamConvert.IntToChars(pending.size, 1);
 
       if(pending.color)
-         result += StreamConvert.IntToChars(parseInt(pending.color.replace("#", "0x")),4);
+         result += createColorData(pending.color);
 
       var lastx = pending.lines[0].x1;
       var lasty = pending.lines[0].y1;
@@ -537,14 +548,9 @@ function createLineData(pending)
          ofsx = pending.lines[i].x2 - lastx;
          ofsy = pending.lines[i].y2 - lasty;
 
-         //console.log("ofsx,ofsy:", ofsx, ofsy);
-
-         //if(true || ofsx && ofsy)
-         //{
          result += 
             StreamConvert.IntToVariableWidth(StreamConvert.SignedToSpecial(ofsx)) +
             StreamConvert.IntToVariableWidth(StreamConvert.SignedToSpecial(ofsy));
-         //}
 
          lastx = pending.lines[i].x2;
          lasty = pending.lines[i].y2;
@@ -552,7 +558,13 @@ function createLineData(pending)
    }
    else if(pending.type == symbols.lines)
    {
+      result += createColorData(pending.color) +
+         StreamConvert.IntToChars(pending.size, 1);
 
+      //And now, just all the line data as-is (literally);
+      pending.lines.forEach(x => result += 
+         createStandardPoint(x.x1, x.y1, x.color) +
+         createStandardPoint(x.x2, x.y2, x.color));
    }
    else
    {
@@ -562,40 +574,50 @@ function createLineData(pending)
    return result + symbols.cap;
 }
 
+function parseStandardPoint(data, start)
+{
+   var header = StreamConvert.CharsToInt(data, start, 4);
+   return { x : (header >> 1) & 1023, y : (header >> 11) & 8191, extra : header & 1,
+      length : 4 };
+}
+
+function parseColorData(data, start)
+{
+   return "#" + StreamConvert.CharsToInt(data, start, 4).toString(16).toUpperCase().padStart(6, "0");
+}
+
 //Get a collection of lines from the given data. Assume start starts at actual
 //line data and not page/type/etc (type is given)
 function parseLineData(data, start, length, type)
 {
-   var i, l = 0, x, y, t, result = [];
+   var i, l = 0, x, y, t, t2, result = [];
 
    if(type == symbols.stroke)
    {
       //Remember, start is at line payload, length doesn't include cap
-      var header = StreamConvert.CharsToInt(data, start, 4);
-      var segment = [ (header >> 1) & 1023, (header >> 11) & 8191 ];
+      var point = parseStandardPoint(data, start);
+      var segment = [ point.x, point.y ];
       var color = false;
-      var size = StreamConvert.CharsToInt(data, start + 4, 1);
-      l += 5;
+      var size = StreamConvert.CharsToInt(data, start + point.length, 1);
+      l += point.length + 1;
 
-      if(header & 1)
+      if(point.extra)
       {
-         color = "#" + StreamConvert.CharsToInt(data, start + l, 4).toString(16).toUpperCase().padStart(6, "0");
+         color = parseColorData(data, start + l);
          l += 4;
       }
 
       while(l < length)
       {
          t = StreamConvert.VariableWidthToInt(data, start + l);
-         //console.log(t);
          l += t.length;
-         x = segment[segment.length - 2] + StreamConvert.SpecialToSigned(t.value);
-         segment.push(x);
+         t2 = segment[segment.length - 2] + StreamConvert.SpecialToSigned(t.value);
+         segment.push(t2);
       }
-
-      //console.log(segment);
 
       if(segment.length % 2)
       {
+         //As often as possible. try to recover from errors.
          console.error("Dangling point on parsed stroke!");
          segment.pop();
       }
@@ -621,16 +643,28 @@ function parseLineData(data, start, length, type)
             segment[i], segment[i + 1], segment[i + 2], segment[i + 3]));
       }
 
-      return result;
    }
    else if(type == symbols.lines)
    {
+      var color = parseColorData(data, start);
+      var size = StreamConvert.CharsToInt(data, start + 4, 1);
+      l += 5;
+
       //This one is actually simpler, it's just blobs of lines
-      for(i = start; i < start + length; i += 8)
+      for(i = start + l; i < start + length; i += 8)
       {
-         console.log('what are we doing');
+         t = parseStandardPoint(data, i);
+         t2 = parseStandardPoint(data, i + 4);
+         result.push(new MiniDraw.LineData(size, t.extra ? color : null, 
+            t.x, t.y, t2.x, t2.y));
       }
    }
+   else
+   {
+      throw "Unparseable data type " + type;
+   }
+
+   return result;
 }
 
 function drawLines(lines, overridecolor) 
