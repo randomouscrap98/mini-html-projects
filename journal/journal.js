@@ -405,7 +405,6 @@ function generatePendingLines(drw, pending)
    //If the pending stroke isn't active, activate it (since they're asking for generation)
    if(!pending.active)
    {
-      console.log("reset pending");
       pending.active = true;
       pending.accepting = true;
       pending.size = getLineSize();
@@ -446,7 +445,7 @@ function generatePendingLines(drw, pending)
          pending.accepting = false;
       }
 
-      pending.lines.concat(currentLines);
+      pending.lines = pending.lines.concat(currentLines);
    }
 
    return currentLines;
@@ -514,12 +513,43 @@ function flood(drw, currentLines, color)
    console.log("Flood lines: ", currentLines.length);
 }
 
+//Consider moving some of this out of here so the line data portion (the
+//"payload" so to speak) can be abstracted away from the idea of pages? but why?
 function createLineData(pending)
 {
    var result = pending.type + StreamConvert.IntToVariableWidth(pending.page);
 
    if(pending.type == symbols.stroke)
    {
+      //lowest bit erase, next 10 x, next 13 y of START point
+      result += StreamConvert.IntToChars(
+         (pending.color ? 0 : 1) + ((pending.lines[0].x1 & 1023) << 1) +
+         ((pending.lines[0].y1 & 8191) << 11), 4) +
+         StreamConvert.IntToChars(pending.size, 1);
+
+      if(pending.color)
+         result += StreamConvert.IntToChars(parseInt(pending.color.replace("#", "0x")),4);
+
+      var lastx = pending.lines[0].x1;
+      var lasty = pending.lines[0].y1;
+      var ofsx, ofsy;
+
+      //Now do all relative points until we run out
+      for(var i = 0; i < pending.lines.length; i++)
+      {
+         ofsx = pending.lines[i].x2 - lastx;
+         ofsy = pending.lines[i].y2 - lasty;
+
+         if(ofsx && ofsy)
+         {
+            result += 
+               StreamConvert.IntToVariableWidth(StreamConvert.SignedToSpecial(ofsx)) +
+               StreamConvert.IntToVariableWidth(StreamConvert.SignedToSpecial(ofsy));
+         }
+
+         lastx = pending.lines[i].x2;
+         lasty = pending.lines[i].y2;
+      }
    }
    else if(pending.type == symbols.lines)
    {
@@ -530,7 +560,7 @@ function createLineData(pending)
       throw "Unknown pending lines type!";
    }
 
-   return result;
+   return result + symbols.cap;
 }
 
 //Get a collection of lines from the given data. Assume start starts at actual
@@ -559,7 +589,6 @@ function parseLineData(data, start, length, type)
 
 function drawLines(lines) 
 { 
-   console.log("drawing " + lines.length + " lines");
    lines.forEach(x => MiniDraw.SimpleLine(globals.context, x));
    return lines; 
 }
@@ -590,7 +619,11 @@ function frameFunction()
    if(!globals.drawer.currentlyDrawing && globals.pendingStroke.active)
    {
       //Usually you'd post here
-      console.log("Posting stroke!");
+      if(globals.pendingStroke.lines.length > 0)
+      {
+         var ldata = createLineData(globals.pendingStroke);
+         console.log("Posting stroke: " + ldata);
+      }
       globals.pendingStroke.active = false;
    }
 
@@ -629,8 +662,6 @@ function frameFunction()
    //Note: start DOES include the type, it's the true whole fragment
    dataScan(globals.drawpointer, (start, length, cc) =>
    {
-      console.log("TRYING LINES??");
-
       globals.drawpointer = start + length;
 
       //We only handle certain things in draw
@@ -643,14 +674,12 @@ function frameFunction()
       if(pageDat.value != page)
          return;
 
-      console.log("DRAWING LINES??");
-
       //Parse the lines, draw them, and update the line count all in one
       //(drawLines returns the lines again)
       totalLines += drawLines(
-         parseLineData(globals.roomdata, start + 1 + pageDat.length, length - pageDat.length - 1, cc)
+         //Length is - 2 instead of 1 because we also don't count the cap at the end
+         parseLineData(globals.roomdata, start + 1 + pageDat.length, length - pageDat.length - 2, cc)
       ).length;
-
 
       return totalLines > constants.maxLineRender;
    });
