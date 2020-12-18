@@ -61,6 +61,7 @@ window.onload = function()
          () => hide(chat));
 
       setupPageControls();
+      HTMLUtilities.SimulateScrollbar(scrollbar, scrollbarbar, scrollblock, false);
       globals.context = drawing.getContext("2d");
 
       if(!document.body.hasAttribute("data-export"))
@@ -76,10 +77,6 @@ window.onload = function()
          setupExport(document.getElementById("export"));
          setupChat();
          globals.drawer = setupDrawer(drawing);
-
-         HTMLUtilities.SimulateScrollbar(scrollbar, scrollbarbar, scrollblock, false);
-
-         //setupScrollTest();
 
          pullInitialStream(() =>
          {
@@ -378,7 +375,7 @@ function dataScan(start, func)
       }
       else if(cc == symbols.stroke || cc == symbols.lines)
       {
-         clength = globals.roomdata.indexOf(symobls.cap, current) - current + 1;
+         clength = globals.roomdata.indexOf(symbols.cap, current) - current + 1;
       }
       else
       {
@@ -523,8 +520,8 @@ function createLineData(pending)
    {
       //lowest bit erase, next 10 x, next 13 y of START point
       result += StreamConvert.IntToChars(
-         (pending.color ? 0 : 1) + ((pending.lines[0].x1 & 1023) << 1) +
-         ((pending.lines[0].y1 & 8191) << 11), 4) +
+            (pending.color ? 1 : 0) + ((pending.lines[0].x1 & 1023) << 1) +
+            ((pending.lines[0].y1 & 8191) << 11), 4) +
          StreamConvert.IntToChars(pending.size, 1);
 
       if(pending.color)
@@ -540,12 +537,14 @@ function createLineData(pending)
          ofsx = pending.lines[i].x2 - lastx;
          ofsy = pending.lines[i].y2 - lasty;
 
-         if(ofsx && ofsy)
-         {
-            result += 
-               StreamConvert.IntToVariableWidth(StreamConvert.SignedToSpecial(ofsx)) +
-               StreamConvert.IntToVariableWidth(StreamConvert.SignedToSpecial(ofsy));
-         }
+         //console.log("ofsx,ofsy:", ofsx, ofsy);
+
+         //if(true || ofsx && ofsy)
+         //{
+         result += 
+            StreamConvert.IntToVariableWidth(StreamConvert.SignedToSpecial(ofsx)) +
+            StreamConvert.IntToVariableWidth(StreamConvert.SignedToSpecial(ofsy));
+         //}
 
          lastx = pending.lines[i].x2;
          lasty = pending.lines[i].y2;
@@ -567,15 +566,62 @@ function createLineData(pending)
 //line data and not page/type/etc (type is given)
 function parseLineData(data, start, length, type)
 {
-   //Assume end includes the cap. Most line data has these standard fields,
-   //color MAY be ommitted. 
-   //var color = ;
-   //var size = ;
-   var i;
+   var i, l = 0, x, y, t, result = [];
 
    if(type == symbols.stroke)
    {
+      //Remember, start is at line payload, length doesn't include cap
+      var header = StreamConvert.CharsToInt(data, start, 4);
+      var segment = [ (header >> 1) & 1023, (header >> 11) & 8191 ];
+      var color = false;
+      var size = StreamConvert.CharsToInt(data, start + 4, 1);
+      l += 5;
 
+      if(header & 1)
+      {
+         color = "#" + StreamConvert.CharsToInt(data, start + l, 4).toString(16).toUpperCase().padStart(6, "0");
+         l += 4;
+      }
+
+      while(l < length)
+      {
+         t = StreamConvert.VariableWidthToInt(data, start + l);
+         //console.log(t);
+         l += t.length;
+         x = segment[segment.length - 2] + StreamConvert.SpecialToSigned(t.value);
+         segment.push(x);
+      }
+
+      //console.log(segment);
+
+      if(segment.length % 2)
+      {
+         console.error("Dangling point on parsed stroke!");
+         segment.pop();
+      }
+
+      if(segment.length < 2)
+      {
+         console.error("Parsed stroke too short!");
+         return result;
+      }
+
+      //Duplicate the last point in case it doesn't line up nicely
+      if(segment.length < 4)
+      {
+         x = segment[0];
+         y = segment[1]
+         segment.push(x, y);
+      }
+
+      //Now generate the lines
+      for(i = 0; i < segment.length - 2; i += 2)
+      {
+         result.push(new MiniDraw.LineData(size, color, 
+            segment[i], segment[i + 1], segment[i + 2], segment[i + 3]));
+      }
+
+      return result;
    }
    else if(type == symbols.lines)
    {
@@ -587,9 +633,14 @@ function parseLineData(data, start, length, type)
    }
 }
 
-function drawLines(lines) 
+function drawLines(lines, overridecolor) 
 { 
-   lines.forEach(x => MiniDraw.SimpleLine(globals.context, x));
+   lines.forEach(x => 
+   {
+      if(overridecolor)
+         x.color = overridecolor;
+      MiniDraw.SimpleLine(globals.context, x);
+   });
    return lines; 
 }
 
@@ -602,29 +653,34 @@ function frameFunction()
    }
 
    //First, perform self-lines
-   if(globals.drawer.currentX !== null)
+   if(globals.drawer)
    {
-      drawLines(generatePendingLines(globals.drawer, globals.pendingStroke));
-
-      //These are NOT performed every frame because the drawing events are
-      //NOT synchronized to the frame, so we could be removing that very
-      //important "lastX lastY" data
-      globals.drawer.lastX = globals.drawer.currentX;
-      globals.drawer.lastY = globals.drawer.currentY;
-      globals.drawer.currentX = null;
-      globals.drawer.currentY = null;
-   }
-
-   //Post lines when we're done (why is this in the frame drawer again?)
-   if(!globals.drawer.currentlyDrawing && globals.pendingStroke.active)
-   {
-      //Usually you'd post here
-      if(globals.pendingStroke.lines.length > 0)
+      if(globals.drawer.currentX !== null)
       {
-         var ldata = createLineData(globals.pendingStroke);
-         console.log("Posting stroke: " + ldata);
+         drawLines(generatePendingLines(globals.drawer, globals.pendingStroke));
+
+         //These are NOT performed every frame because the drawing events are
+         //NOT synchronized to the frame, so we could be removing that very
+         //important "lastX lastY" data
+         globals.drawer.lastX = globals.drawer.currentX;
+         globals.drawer.lastY = globals.drawer.currentY;
+         globals.drawer.currentX = null;
+         globals.drawer.currentY = null;
       }
-      globals.pendingStroke.active = false;
+
+      //Post lines when we're done (why is this in the frame drawer again?)
+      if(!globals.drawer.currentlyDrawing && globals.pendingStroke.active)
+      {
+         //Usually you'd post here
+         if(globals.pendingStroke.lines.length > 0)
+         {
+            var ldata = createLineData(globals.pendingStroke);
+            console.log("Posting stroke: " + ldata);
+            post(endpoint(globals.roomname), ldata);
+            //drawLines(parseLineData(ldata, 2, ldata.length - 3, ldata.charAt(0)), "#FF0000");
+         }
+         globals.pendingStroke.active = false;
+      }
    }
 
 
@@ -673,6 +729,10 @@ function frameFunction()
 
       if(pageDat.value != page)
          return;
+
+      //TODO: don't draw ALL the lines, that's really laggy! keep it real low,
+      //based on how many are pending (up to a theoretical maximum)
+      console.log("GOT A LINE! DRAWING");
 
       //Parse the lines, draw them, and update the line count all in one
       //(drawLines returns the lines again)
