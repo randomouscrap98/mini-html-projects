@@ -4,7 +4,7 @@
 var system = 
 {
    name: "journal",
-   version: "0.3.1_f2" //format 2
+   version: "0.4.0_f2" //format 2
 };
 
 var globals = 
@@ -28,7 +28,6 @@ var constants =
    messageLengthBytes : 2,
    maxLines : 5000,        //A single stroke (or fill) can't have more than this
    maxMessageRender : 100, //per frame
-   //maxLineRender : 1000,   //per frame (all lines in stroke count)
    maxScan : 5000,         //per frame
 };
 
@@ -65,6 +64,9 @@ window.onload = function()
          () => hide(chat));
 
       setupPageControls();
+      setupValueLinks(document);   
+      setupRadioEmulators(document);
+
       HTMLUtilities.SimulateScrollbar(scrollbar, scrollbarbar, scrollblock, true);
       globals.context = drawing.getContext("2d");
 
@@ -77,8 +79,6 @@ window.onload = function()
          }
 
          setupColorControls();
-         setupValueLinks(document);   
-         setupRadioEmulators(document);
          setupExport(document.getElementById("export"));
          setupChat();
          globals.drawer = setupDrawer(drawing);
@@ -755,14 +755,7 @@ function frameFunction()
 
    //The incoming draw data handler
    var page = getPageNumber();
-   //var totalLines = globals.scheduledLines;
-
-   //Draw the pending lines first before processing new ones
-   //if(globals.scheduledLines.length > 0)
-   //{
-   //   drawLines(globals.scheduledLines);
-   //   globals.scheduledLines = [];
-   //}
+   var pbspeed = getPlaybackSpeed();
 
    //Note: start DOES include the type, it's the true whole fragment
    dataScan(globals.drawpointer, (start, length, cc) =>
@@ -783,14 +776,13 @@ function frameFunction()
       //(drawLines returns the lines again)
       globals.scheduledLines = globals.scheduledLines.concat(
          parseLineData(globals.roomdata, start + 1 + pageDat.length, length - pageDat.length - 2, cc));
-      //totalLines += globals.scheduledLines.length;
 
-      //return totalLines > constants.maxLineRender;
+      return globals.scheduledLines.length > pbspeed;
    });
 
    //Now draw lines based on playback speed (if there are any)
    if(globals.scheduledLines.length > 0)
-      drawLines(globals.scheduledLines.splice(0, getPlaybackSpeed()));
+      drawLines(globals.scheduledLines.splice(0, pbspeed));
 
    requestAnimationFrame(frameFunction);
 }
