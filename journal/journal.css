@@ -104,12 +104,13 @@ canvas {
 }
 
 /* Controls */
-#paintcontrols {
-   flex: none;
-}
+.controls { flex: none; }
+.controls > * { width: 100%; }
+.controls button { cursor: pointer; }
 
-#paintcontrols > * {
-   width: 100%;
+.controls .text {
+   display: block;
+   padding: 0.2em;
 }
 
 #colortools { display: flex; flex-flow: row nowrap; }
@@ -118,12 +119,7 @@ canvas {
    flex: none; 
    width: 25px; 
    padding: 0;
-   cursor: pointer;
 }
-
-/*#colortext { border-top: none; }
-#sizetext { border-bottom: none; }*/
-
 
 .tools {
    display: flex;
@@ -133,7 +129,6 @@ canvas {
 .tools button {
    width: 25px;
    height: 25px;
-   cursor: pointer;
    padding: 0;
 }
 
@@ -154,31 +149,13 @@ button[data-selected] {
 
 input[type="checkbox"] { margin-right: 0.2em; }
 
-#systemcontrols {
-   flex: none;
-   font-size: 0.8em;
-}
-
-#systemcontrols .text {
-   display: block;
-   padding: 0.2em;
-}
+#systemcontrols { font-size: 0.8em; }
 
 #pagenumberdisplay {
-   padding: 0.2em;
    font-family: monospace;
    font-size: 1.1em;
    background: #F7F7F7;
    border-top: 1px solid #AAA;
-}
-
-#pagemovement { 
-   display: flex; 
-}
-
-#pagemovement button {
-   flex: auto;
-   cursor: pointer;
 }
 
 #version { font-size: 0.75em; }

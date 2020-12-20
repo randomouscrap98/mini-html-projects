@@ -32,7 +32,7 @@
          </form>
       </div>
       <div id="sidebar" class="inertall" data-disabled>
-         <div id="paintcontrols" data-hideexport>
+         <div id="paintcontrols" class="controls" data-hideexport>
             <div id="colortools">
                <input type="color" id="color" value="#333333" data-link="colortext">
                <button id="dropper">💧</button>
@@ -50,20 +50,27 @@
                <button id="tool_eraser">Er</button>
                <button id="tool_fill">Fi</button>
             </div>
+            <input type="range" id="playback" min="1" max="20" value="10" data-link="playbacktext">
+            <input type="text" id="playbacktext" value="10" data-link="playback">
+            <div id="playbackmodifier" data-radio class="collapseall tools">
+               <button id="playback1">10&#8304;</button><!--&#9632&#185;</button> &#8321;</button>-->
+               <button id="playback10">10&#185;</button>
+               <button data-selected id="playback100">10&#178;</button>
+            </div>
          </div>
          <div id="webcontrols">
             <label><input type="checkbox" id="pageflip"></input>Flip</label>
             <label><input type="checkbox" id="pagechat"></input>Text</label>
             <a href="" target="_blank" id="export" data-hideexport>Export</a>
          </div>
-         <div id="systemcontrols">
+         <div id="systemcontrols" class="controls">
             <div id="version" class="center muted text">v?</div>
             <div id="pagecontrols">
                <div id="pagenumberdisplay" class="center text">
                   <span>Pg</span>
                   <span id="pagenumber">1</span>
                </div>
-               <div id="pagemovement">
+               <div id="pagemovement" class="evenfill">
                   <button id="pagebackward" data-disabled>◀</button>
                   <button id="pageforward">▶</button>
                </div>

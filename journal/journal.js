@@ -17,6 +17,7 @@ var globals =
    drawer: null,
    context: null,
    pendingStroke: {},
+   scheduledLines: [],
    scheduledScrolls: []
 };
 
@@ -27,7 +28,7 @@ var constants =
    messageLengthBytes : 2,
    maxLines : 5000,        //A single stroke (or fill) can't have more than this
    maxMessageRender : 100, //per frame
-   maxLineRender : 1000,   //per frame (all lines in stroke count)
+   //maxLineRender : 1000,   //per frame (all lines in stroke count)
    maxScan : 5000,         //per frame
 };
 
@@ -85,6 +86,7 @@ window.onload = function()
          pullInitialStream(() =>
          {
             //DON'T start the frame function until we have the initial stream, this isn't an export!
+            enable(sidebar);
             startLongPoller();
             frameFunction(); 
          });
@@ -104,10 +106,14 @@ window.onload = function()
    }
 };
 
+function safety(func) { try { func(); } catch(ex) { console.log(ex); } }
 function getSetting(name) { return StorageUtilities.ReadLocal(constants.settingPrepend + name) }
 function setSetting(name, value) { StorageUtilities.WriteLocal(constants.settingPrepend + name, value); }
-function safety(func) { try { func(); } catch(ex) { console.log(ex); } }
 function setStatus(status) { percent.setAttribute("data-status", status); }
+function getPlaybackSpeed() { 
+   return Number(playbacktext.value) * 
+      Number(playbackmodifier.querySelector("[data-selected]").id.replace("playback",""));
+}
 function getPageNumber() { return Number(pagenumber.textContent) - 1; }
 function setPageNumber(v) { pagenumber.textContent = v+1; }
 function getLineSize() 
@@ -189,6 +195,7 @@ function setupPageControls()
 function changePage(increment)
 {
    globals.drawpointer = 0;
+   globals.scheduledLines = [];
    setPageNumber(getPageNumber() + increment);
    CanvasUtilities.Clear(drawing);
 
@@ -246,7 +253,7 @@ function performExport(room)
 
       document.body.setAttribute("data-export", "");
       hide(exportscreen);
-      alert("Export complete! You can now save this webpage (in Chrome, you select 'Webpage, Complete' in the dialog). Depending on the browser, this page may not function until you open it locally.");
+      alert("Export complete! You can now save this webpage (in Chrome, you select 'Webpage, Complete' in the dialog). Depending on the browser, this page may not function until you save and open it locally.");
    };
 
    $.get(endpoint(room), data => 
@@ -333,12 +340,10 @@ function pullInitialStream(continuation)
             }
 
             handleIncomingData(data);
-            enable(sidebar);
 
             if(continuation) 
                continuation();
          }
-
       })
       .fail(data =>
       {
@@ -546,7 +551,6 @@ function createMessageChunk(username, message)
    return symbols.text + StreamConvert.IntToChars(m.length, constants.messageLengthBytes) + m;
 }
 
-
 function createStandardPoint(x, y, extra)
 {
    return StreamConvert.IntToChars((extra ? 1 : 0) + ((x & 1023) << 1) + ((y & 8191) << 11), 4);
@@ -731,38 +735,7 @@ function frameFunction()
    //First, perform self-lines
    if(globals.drawer)
    {
-      if(globals.drawer.currentX !== null)
-      {
-         if(isDropperActive())
-         {
-            var ctx = copyToBackbuffer(globals.drawer._canvas);
-            var color = CanvasUtilities.GetColor(ctx, globals.drawer.currentX, globals.drawer.currentY);
-            console.log("Dropper: ", color);
-
-            //This is a lot just to stop the stroke
-            globals.drawer.ignoreStroke = true;
-            globals.drawer.currentX = null;
-
-            //Don't activate the dropper on non-colors
-            if(color.a)
-            {
-               setLineColor(color.ToHexString());
-               setDropperActive(false);
-            }
-         }
-         else
-         {
-            drawLines(generatePendingLines(globals.drawer, globals.pendingStroke));
-
-            //These are NOT performed every frame because the drawing events are
-            //NOT synchronized to the frame, so we could be removing that very
-            //important "lastX lastY" data
-            globals.drawer.lastX = globals.drawer.currentX;
-            globals.drawer.lastY = globals.drawer.currentY;
-            globals.drawer.currentX = null;
-            globals.drawer.currentY = null;
-         }
-      }
+      drawLocal(globals.drawer, globals.pendingStroke);
 
       //Post lines when we're done (why is this in the frame drawer again?)
       if(!globals.drawer.currentlyDrawing && globals.pendingStroke.active)
@@ -770,45 +743,26 @@ function frameFunction()
          if(globals.pendingStroke.lines.length > 0)
          {
             var ldata = createLineData(globals.pendingStroke);
-            //console.log("Posting stroke: " + ldata);
             post(endpoint(globals.roomname), ldata, () => setStatus("ok"), () => setStatus("error"));
+            //console.log("Stroke complete: " + ldata);
             //drawLines(parseLineData(ldata, 2, ldata.length - 3, ldata.charAt(0)), "#FF0000");
          }
          globals.pendingStroke.active = false;
       }
    }
 
-
-   //The message handler
-   var totalMessages = 0;
-   var messagesFragment;
-
-   dataScan(globals.chatpointer, (start, length, cc) =>
-   {
-      globals.chatpointer = start + length;
-
-      if(cc != symbols.text)
-         return;
-
-      //A small optimization so we're not creating a document fragment every frame
-      if(!messagesFragment)
-         messagesFragment = new DocumentFragment();
-
-      messagesFragment.appendChild(createMessageElement(parseMessage(
-         globals.roomdata.substr(start + constants.messageHeaderLength, length - constants.messageHeaderLength))));
-
-      return ++totalMessages > constants.maxMessageRender;
-   });
-
-   if(totalMessages > 0)
-   {
-      messages.appendChild(messagesFragment);
-      globals.scheduledScrolls.push(messagecontainer);
-   }
+   processMessages(constants.maxMessageRender);
 
    //The incoming draw data handler
    var page = getPageNumber();
-   var totalLines = 0;
+   //var totalLines = globals.scheduledLines;
+
+   //Draw the pending lines first before processing new ones
+   //if(globals.scheduledLines.length > 0)
+   //{
+   //   drawLines(globals.scheduledLines);
+   //   globals.scheduledLines = [];
+   //}
 
    //Note: start DOES include the type, it's the true whole fragment
    dataScan(globals.drawpointer, (start, length, cc) =>
@@ -827,15 +781,89 @@ function frameFunction()
 
       //Parse the lines, draw them, and update the line count all in one
       //(drawLines returns the lines again)
-      totalLines += drawLines(
-         //Length is - 2 instead of 1 because we also don't count the cap at the end
-         parseLineData(globals.roomdata, start + 1 + pageDat.length, length - pageDat.length - 2, cc)
-      ).length;
+      globals.scheduledLines = globals.scheduledLines.concat(
+         parseLineData(globals.roomdata, start + 1 + pageDat.length, length - pageDat.length - 2, cc));
+      //totalLines += globals.scheduledLines.length;
 
-      return totalLines > constants.maxLineRender;
+      //return totalLines > constants.maxLineRender;
    });
 
+   //Now draw lines based on playback speed (if there are any)
+   if(globals.scheduledLines.length > 0)
+      drawLines(globals.scheduledLines.splice(0, getPlaybackSpeed()));
+
    requestAnimationFrame(frameFunction);
+}
+
+function drawLocal(drawer, pending)
+{
+   if(drawer.currentX !== null)
+   {
+      if(isDropperActive())
+      {
+         doDropper(drawer.currentX, drawer.currentY);
+
+         //This is a lot just to stop the stroke
+         drawer.ignoreStroke = true;
+         drawer.currentX = null;
+      }
+      else
+      {
+         drawLines(generatePendingLines(drawer, pending));
+
+         //These are NOT performed every frame because the drawing events are
+         //NOT synchronized to the frame, so we could be removing that very
+         //important "lastX lastY" data
+         drawer.lastX = drawer.currentX;
+         drawer.lastY = drawer.currentY;
+         drawer.currentX = null;
+         drawer.currentY = null;
+      }
+   }
+}
+
+function doDropper(x, y)
+{
+   var ctx = copyToBackbuffer(globals.drawer._canvas);
+   var color = CanvasUtilities.GetColor(ctx, x, y);
+   console.log("Dropper: ", color);
+
+   //Don't activate the dropper on non-colors
+   if(color.a)
+   {
+      setLineColor(color.ToHexString());
+      setDropperActive(false);
+   }
+}
+
+//The message handler
+function processMessages(max)
+{
+   var totalMessages = 0;
+   var messagesFragment;
+
+   dataScan(globals.chatpointer, (start, length, cc) =>
+   {
+      globals.chatpointer = start + length;
+
+      if(cc != symbols.text)
+         return;
+
+      //A small optimization so we're not creating a document fragment every frame
+      if(!messagesFragment)
+         messagesFragment = new DocumentFragment();
+
+      messagesFragment.appendChild(createMessageElement(parseMessage(
+         globals.roomdata.substr(start + constants.messageHeaderLength, length - constants.messageHeaderLength))));
+
+      return ++totalMessages > max;//) //constants.maxMessageRender;
+   });
+
+   if(totalMessages > 0)
+   {
+      messages.appendChild(messagesFragment);
+      globals.scheduledScrolls.push(messagecontainer);
+   }
 }
 
 function parseMessage(fullMessage)

@@ -30,6 +30,8 @@ body {
    user-select: none;
 }
 .striped:nth-child(even) { background-color: rgba(0,0,0,0.02); }
+.evenfill { display: flex; }
+.evenfill > * { flex: auto; }
 
 input, textarea, button {
    border-radius: 0;
