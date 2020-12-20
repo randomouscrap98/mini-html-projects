@@ -110,7 +110,11 @@ function safety(func) { try { func(); } catch(ex) { console.log(ex); } }
 function setStatus(status) { percent.setAttribute("data-status", status); }
 function getPageNumber() { return Number(pagenumber.textContent) - 1; }
 function setPageNumber(v) { pagenumber.textContent = v+1; }
-function getLineSize() { return Number(sizetext.value); }
+function getLineSize() 
+{ 
+   return Number(sizetext.value) *
+      Number(sizemodifier.querySelector("[data-selected]").id.replace("size",""));
+}
 function getLineColor() { return colortext.value; }
 function setLineColor(color) { colortext.value = color; doValueLink(colortext); }
 function getTool() { return tools.querySelector("[data-selected]").id.replace("tool_", ""); }

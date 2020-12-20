@@ -87,7 +87,7 @@ canvas {
 #scrollbarbar {
    position: absolute;
    left: 0;
-   background-color: #AAA;
+   background-color: #AAA; /*mediumpurple; /*#AAA;*/
    height: 35px;
    width: 100%;
    touch-action: none;
@@ -125,12 +125,12 @@ canvas {
 #sizetext { border-bottom: none; }*/
 
 
-#tools {
+.tools {
    display: flex;
    flex-flow: row wrap;
 }
 
-#tools button {
+.tools button {
    width: 25px;
    height: 25px;
    cursor: pointer;
@@ -149,8 +149,10 @@ button[data-selected] {
 
 #webcontrols > * {
    display: block;
-   margin: 0.2em 0.2em;
+   margin: 0.2em 0.4em;
 }
+
+input[type="checkbox"] { margin-right: 0.2em; }
 
 #systemcontrols {
    flex: none;

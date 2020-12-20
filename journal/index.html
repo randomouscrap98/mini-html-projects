@@ -2,13 +2,13 @@
    <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-      <script src="../jquery-3.4.1.min.js?v=1608277082"></script>
-      <script src="../randomous.js?v=1608277082"></script>
-      <script src="../randomousCanvas.js?v=1608277082"></script>
-      <script src="../mini.js?v=1608277082"></script>
-      <script src="journal.js?v=1608277082"></script>
-      <link rel="stylesheet" href="../mini.css?v=1608277082">
-      <link rel="stylesheet" href="journal.css?v=1608277082">
+      <script src="../jquery-3.4.1.min.js?v=1608321240"></script>
+      <script src="../randomous.js?v=1608321240"></script>
+      <script src="../randomousCanvas.js?v=1608321240"></script>
+      <script src="../mini.js?v=1608321240"></script>
+      <script src="journal.js?v=1608321240"></script>
+      <link rel="stylesheet" href="../mini.css?v=1608321240">
+      <link rel="stylesheet" href="journal.css?v=1608321240">
    </head>
    <body class="collapseall">
       <div id="window">
@@ -38,9 +38,14 @@
                <button id="dropper">💧</button>
             </div>
             <input type="text" id="colortext" value="#333333" data-link="color">
-            <input type="range" id="size" min="1" max="60" value="3" data-link="sizetext">
+            <input type="range" id="size" min="1" max="20" value="3" data-link="sizetext">
             <input type="text" id="sizetext" value="3" data-link="size">
-            <div id="tools" data-radio class="collapseall">
+            <div id="sizemodifier" data-radio class="collapseall tools">
+               <button data-selected id="size1">&#215;1</button><!--&#9632&#185;</button> &#8321;</button>-->
+               <button id="size2">&#215;2</button>
+               <button id="size3">&#215;3</button>
+            </div>
+            <div id="tools" data-radio class="collapseall tools">
                <button data-selected id="tool_pen">Pe</button>
                <button id="tool_eraser">Er</button>
                <button id="tool_fill">Fi</button>
@@ -48,7 +53,7 @@
          </div>
          <div id="webcontrols">
             <label><input type="checkbox" id="pageflip"></input>Flip</label>
-            <label><input type="checkbox" id="pagechat"></input>Chat</label>
+            <label><input type="checkbox" id="pagechat"></input>Text</label>
             <a href="" target="_blank" id="export" data-hideexport>Export</a>
          </div>
          <div id="systemcontrols">
