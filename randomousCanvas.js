@@ -257,8 +257,8 @@ CanvasPerformer.prototype.Detach = function()
    if(!this._canvas) throw "This CanvasPerformer is is not attached to a canvas!";
 
    document.removeEventListener("mousedown", this._evMD);
-   canvas.removeEventListener("wheel", this._evMW);
-   canvas.removeEventListener("contextmenu", this._evPrevent);
+   this._canvas.removeEventListener("wheel", this._evMW);
+   this._canvas.removeEventListener("contextmenu", this._evPrevent);
    document.removeEventListener("mouseup", this._evMU); 
    document.removeEventListener("mousemove", this._evMM);
 

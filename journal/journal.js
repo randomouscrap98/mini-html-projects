@@ -4,7 +4,7 @@
 var system = 
 {
    name: "journal",
-   version: "0.5.0_f2" //format 2
+   version: "0.5.1_f2" //format 2
 };
 
 var globals = 
@@ -87,6 +87,7 @@ window.onload = function()
          setupExport(document.getElementById("export"));
          setupChat();
          globals.drawer = setupDrawer(drawing);
+         drawtoggle.oninput = (e) => setDrawAbility(globals.drawer, drawing, drawtoggle.checked);
 
          pullInitialStream(() =>
          {
@@ -190,7 +191,7 @@ function setupSvgExport()
       var svg = HTMLUtilities.CreateSvg(constants.pwidth,constants.pheight); 
 
       //Have to do this repeat parsing in order to reduce memory usage.
-      var tracker = { maxPage : 1 };
+      var tracker = { maxPage : 0 };
       var page = 0;
       var context = buffer1.getContext("2d");
       var ready = true;
@@ -221,11 +222,11 @@ function setupSvgExport()
             ready = true;
          }
 
-         if(page >= tracker.maxPage)
+         if(page > tracker.maxPage)
          {
             clearInterval(wait);
             //svg.setAttribute("viewBox","0 0 " + (constants.pwidth * tracker.maxPage) + " " + constants.pheight);
-            svg.setAttribute("width", constants.pwidth * tracker.maxPage);
+            svg.setAttribute("width", constants.pwidth * (tracker.maxPage + 1));
 
             //Fill the background
             HTMLUtilities.FillSvgBackground(svg, "white");
@@ -243,6 +244,20 @@ function setupSvgExport()
          }
       }, 100);
    };
+}
+
+function setDrawAbility(drawer, canvas, ability)
+{
+   if(ability)
+   {
+      drawer.Attach(canvas);
+      canvas.setAttribute("data-drawactive", "");
+   }
+   else
+   {
+      drawer.Detach();
+      canvas.removeAttribute("data-drawactive");
+   }
 }
 
 function setupScrollTest()
@@ -307,7 +322,7 @@ function setupDrawer(canvas)
 {
    var drawer = new CanvasPerformer();
    attachBasicDrawerAction(drawer);
-   drawer.Attach(canvas);
+   setDrawAbility(drawer, canvas, true);
    CanvasUtilities.Clear(canvas);
    return drawer;
 }

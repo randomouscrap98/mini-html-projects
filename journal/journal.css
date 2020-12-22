@@ -27,7 +27,7 @@ canvas {
    position: relative;
 }
 
-#drawing { cursor: crosshair; }
+#drawing[data-drawactive] { cursor: crosshair; }
 
 #scrollblock {
    position: absolute;
