@@ -180,9 +180,24 @@ function setupSvgExport()
    exportsvg.onclick = (e) =>
    {
       e.preventDefault();
+      exportsvgcontainer.innerHTML = "Loading, please wait...";
       show(exportsvgscreen);
-      var svg = HTMLUtilities.CreateSvg(1000,1000);
-      HTMLUtilities.FillSvgBackground(svg, "red");
+      var svg = HTMLUtilities.CreateSvg(1000,8000); //It will never be higher than 8000
+
+      //Have to do this repeat parsing in order to reduce memory usage.
+      var maxPage = 1;
+      var page = 0;
+
+      while(page )
+      {
+
+      }
+
+      //Fill with pages
+
+      //Fill the background
+      HTMLUtilities.FillSvgBackground(svg, "white");
+      //Be done with it
       exportsvgcontainer.innerHTML = "";
       exportsvgcontainer.appendChild(svg);
    };
@@ -399,12 +414,13 @@ function handleIncomingData(data)
 }
 
 //Scan data starting at start until func returns true or data ends
-function dataScan(start, func)
+function dataScan(start, func, maxScan)
 {
    //always skip preamble
    if(start < globals.preamble.skip)
       start = globals.preamble.skip;
 
+   maxScan = maxScan || constants.maxScan;
    var current = start;
    var clength = 0;
    var scanned = 0;
@@ -413,7 +429,7 @@ function dataScan(start, func)
    //Now start looping
    while(true)
    {
-      if(current >= globals.roomdata.length || scanned > constants.maxScan)
+      if(current >= globals.roomdata.length || scanned > maxScan)
          return;
 
       cc = globals.roomdata.charAt(current);
@@ -784,28 +800,9 @@ function frameFunction()
    var page = getPageNumber();
    var pbspeed = getPlaybackSpeed();
 
-   //Note: start DOES include the type, it's the true whole fragment
-   dataScan(globals.drawpointer, (start, length, cc) =>
-   {
-      globals.drawpointer = start + length;
-
-      //We only handle certain things in draw
-      if(cc != symbols.lines && cc != symbols.stroke)
-         return;
-
-      //We ALSO only handle the draw if it's the right PAGE.
-      var pageDat = StreamConvert.VariableWidthToInt(globals.roomdata, start + 1);
-
-      if(pageDat.value != page)
-         return;
-
-      //Parse the lines, draw them, and update the line count all in one
-      //(drawLines returns the lines again)
-      globals.scheduledLines = globals.scheduledLines.concat(
-         parseLineData(globals.roomdata, start + 1 + pageDat.length, length - pageDat.length - 2, cc));
-
-      return globals.scheduledLines.length > pbspeed;
-   });
+   var lineResult = processLines(globals.drawpointer, pbspeed - globals.scheduledLines.length, page);
+   globals.drawpointer = lineResult.end;
+   globals.scheduledLines = globals.scheduledLines.concat(lineResult.lines);
 
    //Now draw lines based on playback speed (if there are any)
    if(globals.scheduledLines.length > 0)
@@ -883,6 +880,35 @@ function processMessages(max)
       messages.appendChild(messagesFragment);
       globals.scheduledScrolls.push(messagecontainer);
    }
+}
+
+function processLines(startScan, limit, page)
+{
+   var lines = [];
+
+   dataScan(startScan, (start, length, cc) =>
+   {
+      startScan = start + length;
+
+      //We only handle certain things in draw
+      if(cc != symbols.lines && cc != symbols.stroke)
+         return;
+
+      //We ALSO only handle the draw if it's the right PAGE.
+      var pageDat = StreamConvert.VariableWidthToInt(globals.roomdata, start + 1);
+
+      if(pageDat.value != page)
+         return;
+
+      //Parse the lines, draw them, and update the line count all in one
+      //(drawLines returns the lines again)
+      lines = lines.concat(
+         parseLineData(globals.roomdata, start + 1 + pageDat.length, length - pageDat.length - 2, cc));
+
+      return lines.length > limit;
+   });
+
+   return { lines: lines, end: startScan };
 }
 
 function parseMessage(fullMessage)
