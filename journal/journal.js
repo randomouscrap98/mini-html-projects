@@ -4,7 +4,7 @@
 var system = 
 {
    name: "journal",
-   version: "0.4.1_f2" //format 2
+   version: "0.5.0_f2" //format 2
 };
 
 var globals = 
@@ -16,6 +16,7 @@ var globals =
    drawpointer: 0,
    drawer: null,
    context: null,
+   maxPage : 0,
    pendingStroke: {},
    scheduledLines: [],
    scheduledScrolls: []
@@ -23,6 +24,8 @@ var globals =
 
 var constants =
 {
+   pwidth : 1000,
+   pheight : 8000,
    roomPrepend : "journal_",
    settingPrepend : "mini_journal_",
    messageLengthBytes : 2,
@@ -182,24 +185,63 @@ function setupSvgExport()
       e.preventDefault();
       exportsvgcontainer.innerHTML = "Loading, please wait...";
       show(exportsvgscreen);
-      var svg = HTMLUtilities.CreateSvg(1000,8000); //It will never be higher than 8000
+
+      //It will never be higher than 8000 (I think)
+      var svg = HTMLUtilities.CreateSvg(constants.pwidth,constants.pheight); 
 
       //Have to do this repeat parsing in order to reduce memory usage.
-      var maxPage = 1;
+      var tracker = { maxPage : 1 };
       var page = 0;
+      var context = buffer1.getContext("2d");
+      var ready = true;
 
-      while(page )
+      var pagedo = (p) =>
       {
+         CanvasUtilities.Clear(buffer1);
+         tracker.drawpointer = 0;
+         tracker.scheduledLines = [];
+         processLines(tracker, Number.MAX_SAFE_INTEGER, p, Number.MAX_SAFE_INTEGER);
+         drawLines(tracker.scheduledLines, context);
+         var image = HTMLUtilities.CreateSvgElement("image");
+         image.setAttribute("x", p * constants.pwidth);
+         image.setAttribute("y", 0);
+         image.setAttribute("width", constants.pwidth);
+         image.setAttribute("height", constants.pheight);
+         image.setAttributeNS('http://www.w3.org/1999/xlink','href',buffer1.toDataURL());
+         svg.appendChild(image);
+      };
 
-      }
+      var wait = setInterval(() =>
+      {
+         if(ready)
+         {
+            ready = false;
+            pagedo(page++);
+            exportsvgcontainer.innerHTML += "<br>Page " + page;
+            ready = true;
+         }
 
-      //Fill with pages
+         if(page >= tracker.maxPage)
+         {
+            clearInterval(wait);
+            //svg.setAttribute("viewBox","0 0 " + (constants.pwidth * tracker.maxPage) + " " + constants.pheight);
+            svg.setAttribute("width", constants.pwidth * tracker.maxPage);
 
-      //Fill the background
-      HTMLUtilities.FillSvgBackground(svg, "white");
-      //Be done with it
-      exportsvgcontainer.innerHTML = "";
-      exportsvgcontainer.appendChild(svg);
+            //Fill the background
+            HTMLUtilities.FillSvgBackground(svg, "white");
+
+            //Be done with it
+            var svgData = svg.outerHTML;
+            var svgBlob = new Blob([svgData], {type:"image/svg+xml;charset=utf-8"});
+            var svgUrl = URL.createObjectURL(svgBlob);
+            var downloadLink = document.createElement("a");
+            downloadLink.textContent = "Download SVG";
+            downloadLink.href = svgUrl;
+            downloadLink.download = globals.roomname + ".svg";
+            downloadLink.style.display = "block";
+            exportsvgcontainer.appendChild(downloadLink);
+         }
+      }, 100);
    };
 }
 
@@ -207,10 +249,10 @@ function setupScrollTest()
 {
    var ctx = drawing.getContext("2d");
    ctx.font = "10px Arial";
-   for(var i = 0; i < 8000; i += 100)
+   for(var i = 0; i < constants.pheight; i += 100)
       ctx.fillText(String(i), 10, i);
-   for(var i = 0; i < 1000; i += 100)
-      ctx.fillRect(i, 0, 1, 8000);
+   for(var i = 0; i < constants.pwidth; i += 100)
+      ctx.fillRect(i, 0, 1, constants.pwidth);
 }
 
 function setupToggleSetting(name, checkbox, checktrue, checkfalse)
@@ -756,13 +798,14 @@ function parseLineData(data, start, length, type)
    return result;
 }
 
-function drawLines(lines, overridecolor) 
+function drawLines(lines, context, overridecolor) 
 { 
+   context = context || globals.context;
    lines.forEach(x => 
    {
       if(overridecolor)
          x.color = overridecolor;
-      MiniDraw.SimpleLine(globals.context, x);
+      MiniDraw.SimpleLine(context, x);
    });
    return lines; 
 }
@@ -794,23 +837,19 @@ function frameFunction()
       }
    }
 
-   var messageResult = processMessages(globals.chatpointer, constants.maxMessageRender);
-   globals.chatpointer = messageResult.pointer;
+   var msgs = processMessages(globals, constants.maxMessageRender);
    
-   if(messageResult.messages.length > 0)
+   if(msgs.length > 0)
    {
       var fragment = new DocumentFragment();
-      messageResult.messages.forEach(x => fragment.appendChild(createMessageElement(x)));
+      msgs.forEach(x => fragment.appendChild(createMessageElement(x)));
       messages.appendChild(fragment);
       globals.scheduledScrolls.push(messagecontainer);
    }
 
    //The incoming draw data handler
    var pbspeed = getPlaybackSpeed();
-
-   var lineResult = processLines(globals.drawpointer, pbspeed - globals.scheduledLines.length, getPageNumber());
-   globals.drawpointer = lineResult.end;
-   globals.scheduledLines = globals.scheduledLines.concat(lineResult.lines);
+   processLines(globals, pbspeed, getPageNumber());
 
    //Now draw lines based on playback speed (if there are any)
    if(globals.scheduledLines.length > 0)
@@ -861,33 +900,31 @@ function doDropper(x, y)
 }
 
 //The message handler
-function processMessages(pointer, max, scanLimit)
+function processMessages(tracker, max, scanLimit)
 {
-   var result = { messages : [], pointer : pointer };
+   var messages = []; 
 
-   dataScan(result.pointer, (start, length, cc) =>
+   dataScan(tracker.chatpointer, (start, length, cc) =>
    {
-      result.pointer = start + length;
+      tracker.chatpointer = start + length;
 
       if(cc != symbols.text)
          return;
 
-      result.messages.push(parseMessage(globals.roomdata.substr(
+      messages.push(parseMessage(globals.roomdata.substr(
          start + constants.messageHeaderLength, length - constants.messageHeaderLength)));
 
-      return result.messages.length > max;
+      return messages.length > max;
    }, scanLimit);
 
-   return result;
+   return messages;
 }
 
-function processLines(startScan, limit, page, scanLimit)
+function processLines(tracker, limit, page, scanLimit)
 {
-   var lines = [];
-
-   dataScan(startScan, (start, length, cc) =>
+   dataScan(tracker.drawpointer, (start, length, cc) =>
    {
-      startScan = start + length;
+      tracker.drawpointer = start + length;
 
       //We only handle certain things in draw
       if(cc != symbols.lines && cc != symbols.stroke)
@@ -896,18 +933,19 @@ function processLines(startScan, limit, page, scanLimit)
       //We ALSO only handle the draw if it's the right PAGE.
       var pageDat = StreamConvert.VariableWidthToInt(globals.roomdata, start + 1);
 
+      if(pageDat.value > tracker.maxPage)
+         tracker.maxPage = pageDat.value;
+
       if(pageDat.value != page)
          return;
 
       //Parse the lines, draw them, and update the line count all in one
       //(drawLines returns the lines again)
-      lines = lines.concat(
+      tracker.scheduledLines = tracker.scheduledLines.concat(
          parseLineData(globals.roomdata, start + 1 + pageDat.length, length - pageDat.length - 2, cc));
 
-      return lines.length > limit;
+      return tracker.scheduledLines.length > limit;
    }, scanLimit);
-
-   return { lines: lines, end: startScan };
 }
 
 function parseMessage(fullMessage)

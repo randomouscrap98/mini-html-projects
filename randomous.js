@@ -341,10 +341,11 @@ var HTMLUtilities =
    CreateSvg : function(width, height)
    {
       var svg = HTMLUtilities.CreateSvgElement("svg");
+      svg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
       //document.createElementNS("http://www.w3.org/2000/svg", "svg");
       svg.setAttributeNS("http://www.w3.org/2000/xmlns/", "xmlns:xlink", "http://www.w3.org/1999/xlink");
-      if(width) svg.setAttribute('width', width);
-      if(height) svg.setAttribute('height', height);
+      svg.setAttribute('width', width || "100%");
+      svg.setAttribute('height', height || "100%");
       return svg;
    },
    CreateSvgElement : function(type)
@@ -359,7 +360,7 @@ var HTMLUtilities =
       rect.setAttribute("width", svg.getAttribute("width"));
       rect.setAttribute("height", svg.getAttribute("height"));
       rect.setAttribute("fill", color);
-      svg.appendChild(rect);
+      svg.insertBefore(rect, svg.firstChild);
    },
    SwapElements : function (obj1, obj2) 
    {
