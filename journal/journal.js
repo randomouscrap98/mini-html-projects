@@ -4,7 +4,7 @@
 var system = 
 {
    name: "journal",
-   version: "0.4.0_f2" //format 2
+   version: "0.4.1_f2" //format 2
 };
 
 var globals = 
@@ -794,13 +794,21 @@ function frameFunction()
       }
    }
 
-   processMessages(constants.maxMessageRender);
+   var messageResult = processMessages(globals.chatpointer, constants.maxMessageRender);
+   globals.chatpointer = messageResult.pointer;
+   
+   if(messageResult.messages.length > 0)
+   {
+      var fragment = new DocumentFragment();
+      messageResult.messages.forEach(x => fragment.appendChild(createMessageElement(x)));
+      messages.appendChild(fragment);
+      globals.scheduledScrolls.push(messagecontainer);
+   }
 
    //The incoming draw data handler
-   var page = getPageNumber();
    var pbspeed = getPlaybackSpeed();
 
-   var lineResult = processLines(globals.drawpointer, pbspeed - globals.scheduledLines.length, page);
+   var lineResult = processLines(globals.drawpointer, pbspeed - globals.scheduledLines.length, getPageNumber());
    globals.drawpointer = lineResult.end;
    globals.scheduledLines = globals.scheduledLines.concat(lineResult.lines);
 
@@ -853,36 +861,27 @@ function doDropper(x, y)
 }
 
 //The message handler
-function processMessages(max)
+function processMessages(pointer, max, scanLimit)
 {
-   var totalMessages = 0;
-   var messagesFragment;
+   var result = { messages : [], pointer : pointer };
 
-   dataScan(globals.chatpointer, (start, length, cc) =>
+   dataScan(result.pointer, (start, length, cc) =>
    {
-      globals.chatpointer = start + length;
+      result.pointer = start + length;
 
       if(cc != symbols.text)
          return;
 
-      //A small optimization so we're not creating a document fragment every frame
-      if(!messagesFragment)
-         messagesFragment = new DocumentFragment();
+      result.messages.push(parseMessage(globals.roomdata.substr(
+         start + constants.messageHeaderLength, length - constants.messageHeaderLength)));
 
-      messagesFragment.appendChild(createMessageElement(parseMessage(
-         globals.roomdata.substr(start + constants.messageHeaderLength, length - constants.messageHeaderLength))));
+      return result.messages.length > max;
+   }, scanLimit);
 
-      return ++totalMessages > max;//) //constants.maxMessageRender;
-   });
-
-   if(totalMessages > 0)
-   {
-      messages.appendChild(messagesFragment);
-      globals.scheduledScrolls.push(messagecontainer);
-   }
+   return result;
 }
 
-function processLines(startScan, limit, page)
+function processLines(startScan, limit, page, scanLimit)
 {
    var lines = [];
 
@@ -906,7 +905,7 @@ function processLines(startScan, limit, page)
          parseLineData(globals.roomdata, start + 1 + pageDat.length, length - pageDat.length - 2, cc));
 
       return lines.length > limit;
-   });
+   }, scanLimit);
 
    return { lines: lines, end: startScan };
 }
