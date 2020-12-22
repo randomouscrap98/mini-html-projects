@@ -338,6 +338,29 @@ var HTMLUtilities =
       }
       return select;
    },
+   CreateSvg : function(width, height)
+   {
+      var svg = HTMLUtilities.CreateSvgElement("svg");
+      //document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      svg.setAttributeNS("http://www.w3.org/2000/xmlns/", "xmlns:xlink", "http://www.w3.org/1999/xlink");
+      if(width) svg.setAttribute('width', width);
+      if(height) svg.setAttribute('height', height);
+      return svg;
+   },
+   CreateSvgElement : function(type)
+   {
+      return document.createElementNS("http://www.w3.org/2000/svg", type);
+   },
+   FillSvgBackground : function(svg, color)
+   {
+      var rect = HTMLUtilities.CreateSvgElement("rect");
+      rect.setAttribute("x", "0");
+      rect.setAttribute("y", "0");
+      rect.setAttribute("width", svg.getAttribute("width"));
+      rect.setAttribute("height", svg.getAttribute("height"));
+      rect.setAttribute("fill", color);
+      svg.appendChild(rect);
+   },
    SwapElements : function (obj1, obj2) 
    {
       // save the location of obj2

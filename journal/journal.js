@@ -66,6 +66,8 @@ window.onload = function()
       setupPageControls();
       setupValueLinks(document);   
       setupRadioEmulators(document);
+      setupClosable(document);
+      setupSvgExport();
 
       HTMLUtilities.SimulateScrollbar(scrollbar, scrollbarbar, scrollblock, true);
       globals.context = drawing.getContext("2d");
@@ -159,6 +161,31 @@ function setupRadioEmulators(element)
    {
       [...x.children].forEach(y => (y.onclick = () => HTMLUtilities.SimulateRadioSelect(y, x)));
    });
+}
+
+function setupClosable(element)
+{
+   [...element.querySelectorAll("[data-closeable]")].forEach(x =>
+   {
+      var closebutton = document.createElement("button");
+      closebutton.innerHTML = "&#10005;";
+      closebutton.className = "closebutton";
+      closebutton.onclick = () => hide(x);
+      x.appendChild(closebutton);
+   });
+}
+
+function setupSvgExport()
+{
+   exportsvg.onclick = (e) =>
+   {
+      e.preventDefault();
+      show(exportsvgscreen);
+      var svg = HTMLUtilities.CreateSvg(1000,1000);
+      HTMLUtilities.FillSvgBackground(svg, "red");
+      exportsvgcontainer.innerHTML = "";
+      exportsvgcontainer.appendChild(svg);
+   };
 }
 
 function setupScrollTest()
