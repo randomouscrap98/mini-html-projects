@@ -4,7 +4,7 @@
 var system = 
 {
    name: "journal",
-   version: "0.5.1_f2" //format 2
+   version: "0.5.2_f2" //format 2
 };
 
 var globals = 
@@ -213,19 +213,43 @@ function setupStaticExport()
       //It will never be higher than 8000 (I think)
       //var svg = HTMLUtilities.CreateSvg(constants.pwidth,constants.pheight); 
       var htmlexport = document.implementation.createHTMLDocument();
-      htmlexport.head.innerHTML = `
-body > div {
-   display: inline;
-   margin: 0 10px;
-   padding: 0;
-}`;
-      var textbox = document.createElement("div");
-      var imagebox = document.createElement("div");
-      htmlexport.body.appendChild(textbox);
-      htmlexport.body.appendChild(imagebox);
+      htmlexport.body.innerHTML = `
+<meta charset="UTF-8">
+<style>
+body { width: 1700px; font-family: sans-serif; margin: 8px; padding: 0; }
+.pane { display: inline-block; margin: 0 10px; padding: 0; vertical-align: top;}
+#textbox { width: 600px; background-color: #FCFCFC; } 
+#imagebox > * { display: block; }
+#infobox { background: #F7F7F7; padding: 10px; margin-bottom: 15px; }
+#infobox h3 { margin-top: 0; }
+#imagebox img { image-rendering: moz-crisp-edges; image-rendering: crisp-edges;
+   image-rendering: optimizespeed; image-rendering: pixelated; }
+.pageid { background: #F3F3F3; padding: 5px; border-radius: 5px; 
+   padding-left: 10px; }
+.username { font-weight: bold; }
+.username::after { content: ":"; }
+.wholemessage { padding: 1px 3px; }
+.striped:nth-child(even) { background-color: #F7F7F7; }
+.exported { color: #777; font-size: 0.8em; display: block; margin: 7px 0 3px 0;
+   font-style: italic; }
+</style>
+<div id="leftpane" class="pane">
+   <div id="imagebox"></div>
+</div>
+<div id="rightpane" class="pane">
+   <div id="infobox">
+      <h3>${globals.roomname}</h3>
+      <time>${globals.preamble.date}</time>
+      <time class="exported">Exported: ${(new Date()).toISOString()}</time>
+   </div>
+   <div id="textbox"></div>
+</div>`;
+
+      var textbox = htmlexport.getElementById("textbox");
+      var imagebox = htmlexport.getElementById("imagebox");
 
       //Have to do this repeat parsing in order to reduce memory usage.
-      var tracker = { maxPage : 0 };
+      var tracker = { maxPage : 0, chatpointer : 0 };
       var page = 0;
       var ready = true;
 
@@ -246,6 +270,12 @@ body > div {
          {
             ready = false;
             var pageURI = exportSinglePage(page++, tracker);
+            var pageID = document.createElement("a");
+            pageID.id = "page_" + page;
+            pageID.className = "pageid";
+            pageID.innerHTML = "Page " + page;
+            pageID.href = "#" + pageID.id;
+            imagebox.appendChild(pageID);
             var image = document.createElement("img");
             image.setAttribute('src', pageURI);
             imagebox.appendChild(image);
@@ -256,6 +286,10 @@ body > div {
          if(page > tracker.maxPage)
          {
             clearInterval(wait);
+
+            var msgs = processMessages(tracker, Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER);
+            msgs.forEach(x => textbox.appendChild(createMessageElement(x)));
+   
             //svg.setAttribute("viewBox","0 0 " + (constants.pwidth * tracker.maxPage) + " " + constants.pheight);
             //svg.setAttribute("width", constants.pwidth * (tracker.maxPage + 1));
             //svg.setAttribute("height", constants.pheight * (tracker.maxPage + 1));
