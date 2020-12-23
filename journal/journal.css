@@ -206,7 +206,7 @@ input[type="checkbox"] { margin-right: 0.2em; }
    font-size: 0.9em;
 }
 
-#exportsvgcontainer {
+#exportstaticcontainer {
    margin-top: 1em;
    overflow: auto;
    width: 100%;

@@ -70,7 +70,7 @@ window.onload = function()
       setupValueLinks(document);   
       setupRadioEmulators(document);
       setupClosable(document);
-      setupSvgExport();
+      setupStaticExport();
 
       HTMLUtilities.SimulateScrollbar(scrollbar, scrollbarbar, scrollblock, true);
       globals.context = drawing.getContext("2d");
@@ -179,46 +179,77 @@ function setupClosable(element)
    });
 }
 
-function setupSvgExport()
+function exportSinglePage(page, tracker)
 {
-   exportsvg.onclick = (e) =>
+   var context = buffer1.getContext("2d");
+   CanvasUtilities.Clear(buffer1);
+   tracker.drawpointer = 0;
+   tracker.scheduledLines = [];
+   processLines(tracker, Number.MAX_SAFE_INTEGER, page, Number.MAX_SAFE_INTEGER);
+   drawLines(tracker.scheduledLines, context);
+   return buffer1.toDataURL();
+}
+
+function setupStaticExport()
+{
+   var cbutt = exportstaticscreen.querySelector(".closebutton");
+   var activeUrl = null;
+   cbutt.addEventListener("click", () => 
+   {
+      if(activeUrl)
+      {
+         console.log("Releasing download blob");
+         window.URL.revokeObjectURL(activeUrl);
+         activeUrl = null;
+      }
+   });
+   
+   exportstatic.onclick = (e) =>
    {
       e.preventDefault();
-      exportsvgcontainer.innerHTML = "Loading, please wait...";
-      show(exportsvgscreen);
+      exportstaticcontainer.innerHTML = "Loading, please wait...";
+      show(exportstaticscreen);
 
       //It will never be higher than 8000 (I think)
-      var svg = HTMLUtilities.CreateSvg(constants.pwidth,constants.pheight); 
+      //var svg = HTMLUtilities.CreateSvg(constants.pwidth,constants.pheight); 
+      var htmlexport = document.implementation.createHTMLDocument();
+      htmlexport.head.innerHTML = `
+body > div {
+   display: inline;
+   margin: 0 10px;
+   padding: 0;
+}`;
+      var textbox = document.createElement("div");
+      var imagebox = document.createElement("div");
+      htmlexport.body.appendChild(textbox);
+      htmlexport.body.appendChild(imagebox);
 
       //Have to do this repeat parsing in order to reduce memory usage.
       var tracker = { maxPage : 0 };
       var page = 0;
-      var context = buffer1.getContext("2d");
       var ready = true;
 
-      var pagedo = (p) =>
-      {
-         CanvasUtilities.Clear(buffer1);
-         tracker.drawpointer = 0;
-         tracker.scheduledLines = [];
-         processLines(tracker, Number.MAX_SAFE_INTEGER, p, Number.MAX_SAFE_INTEGER);
-         drawLines(tracker.scheduledLines, context);
-         var image = HTMLUtilities.CreateSvgElement("image");
-         image.setAttribute("x", p * constants.pwidth);
-         image.setAttribute("y", 0);
-         image.setAttribute("width", constants.pwidth);
-         image.setAttribute("height", constants.pheight);
-         image.setAttributeNS('http://www.w3.org/1999/xlink','href',buffer1.toDataURL());
-         svg.appendChild(image);
-      };
+      //var pagedo = (p) =>
+      //{
+      //   var image = HTMLUtilities.CreateSvgElement("image");
+      //   image.setAttribute("x", 0);//p * constants.pwidth);
+      //   image.setAttribute("y", p * constants.pheight); //0);
+      //   image.setAttribute("width", constants.pwidth);
+      //   image.setAttribute("height", constants.pheight);
+      //   image.setAttributeNS('http://www.w3.org/1999/xlink','href',buffer1.toDataURL());
+      //   svg.appendChild(image);
+      //};
 
       var wait = setInterval(() =>
       {
          if(ready)
          {
             ready = false;
-            pagedo(page++);
-            exportsvgcontainer.innerHTML += "<br>Page " + page;
+            var pageURI = exportSinglePage(page++, tracker);
+            var image = document.createElement("img");
+            image.setAttribute('src', pageURI);
+            imagebox.appendChild(image);
+            exportstaticcontainer.innerHTML += "<br>Page " + page;
             ready = true;
          }
 
@@ -226,21 +257,24 @@ function setupSvgExport()
          {
             clearInterval(wait);
             //svg.setAttribute("viewBox","0 0 " + (constants.pwidth * tracker.maxPage) + " " + constants.pheight);
-            svg.setAttribute("width", constants.pwidth * (tracker.maxPage + 1));
+            //svg.setAttribute("width", constants.pwidth * (tracker.maxPage + 1));
+            //svg.setAttribute("height", constants.pheight * (tracker.maxPage + 1));
 
             //Fill the background
-            HTMLUtilities.FillSvgBackground(svg, "white");
+            //HTMLUtilities.FillSvgBackground(svg, "white");
 
             //Be done with it
-            var svgData = svg.outerHTML;
-            var svgBlob = new Blob([svgData], {type:"image/svg+xml;charset=utf-8"});
-            var svgUrl = URL.createObjectURL(svgBlob);
+            //var svgData = svg.outerHTML;
+            //var svgBlob = new Blob([svgData], {type:"image/svg+xml;charset=utf-8"});
+            //var htmlData = htmlexport.outerHTML;
+            var htmlBlob = new Blob([htmlexport.documentElement.outerHTML], {type:"text/plain;charset=utf-8"});
+            activeUrl = URL.createObjectURL(htmlBlob);
             var downloadLink = document.createElement("a");
-            downloadLink.textContent = "Download SVG";
-            downloadLink.href = svgUrl;
-            downloadLink.download = globals.roomname + ".svg";
+            downloadLink.textContent = "Download HTML";
+            downloadLink.href = activeUrl;
+            downloadLink.download = globals.roomname + ".html";
             downloadLink.style.display = "block";
-            exportsvgcontainer.appendChild(downloadLink);
+            exportstaticcontainer.appendChild(downloadLink);
          }
       }, 100);
    };
