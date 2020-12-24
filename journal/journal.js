@@ -182,11 +182,13 @@ function setupClosable(element)
 function exportSinglePage(page, tracker)
 {
    var context = buffer1.getContext("2d");
-   CanvasUtilities.Clear(buffer1);
+   CanvasUtilities.Clear(buffer1); //, "#FFF");
    tracker.drawpointer = 0;
    tracker.scheduledLines = [];
    processLines(tracker, Number.MAX_SAFE_INTEGER, page, Number.MAX_SAFE_INTEGER);
    drawLines(tracker.scheduledLines, context);
+   //Need this so images are saved with backgrounds.
+   CanvasUtilities.SwapColor(context, new Color(0,0,0,0), new Color(255,255,255,1), 0);
    return buffer1.toDataURL();
 }
 
@@ -211,7 +213,6 @@ function setupStaticExport()
       show(exportstaticscreen);
 
       //It will never be higher than 8000 (I think)
-      //var svg = HTMLUtilities.CreateSvg(constants.pwidth,constants.pheight); 
       var htmlexport = document.implementation.createHTMLDocument();
       htmlexport.body.innerHTML = `
 <meta charset="UTF-8">
@@ -253,17 +254,6 @@ body { width: 1700px; font-family: sans-serif; margin: 8px; padding: 0; }
       var page = 0;
       var ready = true;
 
-      //var pagedo = (p) =>
-      //{
-      //   var image = HTMLUtilities.CreateSvgElement("image");
-      //   image.setAttribute("x", 0);//p * constants.pwidth);
-      //   image.setAttribute("y", p * constants.pheight); //0);
-      //   image.setAttribute("width", constants.pwidth);
-      //   image.setAttribute("height", constants.pheight);
-      //   image.setAttributeNS('http://www.w3.org/1999/xlink','href',buffer1.toDataURL());
-      //   svg.appendChild(image);
-      //};
-
       var wait = setInterval(() =>
       {
          if(ready)
@@ -289,18 +279,8 @@ body { width: 1700px; font-family: sans-serif; margin: 8px; padding: 0; }
 
             var msgs = processMessages(tracker, Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER);
             msgs.forEach(x => textbox.appendChild(createMessageElement(x)));
-   
-            //svg.setAttribute("viewBox","0 0 " + (constants.pwidth * tracker.maxPage) + " " + constants.pheight);
-            //svg.setAttribute("width", constants.pwidth * (tracker.maxPage + 1));
-            //svg.setAttribute("height", constants.pheight * (tracker.maxPage + 1));
-
-            //Fill the background
-            //HTMLUtilities.FillSvgBackground(svg, "white");
 
             //Be done with it
-            //var svgData = svg.outerHTML;
-            //var svgBlob = new Blob([svgData], {type:"image/svg+xml;charset=utf-8"});
-            //var htmlData = htmlexport.outerHTML;
             var htmlBlob = new Blob([htmlexport.documentElement.outerHTML], {type:"text/plain;charset=utf-8"});
             activeUrl = URL.createObjectURL(htmlBlob);
             var downloadLink = document.createElement("a");
