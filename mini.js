@@ -194,6 +194,11 @@ function randomLetters(count, r)
    return result;
 }
 
+function fileSafeDate()
+{
+   return String(Math.floor(new Date().getTime()/1000));
+}
+
 //This assume all ACTUAL draw actions happen on frame rather than 
 //on instantaneous input.
 function attachBasicDrawerAction(drawer)
@@ -219,7 +224,9 @@ function attachBasicDrawerAction(drawer)
          {
             drawer.lastX = data.x;
             drawer.lastY = data.y;
-            drawer.startAction = data;
+
+            if(data.action & CursorActions.Start)
+               drawer.startAction = data;
          }
 
          //console.log("DRAG", data.x, data.y);

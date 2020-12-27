@@ -4,7 +4,7 @@
 var system = 
 {
    name: "journal",
-   version: "0.5.2_f2" //format 2
+   version: "0.6.0_f2" //format 2
 };
 
 var globals = 
@@ -446,6 +446,32 @@ function performExport(room)
    });
 }
 
+function copySection(ld)
+{
+   var exportCanvas = CanvasUtilities.CreateCopy(drawing, true, 
+      Math.min(ld.x1, ld.x2), Math.min(ld.y1, ld.y2), 
+      Math.abs(ld.x1 - ld.x2), Math.abs(ld.y1 - ld.y2));
+   CanvasUtilities.SwapColor(exportCanvas.getContext("2d"), new Color(0,0,0,0), new Color(255,255,255,1), 0);
+   exportCanvas.className = "pixelated";
+   return exportCanvas;
+}
+
+function exportSection(ld)
+{
+   var expcanv = copySection(globals.pendingStroke.lines[0])
+   exportstaticcontainer.innerHTML = "";
+   show(exportstaticscreen);
+
+   var explink = document.createElement("a");
+   explink.href = expcanv.toDataURL();
+   explink.download = `${globals.roomname}_${fileSafeDate()}.png`;
+   explink.className = "block text";
+   explink.textContent = "Download " + explink.download;
+
+   exportstaticcontainer.appendChild(explink);
+   exportstaticcontainer.appendChild(expcanv);
+}
+
 function refreshInfo(data)
 {
    if(data)
@@ -576,6 +602,8 @@ function generatePendingLines(drw, pending)
    {
       pending.active = true;
       pending.accepting = true;
+      pending.displayAtEnd = false;
+      pending.postLines = true;
       pending.size = getLineSize();
       pending.tool = getTool();
       pending.page = getPageNumber();
@@ -605,9 +633,13 @@ function generatePendingLines(drw, pending)
          pending.accepting = false; //DON'T do any more fills on this stroke!!
          flood(drw, currentLines, pending.color);
       }
-      else if (pending.tool.startsWith("rect"))
+      else if (pending.tool.indexOf("rect") >= 0)
       {
          pending.type = symbols.rectangles;
+         pending.displayAtEnd = true;
+
+         if(pending.tool == "exportrect")
+            pending.postLines = false;
 
          //If this is the first line, create it. otherwise, keep updating the
          //secondary thing. We don't need "current lines" because a rect fill
@@ -899,6 +931,20 @@ function drawLines(lines, context, overridecolor)
    return lines; 
 }
 
+function selectRect(sx, sy, cx, cy)
+{
+   selectrectangle.style.display = "block";
+   selectrectangle.style.left = Math.min(sx, cx);
+   selectrectangle.style.top = Math.min(sy, cy);
+   selectrectangle.style.width = Math.abs(sx - cx);
+   selectrectangle.style.height = Math.abs(sy - cy);
+}
+
+function clearSelectRect()
+{
+   selectrectangle.style.display = "none";
+}
+
 function frameFunction()
 {
    if(globals.scheduledScrolls.length > 0)
@@ -912,33 +958,33 @@ function frameFunction()
    {
       drawLocal(globals.drawer, globals.pendingStroke);
 
-      //Post lines when we're done (why is this in the frame drawer again?)
       if(globals.drawer.currentlyDrawing)
       {
-         if(getTool().startsWith("rect"))
+         if(getTool().indexOf("rect") >= 0)
          {
-            var sx = globals.drawer.startAction.clientX;
-            var sy = globals.drawer.startAction.clientY;
-            var cx = globals.drawer.currentAction.clientX;
-            var cy = globals.drawer.currentAction.clientY;
-            selectrectangle.style.display = "block";
-            selectrectangle.style.left = Math.min(sx, cx);
-            selectrectangle.style.top = Math.min(sy, cy);
-            selectrectangle.style.width = Math.abs(sx - cx);
-            selectrectangle.style.height = Math.abs(sy - cy);
+            selectRect(globals.drawer.startAction.clientX, globals.drawer.startAction.clientY,
+               globals.drawer.currentAction.clientX, globals.drawer.currentAction.clientY);
          }
       }
+      //Post lines when we're done (why is this in the frame drawer again?)
       else 
       {
          //Hopefully this doesn't become a performance concern
-         selectrectangle.style.display = "none";
+         clearSelectRect();
 
+         //Don't need to continuously look at the pending stroke when there is none
          if(globals.pendingStroke.active)
          {
-            if(globals.pendingStroke.lines.length > 0)
+            if(globals.pendingStroke.tool == "exportrect")
+               exportSection(globals.pendingStroke.lines[0]);
+
+            //This saves us in a few ways: some tools don't actually generate lines!
+            if(globals.pendingStroke.lines.length > 0 && globals.pendingStroke.postLines)
             {
                var ldata = createLineData(globals.pendingStroke);
                post(endpoint(globals.roomname), ldata, () => setStatus("ok"), () => setStatus("error"));
+               if(globals.pendingStroke.displayAtEnd)
+                  drawLines(globals.pendingStroke.lines);
                //console.log("Stroke complete: " + ldata);
                //drawLines(parseLineData(ldata, 2, ldata.length - 3, ldata.charAt(0)), "#FF0000");
             }

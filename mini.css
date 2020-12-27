@@ -22,6 +22,7 @@ body {
 .right { flex-direction: row-reverse; }
 .center { text-align: center; }
 .inline { display: inline-block; }
+.block { display: block; }
 .inline > * { vertical-align: middle; }
 .inert, .inertall, .inertall * {
    touch-action: manipulation;
