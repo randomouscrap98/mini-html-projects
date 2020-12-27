@@ -278,13 +278,15 @@ CanvasPerformer.prototype.Perform = function(e, cursorData, canvas)
    if(scalingX <= 0 || scalingY <= 0) return;
 
    cursorData = this.GetModifiedCursorData(cursorData, e);
+   cursorData.clientX = cursorData.x;
+   cursorData.clientY = cursorData.y;
    cursorData.x = (cursorData.x - 
       (clientRect.left + parseFloat(clientStyle.borderLeftWidth))) / scalingX;
    cursorData.y = (cursorData.y - 
       (clientRect.top + parseFloat(clientStyle.borderTopWidth))) / scalingY;
 
    cursorData.targetElement = canvas;
-   cursorData.onTarget = (e.target === canvas);
+   cursorData.onTarget = (e.target === canvas || e.target.hasAttribute("data-rndcanvasallowtarget"));
    cursorData.time = Date.now();
 
    if(e && this.ShouldCapture(cursorData)) 

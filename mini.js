@@ -219,6 +219,7 @@ function attachBasicDrawerAction(drawer)
          {
             drawer.lastX = data.x;
             drawer.lastY = data.y;
+            drawer.startAction = data;
          }
 
          //console.log("DRAG", data.x, data.y);
@@ -226,6 +227,7 @@ function attachBasicDrawerAction(drawer)
          drawer.currentX = data.x;
          drawer.currentY = data.y;
          drawer.currentlyDrawing = true;
+         drawer.currentAction = data;
       }
 
       drawer.lastOffTarget = !data.onTarget;

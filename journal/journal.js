@@ -913,16 +913,37 @@ function frameFunction()
       drawLocal(globals.drawer, globals.pendingStroke);
 
       //Post lines when we're done (why is this in the frame drawer again?)
-      if(!globals.drawer.currentlyDrawing && globals.pendingStroke.active)
+      if(globals.drawer.currentlyDrawing)
       {
-         if(globals.pendingStroke.lines.length > 0)
+         if(getTool().startsWith("rect"))
          {
-            var ldata = createLineData(globals.pendingStroke);
-            post(endpoint(globals.roomname), ldata, () => setStatus("ok"), () => setStatus("error"));
-            //console.log("Stroke complete: " + ldata);
-            //drawLines(parseLineData(ldata, 2, ldata.length - 3, ldata.charAt(0)), "#FF0000");
+            var sx = globals.drawer.startAction.clientX;
+            var sy = globals.drawer.startAction.clientY;
+            var cx = globals.drawer.currentAction.clientX;
+            var cy = globals.drawer.currentAction.clientY;
+            selectrectangle.style.display = "block";
+            selectrectangle.style.left = Math.min(sx, cx);
+            selectrectangle.style.top = Math.min(sy, cy);
+            selectrectangle.style.width = Math.abs(sx - cx);
+            selectrectangle.style.height = Math.abs(sy - cy);
          }
-         globals.pendingStroke.active = false;
+      }
+      else 
+      {
+         //Hopefully this doesn't become a performance concern
+         selectrectangle.style.display = "none";
+
+         if(globals.pendingStroke.active)
+         {
+            if(globals.pendingStroke.lines.length > 0)
+            {
+               var ldata = createLineData(globals.pendingStroke);
+               post(endpoint(globals.roomname), ldata, () => setStatus("ok"), () => setStatus("error"));
+               //console.log("Stroke complete: " + ldata);
+               //drawLines(parseLineData(ldata, 2, ldata.length - 3, ldata.charAt(0)), "#FF0000");
+            }
+            globals.pendingStroke.active = false;
+         }
       }
    }
 
