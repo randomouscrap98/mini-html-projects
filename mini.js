@@ -245,7 +245,7 @@ function attachBasicDrawerAction(drawer)
 var MiniDraw = 
 {
    //An object to store a single line
-   LineData : function (width, color, x1, y1, x2, y2)
+   LineData : function (width, color, x1, y1, x2, y2, rect)
    {
       this.width = width;
       this.color = color;
@@ -253,6 +253,7 @@ var MiniDraw =
       this.y1 = y1;
       this.x2 = x2;
       this.y2 = y2;
+      this.rect = rect;
    },
    SimpleRect : function(ctx, x, y, w, h, clear)
    {
@@ -289,6 +290,20 @@ var MiniDraw =
             MiniDraw.SimpleRect(ctx, ld.x1+Math.cos(ang)*i-ofs, 
                ld.y1+Math.sin(ang)*i-ofs, ld.width, ld.width, !ld.color);
          }
+      }
+   },
+   SimpleRectLine : function(ctx, ld)
+   {
+      if(ld.rect)
+      {
+         if(ld.color)
+            ctx.fillStyle = ld.color;
+         MiniDraw.SimpleRect(ctx, Math.min(ld.x1, ld.x2), Math.min(ld.y1, ld.y2),
+            Math.abs(ld.x1 - ld.x2), Math.abs(ld.y1 - ld.y2), !ld.color);
+      }
+      else
+      {
+         MiniDraw.SimpleLine(ctx, ld);
       }
    },
    GetIndex : function(idata, x, y)

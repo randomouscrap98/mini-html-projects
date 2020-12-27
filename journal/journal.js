@@ -39,6 +39,7 @@ var symbols =
    text : "~",
    stroke : "|",
    lines : "-",
+   rectangles : "+",
    cap : "'"
 };
 
@@ -544,7 +545,7 @@ function dataScan(start, func, maxScan)
          clength = 1 + constants.messageLengthBytes + 
             StreamConvert.CharsToInt(globals.roomdata, current + 1, constants.messageLengthBytes);
       }
-      else if(cc == symbols.stroke || cc == symbols.lines)
+      else if(cc == symbols.stroke || cc == symbols.lines || cc == symbols.rectangles)
       {
          clength = globals.roomdata.indexOf(symbols.cap, current) - current + 1;
       }
@@ -578,7 +579,7 @@ function generatePendingLines(drw, pending)
       pending.size = getLineSize();
       pending.tool = getTool();
       pending.page = getPageNumber();
-      pending.color = pending.tool == "eraser" ? null : getLineColor();
+      pending.color = pending.tool.indexOf("erase") >= 0 ? null : getLineColor();
       pending.lines = [];
    }
 
@@ -603,6 +604,25 @@ function generatePendingLines(drw, pending)
          pending.size = 1;
          pending.accepting = false; //DON'T do any more fills on this stroke!!
          flood(drw, currentLines, pending.color);
+      }
+      else if (pending.tool.startsWith("rect"))
+      {
+         pending.type = symbols.rectangles;
+
+         //If this is the first line, create it. otherwise, keep updating the
+         //secondary thing. We don't need "current lines" because a rect fill
+         //is literally just one rectangle
+         if(!pending.lines.length)
+         {
+            pending.lines.push(new MiniDraw.LineData(pending.size, pending.color,
+               Math.round(drw.currentX), Math.round(drw.currentY),
+               Math.round(drw.currentX), Math.round(drw.currentY), true));
+         }
+         else
+         {
+            pending.lines[0].x2 = Math.round(drw.currentX);
+            pending.lines[0].y2 = Math.round(drw.currentY);
+         }
       }
 
       //if the amount of lines we're about to add is too much, remove from the
@@ -750,10 +770,10 @@ function createLineData(pending)
          lasty = pending.lines[i].y2;
       }
    }
-   else if(pending.type == symbols.lines)
+   else if(pending.type == symbols.lines || pending.type == symbols.rectangles)
    {
       result += createColorData(pending.color) +
-         StreamConvert.IntToChars(pending.size, 1);
+         (pending.type == symbols.rectangles ? "" : StreamConvert.IntToChars(pending.size, 1));
 
       //And now, just all the line data as-is (literally);
       pending.lines.forEach(x => result += 
@@ -838,19 +858,25 @@ function parseLineData(data, start, length, type)
       }
 
    }
-   else if(type == symbols.lines)
+   else if(type == symbols.lines || type == symbols.rectangles)
    {
       var color = parseColorData(data, start);
-      var size = StreamConvert.CharsToInt(data, start + 4, 1);
-      l += 5;
+      var size = 1;
+      l += 4;
+      
+      if(type == symbols.lines)
+      {
+         size = StreamConvert.CharsToInt(data, start + l, 1);
+         l++;
+      }
 
-      //This one is actually simpler, it's just blobs of lines
+      //This one is actually simpler, it's just blobs of lines (or rectangles)
       for(i = start + l; i < start + length; i += 8)
       {
          t = parseStandardPoint(data, i);
          t2 = parseStandardPoint(data, i + 4);
          result.push(new MiniDraw.LineData(size, t.extra ? color : null, 
-            t.x, t.y, t2.x, t2.y));
+            t.x, t.y, t2.x, t2.y, type == symbols.rectangles));
       }
    }
    else
@@ -868,7 +894,7 @@ function drawLines(lines, context, overridecolor)
    {
       if(overridecolor)
          x.color = overridecolor;
-      MiniDraw.SimpleLine(context, x);
+      MiniDraw.SimpleRectLine(context, x);
    });
    return lines; 
 }
@@ -990,7 +1016,7 @@ function processLines(tracker, limit, page, scanLimit)
       tracker.drawpointer = start + length;
 
       //We only handle certain things in draw
-      if(cc != symbols.lines && cc != symbols.stroke)
+      if(cc != symbols.lines && cc != symbols.stroke && cc != symbols.rectangles)
          return;
 
       //We ALSO only handle the draw if it's the right PAGE.
