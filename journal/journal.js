@@ -4,7 +4,7 @@
 var system = 
 {
    name: "journal",
-   version: "0.6.0_f2" //format 2
+   version: "0.6.2_f2" //format 2
 };
 
 var globals = 
@@ -89,6 +89,7 @@ window.onload = function()
          setupChat();
          globals.drawer = setupDrawer(drawing);
          drawtoggle.oninput = (e) => setDrawAbility(globals.drawer, drawing, drawtoggle.checked);
+         hfliptoggle.oninput = (e) => globals.drawer.SetInvert(hfliptoggle.checked);
 
          pullInitialStream(() =>
          {
@@ -647,13 +648,13 @@ function generatePendingLines(drw, pending)
          if(!pending.lines.length)
          {
             pending.lines.push(new MiniDraw.LineData(pending.size, pending.color,
-               Math.round(drw.currentX), Math.round(drw.currentY),
-               Math.round(drw.currentX), Math.round(drw.currentY), true));
+               Math.round(Math.max(drw.currentX,0)), Math.round(Math.max(drw.currentY,0)),
+               Math.round(Math.max(drw.currentX,0)), Math.round(Math.max(drw.currentY,0)), true));
          }
          else
          {
-            pending.lines[0].x2 = Math.round(drw.currentX);
-            pending.lines[0].y2 = Math.round(drw.currentY);
+            pending.lines[0].x2 = Math.round(Math.max(drw.currentX,0));
+            pending.lines[0].y2 = Math.round(Math.max(drw.currentY,0));
          }
       }
 

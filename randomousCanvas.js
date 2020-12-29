@@ -266,6 +266,13 @@ CanvasPerformer.prototype.Detach = function()
    this._canvas = false;
 };
 
+CanvasPerformer.prototype.SetInvert = function(horizontal, vertical)
+{
+   this.horizontalInvert = horizontal;
+   this.verticalInvert = vertical;
+   this._canvas.style.transform = (horizontal ? "scalex(-1) " : "") + (vertical ? "scaley(-1) " : "");
+};
+
 CanvasPerformer.prototype.Perform = function(e, cursorData, canvas)
 {
    var context = canvas.getContext("2d");
@@ -284,6 +291,11 @@ CanvasPerformer.prototype.Perform = function(e, cursorData, canvas)
       (clientRect.left + parseFloat(clientStyle.borderLeftWidth))) / scalingX;
    cursorData.y = (cursorData.y - 
       (clientRect.top + parseFloat(clientStyle.borderTopWidth))) / scalingY;
+
+   if(this.horizontalInvert)
+      cursorData.x = canvas.width - cursorData.x;
+   if(this.verticalInvert)
+      cursorData.y = canvas.height - cursorData.y;
 
    cursorData.targetElement = canvas;
    cursorData.onTarget = (e.target === canvas || e.target.hasAttribute("data-rndcanvasallowtarget"));
