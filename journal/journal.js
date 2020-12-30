@@ -4,7 +4,7 @@
 var system = 
 {
    name: "journal",
-   version: "0.6.2_f2" //format 2
+   version: "0.6.3_f2" //format 2
 };
 
 var globals = 
@@ -75,6 +75,8 @@ window.onload = function()
 
       HTMLUtilities.SimulateScrollbar(scrollbar, scrollbarbar, scrollblock, true);
       globals.context = drawing.getContext("2d");
+
+      handlePageHash(location.hash);
 
       if(!document.body.hasAttribute("data-export"))
       {
@@ -341,17 +343,25 @@ function setupPageControls()
 }
 
 //This might be a dumb function idk
-function changePage(increment)
+function changePage(increment, exact)
 {
    globals.drawpointer = 0;
    globals.scheduledLines = [];
-   setPageNumber(getPageNumber() + increment);
+   setPageNumber(MathUtilities.MinMax((exact ? 0 : getPageNumber()) + increment, 0, 1000000));
    CanvasUtilities.Clear(drawing);
+   location.hash = "page" + (getPageNumber() + 1);
 
    if(getPageNumber() <= 0)
       pagebackward.setAttribute("data-disabled", "");
    else
       pagebackward.removeAttribute("data-disabled");
+}
+
+function handlePageHash(hash)
+{
+   var match = hash.match(/page(\d+)/i);
+   if(match)
+      changePage(Number(match[1]) - 1, true);
 }
 
 
