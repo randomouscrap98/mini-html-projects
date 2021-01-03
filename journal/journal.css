@@ -143,6 +143,16 @@ button[data-selected] {
    background-color: skyblue;
 }
 
+#palette button {
+   padding: 2px;
+}
+
+#palette .swatch {
+   width: 100%;
+   height: 100%;
+   box-sizing: border-box;
+}
+
 #webcontrols {
    flex: auto;
    font-size: 14px; /*0.8em;*/

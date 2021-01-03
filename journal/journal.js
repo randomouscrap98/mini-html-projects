@@ -4,7 +4,7 @@
 var system = 
 {
    name: "journal",
-   version: "0.6.3_f2" //format 2
+   version: "0.6.4_f2" //format 2
 };
 
 var globals = 
@@ -67,10 +67,12 @@ window.onload = function()
          () => show(chat),
          () => hide(chat));
 
-      setupPageControls();
+      //If these need to be done later, it could pose a problem, there's an
+      //ordering issue here: static cexport needs the close button
       setupValueLinks(document);   
-      setupRadioEmulators(document);
       setupClosable(document);
+
+      setupPageControls();
       setupStaticExport();
 
       HTMLUtilities.SimulateScrollbar(scrollbar, scrollbarbar, scrollblock, true);
@@ -87,6 +89,10 @@ window.onload = function()
          }
 
          setupColorControls();
+         setupPalette(palette, getSetting("palette") || [
+            "#333333","#777777","#BBBBBB", 
+            "#016E8F","#00A1D8","#93E3FD",
+            "#99244F","#E63B7A","#F4A4C0" ]);
          setupExport(document.getElementById("export"));
          setupChat();
          globals.drawer = setupDrawer(drawing);
@@ -109,10 +115,15 @@ window.onload = function()
          enable(sidebar);
          refreshInfo();
       }
+
+      //Setup this crap as late as possible, since it's a generic thing and
+      //there could be document generation before this
+      setupRadioEmulators(document);
    }
    catch(ex)
    {
       alert("Exception during load: " + ex.message);
+      throw ex;
    }
 };
 
@@ -132,7 +143,8 @@ function getLineSize()
       Number(sizemodifier.querySelector("[data-selected]").id.replace("size",""));
 }
 function getLineColor() { return colortext.value; }
-function setLineColor(color) { colortext.value = color; doValueLink(colortext); }
+function setPickerColor(color) { colortext.value = color; doValueLink(colortext); }
+function setLineColor(color) { setPickerColor(color); updateCurrentSwatch(color); }
 function getTool() { return tools.querySelector("[data-selected]").id.replace("tool_", ""); }
 function isDropperActive() { return dropper.hasAttribute("data-selected"); }
 function setDropperActive(active) 
@@ -158,9 +170,47 @@ function doValueLink(target)
    update.value = target.value;
 }
 
+function setupPalette(container, colors)
+{
+   for(var i = 0; i < colors.length; i++)
+   {
+      var button = document.createElement("button");
+      var swatch = document.createElement("div");
+      swatch.className = "swatch";
+      button.appendChild(swatch);
+      button.addEventListener("click", (e) => setPickerColor(e.currentTarget.getAttribute("data-color")));
+      container.appendChild(button);
+      updatePaletteSwatch(button, colors[i]);
+
+      if(i == 0) 
+      {
+         button.setAttribute("data-selected", "");
+         button.click();
+         //setPickerColor(colors[i]);
+      }
+   }
+}
+
+function updatePaletteSwatch(button, color)
+{
+   if(color) 
+      button.setAttribute("data-color", color);
+
+   button.firstElementChild.style.background = 
+      button.getAttribute("data-color");
+}
+
+function updateCurrentSwatch(color)
+{
+   updatePaletteSwatch(palette.querySelector("[data-selected]"), color);
+   setSetting("palette", [...palette.querySelectorAll("[data-color]")].map(x => x.getAttribute("data-color")));
+}
+
 function setupColorControls()
 {
    dropper.onclick = () => setDropperActive(!isDropperActive()) ;
+   color.oninput = () => setLineColor(color.value);
+   colortext.oninput = () => setLineColor(colortext.value);
 }
 
 function setupRadioEmulators(element)
