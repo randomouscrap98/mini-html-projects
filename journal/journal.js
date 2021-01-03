@@ -4,7 +4,7 @@
 var system = 
 {
    name: "journal",
-   version: "0.6.6_f2" //format 2
+   version: "0.6.7_f2" //format 2
 };
 
 var globals = 
@@ -88,11 +88,12 @@ window.onload = function()
             return;
          }
 
-         setupColorControls();
+         setSetting("palette", null);
          setupPalette(palette, getSetting("palette") || [
-            "#333333","#777777","#BBBBBB", 
+            "#333333","#858585","#D6D6D6", 
             "#016E8F","#00A1D8","#93E3FD",
-            "#99244F","#E63B7A","#F4A4C0" ]);
+            "#99244F","#E63B7A","#F4A4C0",
+            "#4E7A27","#76BB40","#CDE8B5" ]);
          setupExport(document.getElementById("export"));
          setupChat();
          globals.drawer = setupDrawer(drawing);
