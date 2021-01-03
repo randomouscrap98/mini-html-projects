@@ -4,7 +4,7 @@
 var system = 
 {
    name: "journal",
-   version: "0.6.4_f2" //format 2
+   version: "0.6.6_f2" //format 2
 };
 
 var globals = 
@@ -143,7 +143,7 @@ function getLineSize()
       Number(sizemodifier.querySelector("[data-selected]").id.replace("size",""));
 }
 function getLineColor() { return colortext.value; }
-function setPickerColor(color) { colortext.value = color; doValueLink(colortext); }
+function setPickerColor(c) { colortext.value = c; color.value = c; } //doValueLink(colortext); }
 function setLineColor(color) { setPickerColor(color); updateCurrentSwatch(color); }
 function getTool() { return tools.querySelector("[data-selected]").id.replace("tool_", ""); }
 function isDropperActive() { return dropper.hasAttribute("data-selected"); }
@@ -178,7 +178,15 @@ function setupPalette(container, colors)
       var swatch = document.createElement("div");
       swatch.className = "swatch";
       button.appendChild(swatch);
-      button.addEventListener("click", (e) => setPickerColor(e.currentTarget.getAttribute("data-color")));
+      button.addEventListener("click", (e) => 
+      {
+         var c = e.currentTarget.getAttribute("data-color");
+         if(color.parentNode != e.currentTarget)
+         {
+            e.currentTarget.appendChild(color);
+            setPickerColor(c);
+         }
+      });
       container.appendChild(button);
       updatePaletteSwatch(button, colors[i]);
 
@@ -186,7 +194,6 @@ function setupPalette(container, colors)
       {
          button.setAttribute("data-selected", "");
          button.click();
-         //setPickerColor(colors[i]);
       }
    }
 }

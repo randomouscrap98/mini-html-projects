@@ -121,11 +121,25 @@ canvas {
 }
 
 #colortools { display: flex; flex-flow: row nowrap; }
-#color { flex: auto; }
+#color { 
+   opacity: 0; 
+   position: absolute; 
+   width: 100px;
+   height: 100px;
+   left: 0;
+   top: 0;
+} /*display: none; }*/
+#colortext { 
+   flex: auto; 
+   font-size: 9px; 
+   width: 10px; 
+   font-family: monospace;
+}
 #dropper { 
    flex: none; 
    width: 25px; 
    padding: 0;
+   padding-bottom: 2px;
 }
 
 .tools {
@@ -145,6 +159,7 @@ button[data-selected] {
 
 #palette button {
    padding: 2px;
+   position: relative;
 }
 
 #palette .swatch {

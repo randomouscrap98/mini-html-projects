@@ -2,13 +2,13 @@
    <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-      <script src="../jquery-3.4.1.min.js?v=1609292054"></script>
-      <script src="../randomous.js?v=1609292054"></script>
-      <script src="../randomousCanvas.js?v=1609292054"></script>
-      <script src="../mini.js?v=1609292054"></script>
-      <script src="journal.js?v=1609292054"></script>
-      <link rel="stylesheet" href="../mini.css?v=1609292054">
-      <link rel="stylesheet" href="journal.css?v=1609292054">
+      <script src="../jquery-3.4.1.min.js?v=1609652121"></script>
+      <script src="../randomous.js?v=1609652121"></script>
+      <script src="../randomousCanvas.js?v=1609652121"></script>
+      <script src="../mini.js?v=1609652121"></script>
+      <script src="journal.js?v=1609652121"></script>
+      <link rel="stylesheet" href="../mini.css?v=1609652121">
+      <link rel="stylesheet" href="journal.css?v=1609652121">
    </head>
    <body class="collapseall">
       <div id="window">
@@ -35,10 +35,9 @@
       <div id="sidebar" class="inertall" data-disabled>
          <div id="paintcontrols" class="controls" data-hideexport>
             <div id="colortools">
-               <input type="color" id="color" value="#333333" data-link="colortext">
+               <input type="text" id="colortext">
                <button id="dropper">💧</button>
             </div>
-            <input type="text" id="colortext" value="#333333" data-link="color">
             <div id="palette" data-radio class="collapseall tools">
             </div>
             <input type="range" id="size" min="1" max="20" value="3" data-link="sizetext">
@@ -109,6 +108,9 @@
       <div id="exportstaticscreen" class="coverscreen" data-closeable data-hidden>
          <h3>Static Export</h3>
          <div id="exportstaticcontainer"></div>
+      </div>
+      <div id="hiddencontrols" style="display: none;">
+         <input type="color" id="color">
       </div>
    </body>
 </html>
