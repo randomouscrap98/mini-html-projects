@@ -144,6 +144,11 @@ canvas {
    flex-flow: row wrap;
 }
 
+.tools.alt {
+   padding: 1px 0;
+   background-color: #AAA;
+}
+
 /* Need this to make inputs shrink properly. Probably should use some kind of
  * flex shrink property though... but isn't that what auto does? */
 #sidebar .flexrow > * {
@@ -157,7 +162,7 @@ canvas {
 }
 .smallraw {
    flex: none;
-   width: 20px !important;
+   width: 18px !important;
    padding: 0;
    border: none;
    background: none;
@@ -169,10 +174,10 @@ canvas {
    height: 25px;
    padding: 0;
 }
+.ftools.alt button { background-color: #e0ecf0; /*#E8E8E8;*/ }
 
-button[data-selected] {
-   background-color: skyblue;
-}
+button[data-selected] { background-color: skyblue !important; }
+/*.alt button[data-selected] { background-color: blue !important; }*/
 
 #palette button {
    padding: 2px;

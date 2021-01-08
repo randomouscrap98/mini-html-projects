@@ -68,7 +68,7 @@ window.onload = function()
          () => hide(chat));
 
       //If these need to be done later, it could pose a problem, there's an
-      //ordering issue here: static cexport needs the close button
+      //ordering issue here: static export needs the close button
       setupValueLinks(document);   
       setupClosable(document);
 
@@ -120,6 +120,7 @@ window.onload = function()
       //Setup this crap as late as possible, since it's a generic thing and
       //there could be document generation before this
       setupRadioEmulators(document);
+      setupPlaybackControls();
    }
    catch(ex)
    {
@@ -398,6 +399,24 @@ function setupPageControls()
 {
    pagebackward.onclick = () => changePage(-1);
    pageforward.onclick = () => changePage(1);
+}
+
+function setupPlaybackControls()
+{
+   var cmclick = (x) =>
+   {
+      var size = Number(x.id.replace("canvas", ""));
+      CanvasUtilities.SetScaling(drawing, size);
+      document.getElementById("window").style.flex = `0 2 ${1000 * size / window.devicePixelRatio}px`;
+      setSetting("canvassize", size);
+   };
+
+   [...document.querySelectorAll("#canvasmodifier button")].forEach(x =>
+   {
+      x.addEventListener("click", () => cmclick(x));
+   });
+
+   cmclick(document.getElementById("canvas" + getSetting("canvassize")) || size1);
 }
 
 //This might be a dumb function idk

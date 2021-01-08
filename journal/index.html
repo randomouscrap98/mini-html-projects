@@ -2,13 +2,13 @@
    <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-      <script src="../jquery-3.4.1.min.js?v=1610145829"></script>
-      <script src="../randomous.js?v=1610145829"></script>
-      <script src="../randomousCanvas.js?v=1610145829"></script>
-      <script src="../mini.js?v=1610145829"></script>
-      <script src="journal.js?v=1610145829"></script>
-      <link rel="stylesheet" href="../mini.css?v=1610145829">
-      <link rel="stylesheet" href="journal.css?v=1610145829">
+      <script src="../jquery-3.4.1.min.js?v=1610149217"></script>
+      <script src="../randomous.js?v=1610149217"></script>
+      <script src="../randomousCanvas.js?v=1610149217"></script>
+      <script src="../mini.js?v=1610149217"></script>
+      <script src="journal.js?v=1610149217"></script>
+      <link rel="stylesheet" href="../mini.css?v=1610149217">
+      <link rel="stylesheet" href="journal.css?v=1610149217">
    </head>
    <body class="collapseall">
       <div id="window">
@@ -49,7 +49,7 @@
                <button id="size2">&#215;2</button>
                <button id="size3">&#215;3</button>
             </div>
-            <div id="tools" data-radio class="collapseall tools">
+            <div id="tools" data-radio class="collapseall tools alt">
                <button data-selected id="tool_pen">Pe</button>
                <button id="tool_eraser">Er</button>
                <button id="tool_fill">Fi</button>
@@ -59,6 +59,14 @@
             </div>
          </div>
          <div id="playbackcontrols" class="controls">
+            <div id="canvasmodifier" data-radio class="collapseall tools">
+               <button id="canvas0.25">&#188;</button>
+               <button id="canvas0.5">&#189;</button>
+               <button id="canvas0.75">&#190;</button>
+               <button data-selected id="canvas1">1</button>
+               <button id="canvas1.5">1.5</button>
+               <button id="canvas2">2</button>
+            </div>
             <div class="flexrow">
                <input type="range" id="playback" min="1" max="20" value="10" data-link="playbacktext">
                <input type="text" id="playbacktext" class="controltext smallraw center" value="10" data-link="playback">
