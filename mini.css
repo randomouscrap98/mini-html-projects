@@ -33,6 +33,8 @@ body {
 .striped:nth-child(even) { background-color: rgba(0,0,0,0.02); }
 .evenfill { display: flex; }
 .evenfill > * { flex: auto; }
+.flexrow { display: flex; flex-flow: row nowrap; }
+.flexrow > * { flex: auto; }
 
 input, textarea, button {
    border-radius: 0;

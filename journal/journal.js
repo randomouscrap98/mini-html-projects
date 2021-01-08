@@ -88,12 +88,12 @@ window.onload = function()
             return;
          }
 
-         setSetting("palette", null);
          setupPalette(palette, getSetting("palette") || [
             "#333333","#858585","#D6D6D6", 
             "#016E8F","#00A1D8","#93E3FD",
             "#99244F","#E63B7A","#F4A4C0",
             "#4E7A27","#76BB40","#CDE8B5" ]);
+         setupColorControls();
          setupExport(document.getElementById("export"));
          setupChat();
          globals.drawer = setupDrawer(drawing);

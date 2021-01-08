@@ -2,13 +2,13 @@
    <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-      <script src="../jquery-3.4.1.min.js?v=1609653266"></script>
-      <script src="../randomous.js?v=1609653266"></script>
-      <script src="../randomousCanvas.js?v=1609653266"></script>
-      <script src="../mini.js?v=1609653266"></script>
-      <script src="journal.js?v=1609653266"></script>
-      <link rel="stylesheet" href="../mini.css?v=1609653266">
-      <link rel="stylesheet" href="journal.css?v=1609653266">
+      <script src="../jquery-3.4.1.min.js?v=1610145829"></script>
+      <script src="../randomous.js?v=1610145829"></script>
+      <script src="../randomousCanvas.js?v=1610145829"></script>
+      <script src="../mini.js?v=1610145829"></script>
+      <script src="journal.js?v=1610145829"></script>
+      <link rel="stylesheet" href="../mini.css?v=1610145829">
+      <link rel="stylesheet" href="journal.css?v=1610145829">
    </head>
    <body class="collapseall">
       <div id="window">
@@ -34,14 +34,16 @@
       </div>
       <div id="sidebar" class="inertall" data-disabled>
          <div id="paintcontrols" class="controls" data-hideexport>
-            <div id="colortools">
-               <input type="text" id="colortext">
-               <button id="dropper">💧</button>
+            <div id="colortools" class="flexrow">
+               <input type="text" id="colortext" class="controltext">
+               <button id="dropper" class="subtool">💧</button>
             </div>
             <div id="palette" data-radio class="collapseall tools">
             </div>
-            <input type="range" id="size" min="1" max="20" value="3" data-link="sizetext">
-            <input type="text" id="sizetext" value="3" data-link="size">
+            <div class="flexrow">
+               <input type="range" id="size" min="1" max="20" value="3" data-link="sizetext">
+               <input type="text" id="sizetext" class="controltext smallraw center" value="3" data-link="size">
+            </div>
             <div id="sizemodifier" data-radio class="collapseall tools">
                <button data-selected id="size1">&#215;1</button><!--&#9632&#185;</button> &#8321;</button>-->
                <button id="size2">&#215;2</button>
@@ -57,8 +59,10 @@
             </div>
          </div>
          <div id="playbackcontrols" class="controls">
-            <input type="range" id="playback" min="1" max="20" value="10" data-link="playbacktext">
-            <input type="text" id="playbacktext" value="10" data-link="playback">
+            <div class="flexrow">
+               <input type="range" id="playback" min="1" max="20" value="10" data-link="playbacktext">
+               <input type="text" id="playbacktext" class="controltext smallraw center" value="10" data-link="playback">
+            </div>
             <div id="playbackmodifier" data-radio class="collapseall tools">
                <button id="playback1">10&#8304;</button><!--&#9632&#185;</button> &#8321;</button>-->
                <button id="playback10">10&#185;</button>
