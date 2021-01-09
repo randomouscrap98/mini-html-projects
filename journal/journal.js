@@ -406,8 +406,11 @@ function setupPlaybackControls()
    var cmclick = (x) =>
    {
       var size = Number(x.id.replace("canvas", ""));
+      //Because of weird ios bugs UGH
+      x.setAttribute("data-selected", "");
       CanvasUtilities.SetScaling(drawing, size);
       document.getElementById("window").style.flex = `0 2 ${1000 * size / window.devicePixelRatio}px`;
+      scrollbar.refreshScroll();
       setSetting("canvassize", size);
    };
 

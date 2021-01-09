@@ -262,19 +262,28 @@ var HTMLUtilities =
       var min = false;
       var max = false;
 
-      var down = e =>
+      var cacheValues = () =>
       {
-         e.preventDefault();
-         //var pos = EventUtilities.GetPosition(e);
-
-         //We ASSUME these won't change during the duration of the scroll...
-         target = e.target;
          srect = scrollbar.getBoundingClientRect();
          sirect = scrollitem.getBoundingClientRect();
          snheight = scrollnub.clientHeight;
          wheight = window.innerHeight;
          min = srect.top;
          max = srect.bottom - snheight;
+      };
+      var setScroll = (relpos) =>
+      {
+         scrollnub.style.top = relpos;
+         scrollitem.style.top = - (relpos / (max - min)) * (sirect.bottom - sirect.top - wheight);
+      };
+
+      var down = e =>
+      {
+         e.preventDefault();
+
+         //We ASSUME these won't change during the duration of the scroll...
+         target = e.target;
+         cacheValues();
 
          if(allowJump)
             move(e);
@@ -291,12 +300,17 @@ var HTMLUtilities =
 
          var pos = EventUtilities.GetPosition(e);
          var newpos = MathUtilities.MinMax(pos.y - snheight / 2, min, max);
-         var relpos = newpos - min;
-         scrollnub.style.top = relpos;
-         scrollitem.style.top = - (relpos / (max - min)) * (sirect.bottom - sirect.top - wheight);
+         setScroll(newpos - min);
       };
+
       scrollbar.addEventListener("mousedown", down);
       scrollbar.addEventListener("touchstart", down);
+      scrollbar.refreshScroll = () => 
+      {
+         cacheValues();
+         setScroll(Number(scrollnub.style.top.replace("px", "")));
+      };
+
       //These are permanent
       document.addEventListener("mouseup", up);
       document.addEventListener("touchend", up);
