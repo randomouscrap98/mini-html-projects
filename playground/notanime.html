@@ -11,15 +11,34 @@ function genLinks(seed)
    return [0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0,1.1,1.2,1.3,1.4,1.5,1.6,
            1.7,1.8,1.9,2.0,3.0].map(x => `https://thisanimedoesnotexist.ai/results/psi-${x.toFixed(1)}/seed${seed}.png`);
 }
-
+function getID()
+{
+   return location.search.substr(1);
+}
 window.onload = function()
 {
    var slideMaster = new MultiImageBlender();
    slideMaster.maxZoom = 1.5;
    slideMaster.blendGranularity = 1;
+   if(location.hash && location.hash.indexOf("interpolate") >= 0)
+      slideMaster.blendGranularity = 16;
    slideMaster.Attach(slider);
-   slideMaster.LoadImages(genLinks(location.search.substr(1)));
+   slideMaster.LoadImages(genLinks(getID()));
    slideMaster.vStop = Number.MAX_SAFE_INTEGER;
+
+   var exp = document.getElementById("export");
+   exp.onclick = function(e)
+   {
+      exp.disabled = true;
+      $.getJSON(`/danger/?user=random&run=notanime&args=${getID()}`)
+      .fail(function() {
+         alert("Something went wrong?");
+      })
+       .done(function(data)
+        {
+            location.href = `/random/notanimeexport/${getID()}.gif`;
+        });
+   };
 };
 </script>
 <style>
@@ -52,9 +71,19 @@ body
    border-top: 1px solid #444;
    background-color: #333;
 }
+
+#export {
+   position: absolute;
+   top:0;
+   right:0;
+   cursor: pointer;
+   display: block;
+   z-index: 10000;
+}
 </style>
    </head>
    <body>
+      <button id="export">Export</button>
       <div id="slider"></div>
    </body>
 </html>
