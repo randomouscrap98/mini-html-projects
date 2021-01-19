@@ -1,0 +1,60 @@
+<html>
+   <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+      <script src="../jquery-3.4.1.min.js"></script>
+      <script src="../randomous.js"></script>
+      <script src="../randomousCanvas.js"></script>
+<script>
+function genLinks(seed)
+{
+   return [0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0,1.1,1.2,1.3,1.4,1.5,1.6,
+           1.7,1.8,1.9,2.0,3.0].map(x => `https://thisanimedoesnotexist.ai/results/psi-${x.toFixed(1)}/seed${seed}.png`);
+}
+
+window.onload = function()
+{
+   var slideMaster = new MultiImageBlender();
+   slideMaster.maxZoom = 1.5;
+   slideMaster.blendGranularity = 1;
+   slideMaster.Attach(slider);
+   slideMaster.LoadImages(genLinks(location.search.substr(1)));
+   slideMaster.vStop = Number.MAX_SAFE_INTEGER;
+};
+</script>
+<style>
+body
+{
+   padding: 0;
+   margin: 0;
+   font-family: sans-serif;
+   background-color: #333;
+}
+
+/* Actual map styling */
+#slider
+{
+   width: 100vw;
+   height: 100%;
+   overflow: hidden;
+}
+
+.imageBlenderCanvas
+{
+   background-color: #272727;
+}
+
+.imageBlenderSlider 
+{
+   height: 50px;
+   box-sizing: border-box; 
+   padding: 0 0.2rem;
+   border-top: 1px solid #444;
+   background-color: #333;
+}
+</style>
+   </head>
+   <body>
+      <div id="slider"></div>
+   </body>
+</html>

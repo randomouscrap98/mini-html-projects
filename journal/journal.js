@@ -4,7 +4,7 @@
 var system = 
 {
    name: "journal",
-   version: "0.6.7_f2" //format 2
+   version: "0.7.0_f2" //format 2
 };
 
 var globals = 
