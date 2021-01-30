@@ -4,7 +4,7 @@
 var system = 
 {
    name: "journal",
-   version: "0.7.0_f2" //format 2
+   version: "0.7.1_f2" //format 2
 };
 
 var globals = 
@@ -1214,6 +1214,7 @@ function createMessageElement(parsed)
    var msgelem = document.createElement("span");
    msgelem.className = "message";
    msgelem.textContent = parsed.message;
+   msgelem.innerHTML = msgelem.innerHTML.replace(/\b(https?:\/\/[^ ]+)/gi, '<a target="_blank" href="$1">$1</a>');
 
    var username = document.createElement("span");
    username.className = "username";
