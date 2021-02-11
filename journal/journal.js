@@ -4,7 +4,7 @@
 var system = 
 {
    name: "journal",
-   version: "0.7.1_f2" //format 2
+   version: "0.7.2_f2" //format 2
 };
 
 var globals = 
@@ -52,7 +52,7 @@ window.onload = function()
       var url = new URL(location.href);
 
       if(!globals.roomname)
-         globals.roomname = constants.roomPrepend + url.searchParams.get("room");
+         globals.roomname = constants.roomPrepend + (url.searchParams.get("room") || "");
 
       if(url.searchParams.get("export") == 1)
       {
@@ -82,7 +82,7 @@ window.onload = function()
 
       if(!document.body.hasAttribute("data-export"))
       {
-         if(!globals.roomname)
+         if(!globals.roomname || globals.roomname == constants.roomPrepend)
          {
             show(noroomscreen);
             return;
