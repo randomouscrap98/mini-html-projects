@@ -15,6 +15,26 @@ function displayContent(data, element)
    element.append(content);
 }
 
+function appendScroll(element, data, field)
+{
+   if(field)
+   {
+      element[field] += data;
+   }
+   else
+   {
+      if(!(data instanceof Element || data instanceof HTMLDocument))
+      {
+         var elm = document.createElement("div");
+         elm.textContent = data;
+         data = elm;
+      }
+
+      element.appendChild(data);
+   }
+   element.scrollTop = element.scrollHeight;
+}
+
 function shuffleInt(num)
 {
    var list = [];

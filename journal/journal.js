@@ -4,7 +4,7 @@
 var system = 
 {
    name: "journal",
-   version: "0.7.2_f2" //format 2
+   version: "0.8.0_f2" //format 2
 };
 
 var globals = 
@@ -50,13 +50,14 @@ window.onload = function()
       setupComputedConstants();
 
       var url = new URL(location.href);
+      var sidebar = document.getElementById("sidebar");
 
       if(!globals.roomname)
          globals.roomname = constants.roomPrepend + (url.searchParams.get("room") || "");
 
       if(url.searchParams.get("export") == 1)
       {
-         performExport(globals.roomname);
+         performFunctionalExport(globals.roomname);
          return;
       }
 
@@ -73,7 +74,7 @@ window.onload = function()
       setupClosable(document);
 
       setupPageControls();
-      setupStaticExport();
+      setupExports();
 
       HTMLUtilities.SimulateScrollbar(scrollbar, scrollbarbar, scrollblock, true);
       globals.context = drawing.getContext("2d");
@@ -84,7 +85,7 @@ window.onload = function()
       {
          if(!globals.roomname || globals.roomname == constants.roomPrepend)
          {
-            show(noroomscreen);
+            showCover({title:"No room set", text:"Please provide a room using ?room=yourroomname"});
             return;
          }
 
@@ -94,7 +95,7 @@ window.onload = function()
             "#99244F","#E63B7A","#F4A4C0",
             "#4E7A27","#76BB40","#CDE8B5" ]);
          setupColorControls();
-         setupExport(document.getElementById("export"));
+         //setupExport(document.getElementById("export"));
          setupChat();
          globals.drawer = setupDrawer(drawing);
          drawtoggle.oninput = (e) => setDrawAbility(globals.drawer, drawing, drawtoggle.checked);
@@ -154,6 +155,30 @@ function setDropperActive(active)
    if(active) { dropper.setAttribute("data-selected",""); } 
    else { dropper.removeAttribute("data-selected"); }
 }
+
+//title, text, showContainer, 
+function showCover(config)
+{
+   setHidden(coverscreentitle, !config.title);
+   setHidden(coverscreentext, !config.text);
+   setHidden(coverscreencontainer, !config.showContainer);
+   var oldClose = getClosable(coverscreen);
+   if(oldClose) oldClose.parentNode.removeChild(oldClose);
+   if(config.closable || config.onclose) 
+   {
+      setupClosable(coverscreen);
+      if(config.onclose)
+      {
+         var closebtn = getClosable(coverscreen);
+         closebtn.addEventListener("click", config.onclose);
+      }
+   }
+   coverscreentitle.textContent = config.title;
+   coverscreentext.textContent = config.text;
+   coverscreencontainer.innerHTML = "";
+   show(coverscreen);
+}
+function hideCover() { hide(coverscreen); }
 
 function setupComputedConstants()
 {
@@ -232,15 +257,20 @@ function setupRadioEmulators(element)
 
 function setupClosable(element)
 {
-   [...element.querySelectorAll("[data-closeable]")].forEach(x =>
+   var cfunc = x =>
    {
       var closebutton = document.createElement("button");
       closebutton.innerHTML = "&#10005;";
       closebutton.className = "closebutton";
       closebutton.onclick = () => hide(x);
       x.appendChild(closebutton);
-   });
+   };
+   [...element.querySelectorAll("[data-closable]")].forEach(cfunc);
+   if(element.hasAttribute && element.hasAttribute("data-closable"))
+      cfunc(element);
 }
+
+function getClosable(element) { return element.querySelector(".closebutton"); }
 
 function exportSinglePage(page, tracker)
 {
@@ -255,107 +285,6 @@ function exportSinglePage(page, tracker)
    return buffer1.toDataURL();
 }
 
-function setupStaticExport()
-{
-   var cbutt = exportstaticscreen.querySelector(".closebutton");
-   var activeUrl = null;
-   cbutt.addEventListener("click", () => 
-   {
-      if(activeUrl)
-      {
-         console.log("Releasing download blob");
-         window.URL.revokeObjectURL(activeUrl);
-         activeUrl = null;
-      }
-   });
-   
-   exportstatic.onclick = (e) =>
-   {
-      e.preventDefault();
-      exportstaticcontainer.innerHTML = "Loading, please wait...";
-      show(exportstaticscreen);
-
-      //It will never be higher than 8000 (I think)
-      var htmlexport = document.implementation.createHTMLDocument();
-      htmlexport.body.innerHTML = `
-<meta charset="UTF-8">
-<style>
-body { width: 1700px; font-family: sans-serif; margin: 8px; padding: 0; }
-.pane { display: inline-block; margin: 0 10px; padding: 0; vertical-align: top;}
-#textbox { width: 600px; background-color: #FCFCFC; } 
-#imagebox > * { display: block; }
-#infobox { background: #F7F7F7; padding: 10px; margin-bottom: 15px; }
-#infobox h3 { margin-top: 0; }
-#imagebox img { image-rendering: moz-crisp-edges; image-rendering: crisp-edges;
-   image-rendering: optimizespeed; image-rendering: pixelated; }
-.pageid { background: #F3F3F3; padding: 5px; border-radius: 5px; 
-   padding-left: 10px; }
-.username { font-weight: bold; }
-.username::after { content: ":"; }
-.wholemessage { padding: 1px 3px; }
-.striped:nth-child(even) { background-color: #F7F7F7; }
-.exported { color: #777; font-size: 0.8em; display: block; margin: 7px 0 3px 0;
-   font-style: italic; }
-</style>
-<div id="leftpane" class="pane">
-   <div id="imagebox"></div>
-</div>
-<div id="rightpane" class="pane">
-   <div id="infobox">
-      <h3>${globals.roomname}</h3>
-      <time>${globals.preamble.date}</time>
-      <time class="exported">Exported: ${(new Date()).toISOString()}</time>
-   </div>
-   <div id="textbox"></div>
-</div>`;
-
-      var textbox = htmlexport.getElementById("textbox");
-      var imagebox = htmlexport.getElementById("imagebox");
-
-      //Have to do this repeat parsing in order to reduce memory usage.
-      var tracker = { maxPage : 0, chatpointer : 0 };
-      var page = 0;
-      var ready = true;
-
-      var wait = setInterval(() =>
-      {
-         if(ready)
-         {
-            ready = false;
-            var pageURI = exportSinglePage(page++, tracker);
-            var pageID = document.createElement("a");
-            pageID.id = "page_" + page;
-            pageID.className = "pageid";
-            pageID.innerHTML = "Page " + page;
-            pageID.href = "#" + pageID.id;
-            imagebox.appendChild(pageID);
-            var image = document.createElement("img");
-            image.setAttribute('src', pageURI);
-            imagebox.appendChild(image);
-            exportstaticcontainer.innerHTML += "<br>Page " + page;
-            ready = true;
-         }
-
-         if(page > tracker.maxPage)
-         {
-            clearInterval(wait);
-
-            var msgs = processMessages(tracker, Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER);
-            msgs.forEach(x => textbox.appendChild(createMessageElement(x)));
-
-            //Be done with it
-            var htmlBlob = new Blob([htmlexport.documentElement.outerHTML], {type:"text/plain;charset=utf-8"});
-            activeUrl = URL.createObjectURL(htmlBlob);
-            var downloadLink = document.createElement("a");
-            downloadLink.textContent = "Download HTML";
-            downloadLink.href = activeUrl;
-            downloadLink.download = globals.roomname + ".html";
-            downloadLink.style.display = "block";
-            exportstaticcontainer.appendChild(downloadLink);
-         }
-      }, 100);
-   };
-}
 
 function setDrawAbility(drawer, canvas, ability)
 {
@@ -467,17 +396,125 @@ function setupDrawer(canvas)
    return drawer;
 }
 
-function setupExport(exp)
+function setupExports()
 {
    var url = new URL(location.href);
    url.searchParams.set("export", "1");
-   exp.href = url.toString();
+   document.getElementById("export").href = url.toString();
+   exportstatic.onclick = (e) =>
+   {
+      e.preventDefault();
+      performStaticExport();
+   };
 }
 
-function performExport(room)
+function performStaticExport()
+{
+   var activeUrls = [];
+   showCover({
+      title: "Static Export",
+      showContainer: true,
+      onclose : () => 
+      {
+         while(activeUrls.length)
+         {
+            console.log(`Releasing download blob ${activeUrls.length}`);
+            window.URL.revokeObjectURL(activeUrls.pop());
+         }
+      }
+   });
+   appendScroll(coverscreencontainer, "Loading, please wait...");
+
+   //It will never be higher than 8000 (I think)
+   var htmlexport = document.implementation.createHTMLDocument();
+   htmlexport.body.innerHTML = `
+<meta charset="UTF-8">
+<style>
+body { width: 1700px; font-family: sans-serif; margin: 8px; padding: 0; }
+.pane { display: inline-block; margin: 0 10px; padding: 0; vertical-align: top;}
+#textbox { width: 600px; background-color: #FCFCFC; } 
+#imagebox > * { display: block; }
+#infobox { background: #F7F7F7; padding: 10px; margin-bottom: 15px; }
+#infobox h3 { margin-top: 0; }
+#imagebox img { image-rendering: moz-crisp-edges; image-rendering: crisp-edges;
+   image-rendering: optimizespeed; image-rendering: pixelated; }
+.pageid { background: #F3F3F3; padding: 5px; border-radius: 5px; 
+   padding-left: 10px; }
+.username { font-weight: bold; }
+.username::after { content: ":"; }
+.wholemessage { padding: 1px 3px; }
+.striped:nth-child(even) { background-color: #F7F7F7; }
+.exported { color: #777; font-size: 0.8em; display: block; margin: 7px 0 3px 0;
+   font-style: italic; }
+</style>
+<div id="leftpane" class="pane">
+   <div id="imagebox"></div>
+</div>
+<div id="rightpane" class="pane">
+   <div id="infobox">
+      <h3>${globals.roomname}</h3>
+      <time>${globals.preamble.date}</time>
+      <time class="exported">Exported: ${(new Date()).toISOString()}</time>
+   </div>
+   <div id="textbox"></div>
+</div>`;
+
+   var textbox = htmlexport.getElementById("textbox");
+   var imagebox = htmlexport.getElementById("imagebox");
+
+   //Have to do this repeat parsing in order to reduce memory usage.
+   var tracker = { maxPage : 0, chatpointer : 0 };
+   var page = 0;
+   var ready = true;
+
+   var wait = setInterval(() =>
+   {
+      if(ready)
+      {
+         ready = false;
+         var pageURI = exportSinglePage(page++, tracker);
+         var pageID = document.createElement("a");
+         pageID.id = "page_" + page;
+         pageID.className = "pageid";
+         pageID.innerHTML = "Page " + page;
+         pageID.href = "#" + pageID.id;
+         imagebox.appendChild(pageID);
+         var image = document.createElement("img");
+         image.setAttribute('src', pageURI);
+         imagebox.appendChild(image);
+         appendScroll(coverscreencontainer, `Page ${page}`);
+         ready = true;
+      }
+
+      if(page > tracker.maxPage)
+      {
+         clearInterval(wait);
+
+         var msgs = processMessages(tracker, Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER);
+         msgs.forEach(x => textbox.appendChild(createMessageElement(x)));
+
+         //Be done with it
+         var htmlBlob = new Blob([htmlexport.documentElement.outerHTML], {type:"text/plain;charset=utf-8"});
+         activeUrls.push(URL.createObjectURL(htmlBlob));
+         var downloadLink = document.createElement("a");
+         downloadLink.textContent = "Download HTML";
+         downloadLink.href = activeUrls[activeUrls.length - 1];
+         downloadLink.download = `${globals.roomname}_static.html`;
+         downloadLink.style.display = "block";
+         appendScroll(coverscreencontainer, downloadLink);
+      }
+   }, 100);
+}
+
+function performFunctionalExport(room)
 {
    //First, throw up the cover screen
-   show(exportscreen);
+   showCover({ 
+      title: "Functional Export",
+      showContainer: true
+   });
+
+   appendScroll(coverscreencontainer, "Please wait, downloading + stitching data + scripts");
 
    //Then, go download all the header stuff and jam them into their respective elements
    var styles = document.head.querySelectorAll('link[rel="stylesheet"]');
@@ -487,12 +524,27 @@ function performExport(room)
 
    var finalize = () =>
    {
-      console.log(scriptsLeft, stylesLeft);
+      appendScroll(coverscreencontainer, `Remaining Scripts: ${scriptsLeft}, Styles: ${stylesLeft}`);
+      //console.log(scriptsLeft, stylesLeft);
       if(!(stylesLeft == 0 && scriptsLeft == 0)) return;
 
       document.body.setAttribute("data-export", "");
-      hide(exportscreen);
-      alert("Export complete! You can now save this webpage (in Chrome, you select 'Webpage, Complete' in the dialog). Depending on the browser, this page may not function until you save and open it locally.");
+
+      //We can't close the functional export screen (since we mangled the html)
+      //so... oops, this is a little janky
+      hide(coverscreen);
+      var htmlBlob = new Blob([document.documentElement.outerHTML], {type:"text/plain;charset=utf-8"});
+      show(coverscreen);
+      appendScroll(coverscreencontainer, "Export complete! You can close the window when you're done");
+      var activeUrl = window.URL.createObjectURL(htmlBlob);
+      var downloadLink = document.createElement("a");
+      downloadLink.textContent = "Download Functional HTML";
+      downloadLink.href = activeUrl;
+      downloadLink.download = `${room}_full.html`;
+      downloadLink.style.display = "block";
+      appendScroll(coverscreencontainer, downloadLink);
+
+      //alert("Export complete! You can now save this webpage (in Chrome, you select 'Webpage, Complete' in the dialog). Depending on the browser, this page may not function until you save and open it locally.");
    };
 
    $.get(endpoint(room), data => 
@@ -550,8 +602,11 @@ function copySection(ld)
 function exportSection(ld)
 {
    var expcanv = copySection(globals.pendingStroke.lines[0])
-   exportstaticcontainer.innerHTML = "";
-   show(exportstaticscreen);
+   showCover({
+      title: "Region Export",
+      showContainer: true,
+      closable: true
+   });
 
    var explink = document.createElement("a");
    explink.href = expcanv.toDataURL();
@@ -559,8 +614,8 @@ function exportSection(ld)
    explink.className = "block text";
    explink.textContent = "Download " + explink.download;
 
-   exportstaticcontainer.appendChild(explink);
-   exportstaticcontainer.appendChild(expcanv);
+   appendScroll(coverscreencontainer, expcanv);
+   appendScroll(coverscreencontainer, explink);
 }
 
 function refreshInfo(data)
@@ -600,8 +655,10 @@ function pullInitialStream(continuation)
             if(!(globals.preamble && globals.preamble.version && globals.preamble.name == system.name &&
                globals.preamble.version.endsWith("f2")))
             {
-               show(incompatibleformatscreen);
-               return;
+               showCover({
+                  title: "Incompatible format", 
+                  text: "This room/journal appears to be in an incorrect format (bad preamble)"
+               } );
             }
 
             handleIncomingData(data);
@@ -612,7 +669,7 @@ function pullInitialStream(continuation)
       })
       .fail(data =>
       {
-         show(initialchunkfailscreen);
+         showCover({title: "Couldn't pull initial data chunk."});
       });
 }
 

@@ -107,21 +107,10 @@
             </div>
          </div>
       </div>
-      <div id="exportscreen" class="coverscreen" data-hidden>
-         <span>Exporting...</span>
-      </div>
-      <div id="noroomscreen" class="coverscreen" data-hidden>
-         <span>No room provided, must param "room" in query. All rooms are public!<span>
-      </div>
-      <div id="initialchunkfailscreen" class="coverscreen" data-hidden>
-         <span>Couldn't pull initial data chunk.</span>
-      </div>
-      <div id="incompatibleformatscreen" class="coverscreen" data-hidden>
-         <span>This room/journal appears to be in an incorrect format (bad preamble)</span>
-      </div>
-      <div id="exportstaticscreen" class="coverscreen" data-closeable data-hidden>
-         <h3>Static Export</h3>
-         <div id="exportstaticcontainer"></div>
+      <div id="coverscreen" class="coverscreen" data-closable data-hidden>
+         <h3 id="coverscreentitle"></h3>
+         <span id="coverscreentext"></span>
+         <div id="coverscreencontainer" class="lightconsole" data-hidden></div>
       </div>
       <div id="hiddencontrols" style="display: none;">
          <input type="color" id="color">
