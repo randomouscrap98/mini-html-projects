@@ -425,7 +425,20 @@ function performStaticExport()
    });
    appendScroll(coverscreencontainer, "Loading, please wait...");
 
-   //It will never be higher than 8000 (I think)
+   var makeDownload = (data, name, filename) =>
+   {
+      var blob = new Blob([data], {type:"text/plain;charset=utf-8"});
+      activeUrls.push(window.URL.createObjectURL(blob));
+      var downloadLink = document.createElement("a");
+      downloadLink.textContent = `Download ${name}`;
+      downloadLink.href = activeUrls[activeUrls.length - 1];
+      downloadLink.download = filename;
+      downloadLink.style.display = "block";
+      appendScroll(coverscreencontainer, downloadLink);
+   };
+
+   //It will never be higher than 8000 (I think). We do both html AND svg export!
+   var svg = HTMLUtilities.CreateSvg(constants.pwidth,constants.pheight); 
    var htmlexport = document.implementation.createHTMLDocument();
    htmlexport.body.innerHTML = `
 <meta charset="UTF-8">
@@ -472,7 +485,10 @@ body { width: 1700px; font-family: sans-serif; margin: 8px; padding: 0; }
       if(ready)
       {
          ready = false;
+
          var pageURI = exportSinglePage(page++, tracker);
+
+         //The html element
          var pageID = document.createElement("a");
          pageID.id = "page_" + page;
          pageID.className = "pageid";
@@ -482,6 +498,17 @@ body { width: 1700px; font-family: sans-serif; margin: 8px; padding: 0; }
          var image = document.createElement("img");
          image.setAttribute('src', pageURI);
          imagebox.appendChild(image);
+
+         //The svg element
+         var simage = HTMLUtilities.CreateSvgElement("image");
+         simage.setAttribute("x", (page-1) * constants.pwidth);
+         simage.setAttribute("y", 0);
+         simage.setAttribute("width", constants.pwidth);
+         simage.setAttribute("height", constants.pheight);
+         simage.setAttributeNS('http://www.w3.org/1999/xlink','href', pageURI);
+         svg.appendChild(simage);
+         svg.setAttribute("width", constants.pwidth * page);
+
          appendScroll(coverscreencontainer, `Page ${page}`);
          ready = true;
       }
@@ -493,15 +520,11 @@ body { width: 1700px; font-family: sans-serif; margin: 8px; padding: 0; }
          var msgs = processMessages(tracker, Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER);
          msgs.forEach(x => textbox.appendChild(createMessageElement(x)));
 
-         //Be done with it
-         var htmlBlob = new Blob([htmlexport.documentElement.outerHTML], {type:"text/plain;charset=utf-8"});
-         activeUrls.push(URL.createObjectURL(htmlBlob));
-         var downloadLink = document.createElement("a");
-         downloadLink.textContent = "Download HTML";
-         downloadLink.href = activeUrls[activeUrls.length - 1];
-         downloadLink.download = `${globals.roomname}_static.html`;
-         downloadLink.style.display = "block";
-         appendScroll(coverscreencontainer, downloadLink);
+         //Finalize SVG
+         HTMLUtilities.FillSvgBackground(svg, "white");
+
+         makeDownload(svg.outerHTML, "SVG (Images only)", `${globals.roomname}.svg`);
+         makeDownload(htmlexport.documentElement.outerHTML, "HTML", `${globals.roomname}_static.html`);
       }
    }, 100);
 }
