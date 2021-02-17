@@ -520,10 +520,17 @@ body { width: 1700px; font-family: sans-serif; margin: 8px; padding: 0; }
          var msgs = processMessages(tracker, Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER);
          msgs.forEach(x => textbox.appendChild(createMessageElement(x)));
 
-         //Finalize SVG
+         //Finalize SVG. Set viewbox just in case (it's not necessary but it
+         //helps with scaling if you need it later)
          HTMLUtilities.FillSvgBackground(svg, "white");
-
+         svg.setAttribute("viewBox", `0 0 ${svg.getAttribute("width")} ${svg.getAttribute("height")}`);
          makeDownload(svg.outerHTML, "SVG (Images only)", `${globals.roomname}.svg`);
+
+         //Modify svg to produce a "quarter" svg (useful for zoomed out stuff)
+         svg.setAttribute("width", Number(svg.getAttribute("width")) / 4);
+         svg.setAttribute("height", Number(svg.getAttribute("height")) / 4);
+         makeDownload(svg.outerHTML, "SVG (Quarter size)", `${globals.roomname}_quarter.svg`);
+
          makeDownload(htmlexport.documentElement.outerHTML, "HTML", `${globals.roomname}_static.html`);
       }
    }, 100);
