@@ -79,7 +79,8 @@ function any(array, check)
    return false;
 }
 
-function endpoint(room) { return "/stream/" + room; }
+function endpoint(room, readonly) { return "/stream/" + room + 
+   (readonly ? "?readonlykey=true" : ""); }
 
 function queryEnd(room, start, handle, error, readonly)
 {

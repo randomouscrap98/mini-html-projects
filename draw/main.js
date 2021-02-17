@@ -135,7 +135,7 @@ $(document).ready(function()
    }, false);
    exp.click("click", function()
    {
-      var js, html, data, css;
+      var js, html, data, css, minicss;
       exp.addClass("disabled");
       var finalize = function()
       {
@@ -153,7 +153,7 @@ $(document).ready(function()
          $("#data").append(dl);
       };
       //Note: this does NOT show errors if anything errors out!
-      $.get(endpoint(system.room), function(d) { data = d; finalize(); });
+      $.get(endpoint(system.room, isReadonly), function(d) { data = d; finalize(); });
       $.get("export.html", function(d) { html = d; finalize(); });
       $.get("draw.js", function(d) { js = d; finalize(); });
       $.get("main.css", function(d) { css = d; finalize(); });
