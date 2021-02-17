@@ -31,7 +31,7 @@ var constants =
    messageLengthBytes : 2,
    maxLines : 5000,        //A single stroke (or fill) can't have more than this
    maxMessageRender : 100, //per frame
-   maxScan : 5000,         //per frame
+   maxScan : 50000,        //per frame
 };
 
 var symbols = 
