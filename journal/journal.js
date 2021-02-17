@@ -378,9 +378,31 @@ function setupChat()
 {
    var form = $("#messageform");
    enterSubmits($("#message"), form);
+   var isAutoUseraname = () => autousernamedatetime.checked;
+
+   autousernamedatetime.onchange = function()
+   {
+      $("#username").prop("disabled", isAutoUseraname());
+      setSetting("autousernamedatetime", isAutoUseraname());
+   };
+
+   if(getSetting("autousernamedatetime"))
+      autousernamedatetime.click();
 
    form.submit(function()
    {
+      //Automatically set the username
+      if(isAutoUseraname())
+      {
+         var d = new Date();
+         var zs = (v,ln) => String(v).padStart(ln || 2, "0");
+         //username.value = d.toISOString();
+         //username.value = `${String(d.getMonth() + 1)}-${d.getDate()}-${d.getFullYear()}t${zs(
+         //   d.getHours())}`;
+         username.value = `${d.getFullYear()}${zs(d.getMonth() + 1)}${zs(d.getDate())}.${zs(
+            d.getHours())}${zs(d.getMinutes())}`;
+      }
+         
       post(endpoint(globals.roomname), createMessageChunk(username.value, message.value));
       message.value = "";
       return false;
@@ -922,6 +944,8 @@ function flood(drw, currentLines, color)
 
 function createMessageChunk(username, message)
 {
+   //This DAMN SPACE is here to stay, half the first giant journal already uses
+   //it. Perhpaps swap it out when you get to the second journal.
    var m = username + ": " + message;
    var max = StreamConvert.MaxValue(constants.messageLengthBytes);
    if(m.length > max)
@@ -1285,7 +1309,7 @@ function processLines(tracker, limit, page, scanLimit)
 function parseMessage(fullMessage)
 {
    var colon = fullMessage.indexOf(":");
-   var result = { username : "???", message : fullMessage };
+   var result = { username : "???", message : fullMessage }; //, time : null };
 
    if(colon >= 0)
    {
@@ -1304,11 +1328,22 @@ function createMessageElement(parsed)
    msgelem.innerHTML = msgelem.innerHTML.replace(/\b(https?:\/\/[^ ]+)/gi, '<a target="_blank" href="$1">$1</a>');
 
    var username = document.createElement("span");
-   username.className = "username";
-   username.textContent = parsed.username;
+   username.className = "username"; // noflex";
+   username.title = parsed.username;
+
+   var um = parsed.username.match(/^(\d{4})(\d{2})(\d{2})\.(\d{2})(\d{2})$/);
+   if(um)
+   {
+      var d = new Date(`${um[1]}-${um[2]}-${um[3]}T${um[4]}:${um[5]}`);
+      username.textContent = d.toLocaleDateString().replaceAll('/','-');
+   }
+   else
+   {
+      username.textContent = parsed.username;
+   }
 
    var msgcontainer = document.createElement("div");
-   msgcontainer.className = "striped wholemessage";
+   msgcontainer.className = "striped wholemessage"; // flexrow";
    msgcontainer.appendChild(username);
    msgcontainer.appendChild(msgelem);
 

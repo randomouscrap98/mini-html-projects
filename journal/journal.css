@@ -62,7 +62,11 @@ canvas {
 #messages { padding: 0.2em 0; }
 .wholemessage { padding: 0.08em 0.3em; }
 .message { white-space: pre-wrap; }
-.username { font-weight: bold; }
+.username { 
+   font-weight: bold;
+/*   font-size: 12px; 
+   font-family: monospace; */
+}
 .username::after { content: ":"; }
 
 /* Message form */
@@ -79,6 +83,11 @@ canvas {
    height: 5rem;
    max-height: 15rem;
    min-height: 2rem;
+}
+
+#messageform .autousernamedatetime {
+   font-size: 0.8em;
+   padding: 0.1em;
 }
 
 /* Scrollbar */

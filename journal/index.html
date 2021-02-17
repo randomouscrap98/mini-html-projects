@@ -27,7 +27,11 @@
             <div id="messages" class="messages"></div>
          </div>
          <form id="messageform" data-hideexport class="collapseall">
-            <input tabindex="1" type="text" id="username" placeholder="username" required="">
+            <div class="flexrow">
+               <input tabindex="1" type="text" id="username" placeholder="username" required="">
+               <label class="noflex likeinput autousernamedatetime">
+                  <input id="autousernamedatetime" type="checkbox">datetime</label>
+            </div>
             <textarea tabindex="1" id="message" maxlength="3500" placeholder="message" required=""></textarea>
             <input tabindex="2" type="submit">
          </form>
@@ -36,32 +40,35 @@
          <div id="paintcontrols" class="controls" data-hideexport>
             <div id="colortools" class="flexrow">
                <input type="text" id="colortext" class="controltext">
-               <button id="dropper" class="subtool">💧</button>
+               <button id="dropper" class="subtool" title="Dropper (pick color)">💧</button>
             </div>
             <div id="palette" data-radio class="collapseall tools">
             </div>
-            <div class="flexrow">
-               <input type="range" id="size" min="1" max="20" value="3" data-link="sizetext">
+            <div class="flexrow" title="Line size">
+               <input type="range" id="size" min="1" max="10" value="3" data-link="sizetext" >
                <input type="text" id="sizetext" class="controltext smallraw center" value="3" data-link="size">
             </div>
-            <div id="sizemodifier" data-radio class="collapseall tools">
-               <button data-selected id="size1">&#215;1</button><!--&#9632&#185;</button> &#8321;</button>-->
+            <div id="sizemodifier" data-radio class="collapseall tools" title="Line size multiplier">
+               <button data-selected id="size1">&#215;1</button>
                <button id="size2">&#215;2</button>
                <button id="size3">&#215;3</button>
+               <button id="size4">&#215;4</button>
+               <button id="size5">&#215;5</button>
+               <button id="size6">&#215;6</button>
             </div>
             <div id="tools" data-radio class="collapseall tools alt">
-               <button data-selected id="tool_pen">Pe</button>
-               <button id="tool_eraser">Er</button>
-               <button id="tool_fill">Fi</button>
-               <button id="tool_rectfill">RF</button>
-               <button id="tool_recterase">RE</button>
-               <button id="tool_exportrect">Ex</button>
+               <button data-selected id="tool_pen" title="Pen">Pe</button>
+               <button id="tool_eraser" title="Eraser">Er</button>
+               <button id="tool_fill" title="Bucket fill">Fi</button>
+               <button id="tool_rectfill" title="Rectangle fill">RF</button>
+               <button id="tool_recterase" title="Rectangle erase">RE</button>
+               <button id="tool_exportrect" title="Export area">Ex</button>
             </div>
          </div>
          <div id="playbackcontrols" class="controls">
             <!-- These are in PLAYBACK because they are not part of DRAWING,
                the canvas size can be set even if there's no drawer program! -->
-            <div id="canvasmodifier" data-radio class="collapseall tools">
+            <div id="canvasmodifier" data-radio class="collapseall tools" title="Zoom">
                <button id="canvas0.25">&#188;</button>
                <button id="canvas0.5">&#189;</button>
                <button id="canvas0.75">&#190;</button>
@@ -69,25 +76,30 @@
                <button id="canvas1.5">1.5</button>
                <button id="canvas2">2</button>
             </div>
-            <div class="flexrow">
+            <div class="flexrow" title="Playback speed">
                <input type="range" id="playback" min="1" max="20" value="10" data-link="playbacktext">
                <input type="text" id="playbacktext" class="controltext smallraw center" value="10" data-link="playback">
             </div>
-            <div id="playbackmodifier" data-radio class="collapseall tools">
+            <div id="playbackmodifier" data-radio class="collapseall tools" title="Playback speed multiplier">
                <button id="playback1">10&#8304;</button><!--&#9632&#185;</button> &#8321;</button>-->
                <button id="playback10">10&#185;</button>
                <button data-selected id="playback100">10&#178;</button>
             </div>
          </div>
          <div id="webcontrols">
-            <label data-hideexport><input type="checkbox" id="drawtoggle" checked="true"></input>Draw</label>
-            <label data-hideexport><input type="checkbox" id="hfliptoggle"></input>HFlip</label>
-            <label><input type="checkbox" id="pageflip"></input>Flip</label>
-            <label><input type="checkbox" id="pagechat"></input>Text</label>
+            <label data-hideexport title="Canvas accepts drawing commands">
+               <input type="checkbox" id="drawtoggle" checked="true"></input>Draw</label>
+            <label data-hideexport title="Horizontal flip canvas">
+               <input type="checkbox" id="hfliptoggle"></input>HFlip</label>
+            <label title="Switch sidebar sides">
+               <input type="checkbox" id="pageflip"></input>Flip</label>
+            <label title="Show text chat">
+               <input type="checkbox" id="pagechat"></input>Text</label>
             <hr>
             <em>Export:</em>
-            <a href="" target="_blank" id="export" data-hideexport>Functional</a>
-            <a href="#" id="exportstatic">Static</a>
+            <a href="" target="_blank" id="export" data-hideexport
+               title="Export page as-is (readonly), requires javascript to view">Functional</a>
+            <a href="#" id="exportstatic" title="Export journal as images in svg or pure html">Static</a>
          </div>
          <div id="systemcontrols" class="controls">
             <div id="version" class="center muted text">v?</div>
@@ -101,7 +113,7 @@
                   <button id="pageforward">▶</button>
                </div>
             </div>
-            <div id="percent" class="" data-hideexport>
+            <div id="percent" class="" data-hideexport title="Room data limit">
                <div id="percentbar"></div>
                <span id="percenttext">???</span>
             </div>

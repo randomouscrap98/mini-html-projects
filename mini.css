@@ -35,8 +35,9 @@ body {
 .evenfill > * { flex: auto; }
 .flexrow { display: flex; flex-flow: row nowrap; }
 .flexrow > * { flex: auto; }
+.noflex { flex: none; }
 
-input, textarea, button {
+input, textarea, button, .likeinput {
    border-radius: 0;
    border: 1px solid #AAA;
    outline: none;
