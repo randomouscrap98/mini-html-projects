@@ -31,16 +31,33 @@ $(document).ready(function()
    var messages = $("#messages");
    var message = $("#message");
    var username = $("#username");
+   
+   var isReadonly = location.hash == "#readonly";
+
+   //SUPER initial setup
+   drawing[0].width = totalWidth;
+   drawing[0].height = totalHeight;
+   CanvasUtilities.Clear(drawing[0], palette[clearIndex]);
 
    //Boring "enter to yeah"
-   enterSubmits(message, chatForm);
-
-   chatForm.submit(function()
+   if(!isReadonly)
    {
-      post(endpoint(system.room), createMessageChunk(username.val(), message.val()));
-      message.val("");
-      return false;
-   });
+      enterSubmits(message, chatForm);
+
+      chatForm.submit(function()
+      {
+         post(endpoint(system.room), createMessageChunk(username.val(), message.val()));
+         message.val("");
+         return false;
+      });
+   }
+   else
+   {
+      hide(pControls[0]);
+      hide(chatForm[0]);
+      hide(document.getElementById("line"));
+      system.drawer = {}; //Don't allow ANY drawer
+   }
 
    //Setup main system
    system.signaled = new Queue(20);
@@ -49,7 +66,7 @@ $(document).ready(function()
    system.receivedIndex = 0;
    system.room = system.room || window.location.search.substr(1);
    system.rawTool = drawSimpleLine;
-   system.drawer = system.drawer || createBaseDrawer(drawing, 3600, 3600);
+   system.drawer = system.drawer || createBaseDrawer(drawing); //, 3600, 3600);
    system.context = context;
    system.frameDraw = setupFrameDraw(system);
 
@@ -79,6 +96,8 @@ $(document).ready(function()
          });
 
       percent.text((data.used / data.limit * 100).toFixed(2) + "%");
+      readonlylink.href=`?${data.readonlykey}#readonly`;
+      readonlylink.textContent = `#${data.readonlykey}`;
       system.signaled.Enqueue(data.signalled);
       statusindicator.text(Math.ceil(system.signaled.Average()));
 
@@ -89,7 +108,7 @@ $(document).ready(function()
          exp.addClass("disabled");
 
       return data.data.length;
-   }, function() { setError(statusindicator); });
+   }, function() { setError(statusindicator); }, isReadonly);
 
    //Start the system
    system.frameDraw();
@@ -277,7 +296,7 @@ function setupFrameDraw(system)
    return frameDraw;
 }
 
-function createBaseDrawer(canvas, width, height)
+function createBaseDrawer(canvas) //, width, height)
 {
    var drawer = new CanvasPerformer();
 
@@ -318,11 +337,8 @@ function createBaseDrawer(canvas, width, height)
          ignore = false;
    };
 
-   canvas[0].width = totalWidth;
-   canvas[0].height = totalHeight;
-
    drawer.Attach(canvas[0]);
-   CanvasUtilities.Clear(canvas[0], palette[clearIndex]);
+   canvas.attr("data-drawable", "");
 
    return drawer;
 }

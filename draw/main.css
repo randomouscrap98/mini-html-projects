@@ -18,10 +18,8 @@ form { margin-bottom: 0.4em; }
    padding: 0;
    margin: 0;
 }
-#drawing {
-   position: absolute;
-   cursor: crosshair;
-}
+#drawing { position: absolute; }
+#drawing[data-drawable] { cursor: crosshair; }
 #line {
    display: inline-block;
    background-color: #F7F7F7;

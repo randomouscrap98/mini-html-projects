@@ -81,10 +81,13 @@ function any(array, check)
 
 function endpoint(room) { return "/stream/" + room; }
 
-function queryEnd(room, start, handle, error)
+function queryEnd(room, start, handle, error, readonly)
 {
-   var requery = function() { queryEnd(room, start, handle, error); };
-   $.getJSON(endpoint(room) + "/json?start=" + start)
+   var requery = function() { queryEnd(room, start, handle, error, readonly); };
+   var params = new URLSearchParams();
+   params.set("start", start);
+   if(readonly) params.set("readonlykey", true);
+   $.getJSON(endpoint(room) + "/json?" + params.toString()) //start=" + start)
       .done(function(data) 
       { 
          start += handle(data, start); 
