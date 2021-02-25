@@ -4,7 +4,7 @@
 var system = 
 {
    name: "journal",
-   version: "0.8.1_f2" //format 2
+   version: "0.8.2_f2" //format 2
 };
 
 var globals = 
@@ -95,10 +95,11 @@ window.onload = function()
             "#99244F","#E63B7A","#F4A4C0",
             "#4E7A27","#76BB40","#CDE8B5" ]);
          setupColorControls();
-         //setupExport(document.getElementById("export"));
          setupChat();
          globals.drawer = setupDrawer(drawing);
-         drawtoggle.oninput = (e) => setDrawAbility(globals.drawer, drawing, drawtoggle.checked);
+         setupToggleSetting("drawtoggle", drawtoggle, 
+            () => setDrawAbility(globals.drawer, drawing, true),
+            () => setDrawAbility(globals.drawer, drawing, false));
          hfliptoggle.oninput = (e) => globals.drawer.SetInvert(hfliptoggle.checked);
 
          pullInitialStream(() =>
@@ -295,7 +296,10 @@ function setDrawAbility(drawer, canvas, ability)
    }
    else
    {
-      drawer.Detach();
+      if(drawer._canvas)
+         drawer.Detach();
+      else
+         console.log("Canvas already detached");
       canvas.removeAttribute("data-drawactive");
    }
 }
@@ -310,6 +314,8 @@ function setupScrollTest()
       ctx.fillRect(i, 0, 1, constants.pwidth);
 }
 
+//This sets up a storage system on the checkbox given, so the state is
+//remembered. It can also run functions based on check state
 function setupToggleSetting(name, checkbox, checktrue, checkfalse)
 {
    var change = e => {
@@ -320,7 +326,11 @@ function setupToggleSetting(name, checkbox, checktrue, checkfalse)
          checkfalse(checkbox, name);
    };
    checkbox.oninput = change;
-   safety(() => checkbox.checked = getSetting(name));
+   //This loads the setting out into the checkbox
+   var setting = getSetting(name);
+   if(setting !== undefined && setting !== null)
+      safety(() => checkbox.checked = setting);
+   //This runs the functions required for initial state
    change();
 }
 
@@ -413,7 +423,7 @@ function setupDrawer(canvas)
 {
    var drawer = new CanvasPerformer();
    attachBasicDrawerAction(drawer);
-   setDrawAbility(drawer, canvas, true);
+   //setDrawAbility(drawer, canvas, true);
    CanvasUtilities.Clear(canvas);
    return drawer;
 }
