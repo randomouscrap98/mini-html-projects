@@ -11,4 +11,5 @@ An example can be seen at http://oboy.smilebasicsource.com/random/mini/um?<roomN
 It is a supremely simple chat built on top of the stream
 
 
-Note: streams can only go up to 5mb for now. They are not persisted to disk yet.
+Note: streams can only go up to 5mb for now. They are persisted to disk
+frequently
