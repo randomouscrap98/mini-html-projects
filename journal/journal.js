@@ -4,7 +4,7 @@
 var system = 
 {
    name: "journal",
-   version: "0.8.2_f2" //format 2
+   version: "0.8.3_f2" //format 2
 };
 
 var globals = 
@@ -486,12 +486,16 @@ body { width: 1700px; font-family: sans-serif; margin: 8px; padding: 0; }
 .pageid { background: #F3F3F3; padding: 5px; border-radius: 5px; 
    padding-left: 10px; }
 .username { font-weight: bold; }
+.keyword { color: deeppink; }
 .username::after { content: ":"; }
 .wholemessage { padding: 1px 3px; }
 .striped:nth-child(even) { background-color: #F7F7F7; }
 .exported { color: #777; font-size: 0.8em; display: block; margin: 7px 0 3px 0;
    font-style: italic; }
 </style>
+<script>
+function hashtag(e) { e.preventDefault(); }
+</script>
 <div id="leftpane" class="pane">
    <div id="imagebox"></div>
 </div>
@@ -1330,12 +1334,19 @@ function parseMessage(fullMessage)
    return result;
 }
 
+function hashtag(e)
+{
+   e.preventDefault();
+   alert("Coming soon: " + e.currentTarget.textContent);
+}
+
 function createMessageElement(parsed)
 {
    var msgelem = document.createElement("span");
    msgelem.className = "message";
    msgelem.textContent = parsed.message;
    msgelem.innerHTML = msgelem.innerHTML.replace(/\b(https?:\/\/[^ ]+)/gi, '<a target="_blank" href="$1">$1</a>');
+   msgelem.innerHTML = msgelem.innerHTML.replace(/(#[a-z]+)/gi, '<a href="$1" class="keyword" onclick="hashtag(event);">$1</a>');
 
    var username = document.createElement("span");
    username.className = "username"; // noflex";

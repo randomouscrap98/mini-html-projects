@@ -8,6 +8,7 @@ body {
 
 .collapse, .collapseall, .collapseall * { margin: 0; }
 .error { color: darkred; }
+.keyword { color: deeppink; }
 .version { font-style: italic; color: #777; }
 .muted { color: #777; }
 .disabled, [data-disabled] {
