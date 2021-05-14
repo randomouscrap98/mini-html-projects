@@ -4,7 +4,7 @@
 var system = 
 {
    name: "journal",
-   version: "0.8.4_f2" //format 2
+   version: "0.8.5_f2" //format 2
 };
 
 var globals = 
@@ -41,7 +41,7 @@ var symbols =
    lines : "-",
    rectangles : "+",
    cap : "'",
-   under : " "
+   ignore : " "
 };
 
 window.onload = function()
@@ -151,12 +151,27 @@ function getLineColor() { return colortext.value; }
 function setPickerColor(c) { colortext.value = c; color.value = c; } //doValueLink(colortext); }
 function setLineColor(color) { setPickerColor(color); updateCurrentSwatch(color); }
 function getTool() { return tools.querySelector("[data-selected]").id.replace("tool_", ""); }
-function getUnder() { return undertoggle.checked; }
 function isDropperActive() { return dropper.hasAttribute("data-selected"); }
 function setDropperActive(active) 
 { 
    if(active) { dropper.setAttribute("data-selected",""); } 
    else { dropper.removeAttribute("data-selected"); }
+}
+//Retrieve the list of STRING (ie regular color hex value) colors to ignore
+function getIgnoredColors() {
+   return null;
+}
+
+//Generate a function (or null if none provided) for the complex line drawing
+function getComplexLineRect(ignored) {
+   if(!ignored)
+      return null;
+   //Convert ignored into proper broken up integers
+   var ignored_1d = [];
+   ignored.forEach(x => ignored_1d = ignored_1d.concat(MiniDraw.ParseHexColor(x)));
+   //Ignored colors are colors we DON'T apply transformations to, so it goes
+   //into "except" (the second parameter)
+   return (d,c) => MiniDraw.ComplexSelectiveRect(d,c,[],ignored_1d);
 }
 
 //title, text, showContainer, 
@@ -823,8 +838,10 @@ function generatePendingLines(drw, pending)
       pending.size = getLineSize();
       pending.tool = getTool();
       pending.page = getPageNumber();
-      pending.under = getUnder();
-      pending.color = pending.tool.indexOf("erase") >= 0 ? null : getLineColor();
+      pending.erasing = pending.tool.indexOf("erase") >= 0;
+      pending.ignoredColors = getCurrentIgnoredColors();
+      pending.complex = getComplexLineRect(pending.ignoredColors);
+      pending.color = pending.erasing ? null : getLineColor();
       pending.lines = [];
    }
 
@@ -841,7 +858,7 @@ function generatePendingLines(drw, pending)
          currentLines.push(new MiniDraw.LineData(pending.size, pending.color,
             Math.round(drw.lastX), Math.round(drw.lastY), 
             Math.round(drw.currentX), Math.round(drw.currentY),
-            false, pending.under));
+            false, pending.complex));
       }
       //Complex big boy fill
       else if(pending.tool == "fill")
@@ -867,7 +884,7 @@ function generatePendingLines(drw, pending)
             pending.lines.push(new MiniDraw.LineData(pending.size, pending.color,
                Math.round(Math.max(drw.currentX,0)), Math.round(Math.max(drw.currentY,0)),
                Math.round(Math.max(drw.currentX,0)), Math.round(Math.max(drw.currentY,0)), 
-               true, pending.under));
+               true, pending.complex));
          }
          else
          {
@@ -933,6 +950,8 @@ function flood(drw, currentLines, color)
          //Bring them back in range
          west++; east--;
 
+         //NOTE: flood fill doesn't CARE about fancy additional complexity like
+         //rectangle drawing or complex line fill, WE are the complexity already
          currentLines.push(new MiniDraw.LineData(1, color, west, p[1], east, p[1]));
 
          //Don't allow huge fills at all, just quit
@@ -988,13 +1007,18 @@ function createLineData(pending)
 {
    var result = pending.type + StreamConvert.IntToVariableWidth(pending.page);
 
-   //Under means "underneath" drawing. These kinds of post-design flags that
+   //"IgnoredColors" is a list of colors where the transformation is not
+   //applied. These kinds of post-design flags that
    //I'm adding are just characters or data appended to the beginning of the
    //line data, and are non-stream characters
-   if(pending.under)
+   if(pending.ignoredColors)
    {
-      //console.log("CREATE UNDER");
-      result += symbols.under;
+      console.log("CREATE UNDER");
+      result += symbols.ignore;
+      //Put colors into the space between the ignores, we'll know it's done
+      //when we encounter another ignore character
+      pending.ignoredColors.forEach(x => result += createColorData(x));
+      result += symbols.ignore;
    }
 
    if(pending.type == symbols.stroke)
@@ -1068,14 +1092,44 @@ function parseColorData(data, start)
 //line data and not page/type/etc (type is given)
 function parseLineData(data, start, length, type)
 {
-   var i, l = 0, x, y, t, t2, result = [], under = false;
+   var i, l = 0, x, y, t, t2, result = [], complexRect = false;
 
-   if(data.charAt(start) === symbols.under)
+   if(data.charAt(start) === symbols.ignore)
    {
-      start++;
-      length--;
-      under = true;
-      //console.log("PARSE UNDER");
+      //There IS data out there that, unfortunately, has this non-ending
+      //glitch. If so, just ignore the space.
+      var iglength = data.indexOf(symbols.ignore, start + 1);
+
+      //If a space is not found, or a space is found outside of the designated
+      //line data, this is an error. Just assume the space is erroneous (from
+      //an old system) and move on
+      if(iglength < 0 || iglength >= start + length) 
+      {
+         console.warn("Found erroneous ignore symbol (probably from old 'under' system'), ignoring");
+         iglength = 1;
+      }
+      else
+      {
+         //This is the length of the WHOLE ignore section, which includes the
+         //front and end symbols
+         iglength = iglength - start + 1;
+         //Now pull the ignored colors out of the line data, starting right
+         //after the initial identifying symbol and ending before the last
+         //symbol. So for instance, if iglength is 6 (meaning 1 color), the 
+         //loop will run for 1, then stop at 5
+         var ignoredColors = [];
+         for(var i = 1; i < iglength - 1; i += 4) //where does 4 come from? is this a constant?
+            ignoredColors.push(parseColorData(data, start + i));
+         //Generate the complex rectangle function to be used to draw this thing.
+         //We track the FOR REAL individual line data for drawing in this
+         //parsing function so we can draw the lines immediately without posting.
+         complexRect = getComplexLineRect(ignoredColors);
+         console.log("PARSE UNDER: " + iglength);
+      }
+
+      //Skip over the ignored colors section
+      start += iglength;
+      length -= iglength;
    }
 
    if(type == symbols.stroke)
@@ -1127,9 +1181,8 @@ function parseLineData(data, start, length, type)
       {
          result.push(new MiniDraw.LineData(size, color, 
             segment[i], segment[i + 1], segment[i + 2], segment[i + 3], 
-            false, under)); //rect, underneath draw
+            false, complexRect));
       }
-
    }
    else if(type == symbols.lines || type == symbols.rectangles)
    {
@@ -1149,7 +1202,7 @@ function parseLineData(data, start, length, type)
          t = parseStandardPoint(data, i);
          t2 = parseStandardPoint(data, i + 4);
          result.push(new MiniDraw.LineData(size, t.extra ? color : null, 
-            t.x, t.y, t2.x, t2.y, type == symbols.rectangles, under));
+            t.x, t.y, t2.x, t2.y, type == symbols.rectangles, complexRect));
       }
    }
    else
@@ -1271,7 +1324,7 @@ function drawLocal(drawer, pending)
       {
          //This creates pending lines from our current drawing tool/etc for
          //posting later. The generated lines are drawn NOW though, so the line
-         //data must be correct/working/etc (including stuff like under)
+         //data must be correct/working/etc (including stuff like complex func)
          drawLines(generatePendingLines(drawer, pending));
 
          //These are NOT performed every frame because the drawing events are

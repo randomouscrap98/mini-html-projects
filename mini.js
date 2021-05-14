@@ -278,7 +278,7 @@ function attachBasicDrawerAction(drawer)
 var MiniDraw = 
 {
    //An object to store a single line
-   LineData : function (width, color, x1, y1, x2, y2, rect, under)
+   LineData : function (width, color, x1, y1, x2, y2, rect, complex)
    {
       this.width = width;
       this.color = color;
@@ -287,41 +287,60 @@ var MiniDraw =
       this.x2 = x2;
       this.y2 = y2;
       this.rect = rect;
-      this.under = under;
+      this.complex = complex;
    },
-   SimpleRect : function(ctx, x, y, w, h, clear, under)
+   ParseHexColor : function(c)
+   {
+      return [
+         parseInt(c.substr(1,2), 16), 
+         parseInt(c.substr(3,2), 16), 
+         parseInt(c.substr(5,2), 16),
+         c.length == 9 ? parseInt(c.substr(7,2),16) : 255
+      ];
+   },
+   SimpleRect : function(ctx, x, y, w, h, clear, complex)
    {
       //LOTS of if statements, but hopefully those are supremely outshadowed by
       //the drawing time
-      if(clear)
+      if(complex)
+      {
+         //Compute the color to use (the function could ignore this I guess)
+         var c = clear ? [0,0,0,0] : MiniDraw.ParseHexColor(ctx.fillStyle); 
+         //Get the image data
+         var d = ctx.getImageData(Math.round(x), Math.round(y), w, h);
+         //The complex function should modify the data in-place
+         complex(d, c);
+         //Then we reapply it
+         ctx.putImageData(d, Math.round(x), Math.round(y));
+      }
+      else if(clear)
       {
          ctx.clearRect(Math.round(x), Math.round(y), w, h);
-      }
-      else if(under)
-      {
-         var c = [ 
-            parseInt(ctx.fillStyle.substr(1,2), 16), 
-            parseInt(ctx.fillStyle.substr(3,2), 16), 
-            parseInt(ctx.fillStyle.substr(5,2), 16)
-         ];
-         //console.log(ctx.fillStyle,c);
-         var d = ctx.getImageData(Math.round(x), Math.round(y), w, h);
-         for(var i = 0; i < d.data.length; i+=4)
-         {
-            //Fill with color
-            if(!d.data[i+3])
-            {
-               d.data[i] = c[0];
-               d.data[i+1] = c[1];
-               d.data[i+2] = c[2];
-               d.data[i+3] = 255;
-            }
-         }
-         ctx.putImageData(d, Math.round(x), Math.round(y));
       }
       else
       {
          ctx.fillRect(Math.round(x), Math.round(y), w, h);
+      }
+   },
+   //Draw only IN or OUT of the selective colors 
+   ComplexSelectiveRect : function(d, color, selective, except)
+   {
+      csr_datascan:
+      for(var i = 0; i < d.data.length; i+=4)
+      {
+         for(var j = 0; j < selective.length; j+=4)
+            if(d.data[i] != selective[j] || d.data[i+1] != selective[j+1] ||
+               d.data[i+2] != selective[j+2] || d.data[i+3] != selective[j+3])
+               continue csr_datascan;
+         for(var j = 0; j < except.length; j+=4)
+            if(d.data[i] == except[j] && d.data[i+1] == except[j+1] &&
+               d.data[i+2] == except[j+2] && d.data[i+3] == except[j+3])
+               continue csr_datascan;
+
+         d.data[i] = color[0];
+         d.data[i+1] = color[1];
+         d.data[i+2] = color[2];
+         d.data[i+3] = color[3];
       }
    },
    SimpleLine : function (ctx, ld)
@@ -341,14 +360,15 @@ var MiniDraw =
       if(Math.abs(ydiff) < 0.1) //A 0.1 diff shouldn't change anything...
       {
          MiniDraw.SimpleRect(ctx, Math.min(ld.x1, ld.x2) - ofs, ld.y1 - ofs, 
-            Math.abs(xdiff) + ld.width, ld.width, !ld.color, ld.under);
+            Math.abs(xdiff) + ld.width, ld.width, !ld.color, ld.complex);
       }
       else
       {
          for(var i=0;i<dist;i+=0.5) 
          {
             MiniDraw.SimpleRect(ctx, ld.x1+Math.cos(ang)*i-ofs, 
-               ld.y1+Math.sin(ang)*i-ofs, ld.width, ld.width, !ld.color, ld.under);
+               ld.y1+Math.sin(ang)*i-ofs, ld.width, ld.width, 
+               !ld.color, ld.complex);
          }
       }
    },
@@ -359,7 +379,8 @@ var MiniDraw =
          if(ld.color)
             ctx.fillStyle = ld.color;
          MiniDraw.SimpleRect(ctx, Math.min(ld.x1, ld.x2), Math.min(ld.y1, ld.y2),
-            Math.abs(ld.x1 - ld.x2), Math.abs(ld.y1 - ld.y2), !ld.color, ld.under);
+            Math.abs(ld.x1 - ld.x2), Math.abs(ld.y1 - ld.y2), 
+            !ld.color, ld.complex);
       }
       else
       {
