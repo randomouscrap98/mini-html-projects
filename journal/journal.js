@@ -4,7 +4,7 @@
 var system = 
 {
    name: "journal",
-   version: "0.8.3_f2" //format 2
+   version: "0.8.4_f2" //format 2
 };
 
 var globals = 
@@ -40,7 +40,8 @@ var symbols =
    stroke : "|",
    lines : "-",
    rectangles : "+",
-   cap : "'"
+   cap : "'",
+   under : " "
 };
 
 window.onload = function()
@@ -150,6 +151,7 @@ function getLineColor() { return colortext.value; }
 function setPickerColor(c) { colortext.value = c; color.value = c; } //doValueLink(colortext); }
 function setLineColor(color) { setPickerColor(color); updateCurrentSwatch(color); }
 function getTool() { return tools.querySelector("[data-selected]").id.replace("tool_", ""); }
+function getUnder() { return undertoggle.checked; }
 function isDropperActive() { return dropper.hasAttribute("data-selected"); }
 function setDropperActive(active) 
 { 
@@ -821,6 +823,7 @@ function generatePendingLines(drw, pending)
       pending.size = getLineSize();
       pending.tool = getTool();
       pending.page = getPageNumber();
+      pending.under = getUnder();
       pending.color = pending.tool.indexOf("erase") >= 0 ? null : getLineColor();
       pending.lines = [];
    }
@@ -983,12 +986,20 @@ function createLineData(pending)
 {
    var result = pending.type + StreamConvert.IntToVariableWidth(pending.page);
 
+   //Under means "underneath" drawing. These kinds of post-design flags that
+   //I'm adding are just characters or data appended to the beginning of the
+   //line data, and are non-stream characters
+   if(pending.under)
+      result += symbols.under;
+
    if(pending.type == symbols.stroke)
    {
       //lowest bit erase, next 10 x, next 13 y of START point
       result += createStandardPoint(pending.lines[0].x1, pending.lines[0].y1, pending.color) +
          StreamConvert.IntToChars(pending.size, 1);
 
+      //Color is ONLY added if we're not erasing. It's a sort of space optimization,
+      //saves 4 whole bytes on erasing
       if(pending.color)
          result += createColorData(pending.color);
 
@@ -1052,7 +1063,14 @@ function parseColorData(data, start)
 //line data and not page/type/etc (type is given)
 function parseLineData(data, start, length, type)
 {
-   var i, l = 0, x, y, t, t2, result = [];
+   var i, l = 0, x, y, t, t2, result = [], under = false;
+
+   if(data.charAt(start) === symbols.under)
+   {
+      start++;
+      length--;
+      under = true;
+   }
 
    if(type == symbols.stroke)
    {
@@ -1102,7 +1120,8 @@ function parseLineData(data, start, length, type)
       for(i = 0; i < segment.length - 2; i += 2)
       {
          result.push(new MiniDraw.LineData(size, color, 
-            segment[i], segment[i + 1], segment[i + 2], segment[i + 3]));
+            segment[i], segment[i + 1], segment[i + 2], segment[i + 3], 
+            false, under)); //rect, underneath draw
       }
 
    }
@@ -1124,7 +1143,7 @@ function parseLineData(data, start, length, type)
          t = parseStandardPoint(data, i);
          t2 = parseStandardPoint(data, i + 4);
          result.push(new MiniDraw.LineData(size, t.extra ? color : null, 
-            t.x, t.y, t2.x, t2.y, type == symbols.rectangles));
+            t.x, t.y, t2.x, t2.y, type == symbols.rectangles, under));
       }
    }
    else

@@ -278,7 +278,7 @@ function attachBasicDrawerAction(drawer)
 var MiniDraw = 
 {
    //An object to store a single line
-   LineData : function (width, color, x1, y1, x2, y2, rect)
+   LineData : function (width, color, x1, y1, x2, y2, rect, under)
    {
       this.width = width;
       this.color = color;
@@ -287,6 +287,7 @@ var MiniDraw =
       this.x2 = x2;
       this.y2 = y2;
       this.rect = rect;
+      this.under = under;
    },
    SimpleRect : function(ctx, x, y, w, h, clear)
    {
