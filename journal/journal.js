@@ -159,12 +159,13 @@ function setDropperActive(active)
 }
 //Retrieve the list of STRING (ie regular color hex value) colors to ignore
 function getIgnoredColors() {
-   return null;
+   var colors = document.querySelectorAll("#palette [data-ignore]");
+   return [...colors].map(x => x.getAttribute("data-color"));
 }
 
 //Generate a function (or null if none provided) for the complex line drawing
 function getComplexLineRect(ignored) {
-   if(!ignored)
+   if(!ignored || ignored.length == 0)
       return null;
    //Convert ignored into proper broken up integers
    var ignored_1d = [];
@@ -221,10 +222,24 @@ function setupPalette(container, colors)
    {
       var button = document.createElement("button");
       var swatch = document.createElement("div");
+      var ignorebubble = document.createElement("div");
       swatch.className = "swatch";
+      ignorebubble.className = "ignorebubble";
       button.appendChild(swatch);
+      button.appendChild(ignorebubble);
       button.addEventListener("click", (e) => 
       {
+         if(isDropperActive())
+         {
+            e.preventDefault();
+            e.stopPropagation();
+            if(e.currentTarget.hasAttribute("data-ignore"))
+               e.currentTarget.removeAttribute("data-ignore");
+            else
+               e.currentTarget.setAttribute("data-ignore", "");
+            setDropperActive(false);
+         }
+
          var c = e.currentTarget.getAttribute("data-color");
          if(color.parentNode != e.currentTarget)
          {
@@ -839,7 +854,7 @@ function generatePendingLines(drw, pending)
       pending.tool = getTool();
       pending.page = getPageNumber();
       pending.erasing = pending.tool.indexOf("erase") >= 0;
-      pending.ignoredColors = getCurrentIgnoredColors();
+      pending.ignoredColors = getIgnoredColors();
       pending.complex = getComplexLineRect(pending.ignoredColors);
       pending.color = pending.erasing ? null : getLineColor();
       pending.lines = [];
@@ -1011,9 +1026,9 @@ function createLineData(pending)
    //applied. These kinds of post-design flags that
    //I'm adding are just characters or data appended to the beginning of the
    //line data, and are non-stream characters
-   if(pending.ignoredColors)
+   if(pending.complex)
    {
-      console.log("CREATE UNDER");
+      //console.log("CREATE UNDER");
       result += symbols.ignore;
       //Put colors into the space between the ignores, we'll know it's done
       //when we encounter another ignore character
@@ -1124,7 +1139,7 @@ function parseLineData(data, start, length, type)
          //We track the FOR REAL individual line data for drawing in this
          //parsing function so we can draw the lines immediately without posting.
          complexRect = getComplexLineRect(ignoredColors);
-         console.log("PARSE UNDER: " + iglength);
+         //console.log("PARSE UNDER: " + iglength);
       }
 
       //Skip over the ignored colors section
