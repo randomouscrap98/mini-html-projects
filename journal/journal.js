@@ -4,7 +4,7 @@
 var system = 
 {
    name: "journal",
-   version: "0.8.5_f2" //format 2
+   version: "0.9.0_f2" //format 2
 };
 
 var globals = 
@@ -148,7 +148,7 @@ function getLineSize()
       Number(sizemodifier.querySelector("[data-selected]").id.replace("size",""));
 }
 function getLineColor() { return colortext.value; }
-function setPickerColor(c) { colortext.value = c; color.value = c; } //doValueLink(colortext); }
+function setPickerColor(c) { colortext.value = c; color.value = c; }
 function setLineColor(color) { setPickerColor(color); updateCurrentSwatch(color); }
 function getTool() { return tools.querySelector("[data-selected]").id.replace("tool_", ""); }
 function isDropperActive() { return dropper.hasAttribute("data-selected"); }
@@ -240,6 +240,10 @@ function setupPalette(container, colors)
             setDropperActive(false);
          }
 
+         //Even though we DON'T want the color picker to show up on dropper
+         //ignore select, we still want the color picker to into the selected
+         //button. Because we stopped propagation, the color picker should
+         //generally not be opened anyway.
          var c = e.currentTarget.getAttribute("data-color");
          if(color.parentNode != e.currentTarget)
          {
@@ -438,9 +442,6 @@ function setupChat()
       {
          var d = new Date();
          var zs = (v,ln) => String(v).padStart(ln || 2, "0");
-         //username.value = d.toISOString();
-         //username.value = `${String(d.getMonth() + 1)}-${d.getDate()}-${d.getFullYear()}t${zs(
-         //   d.getHours())}`;
          username.value = `${d.getFullYear()}${zs(d.getMonth() + 1)}${zs(d.getDate())}.${zs(
             d.getHours())}${zs(d.getMinutes())}`;
       }
@@ -455,7 +456,6 @@ function setupDrawer(canvas)
 {
    var drawer = new CanvasPerformer();
    attachBasicDrawerAction(drawer);
-   //setDrawAbility(drawer, canvas, true);
    CanvasUtilities.Clear(canvas);
    return drawer;
 }
@@ -623,7 +623,6 @@ function performFunctionalExport(room)
    var finalize = () =>
    {
       appendScroll(coverscreencontainer, `Remaining Scripts: ${scriptsLeft}, Styles: ${stylesLeft}`);
-      //console.log(scriptsLeft, stylesLeft);
       if(!(stylesLeft == 0 && scriptsLeft == 0)) return;
 
       document.body.setAttribute("data-export", "");
@@ -641,8 +640,6 @@ function performFunctionalExport(room)
       downloadLink.download = `${room}_full.html`;
       downloadLink.style.display = "block";
       appendScroll(coverscreencontainer, downloadLink);
-
-      //alert("Export complete! You can now save this webpage (in Chrome, you select 'Webpage, Complete' in the dialog). Depending on the browser, this page may not function until you save and open it locally.");
    };
 
    $.get(endpoint(room), data => 
@@ -741,7 +738,7 @@ function pullInitialStream(continuation)
             {
                //POST the preamble and move on to reload
                post(endpoint(globals.roomname), 
-                  createPreamble(system.name, system.version), // + newPageString(), 
+                  createPreamble(system.name, system.version),
                   d => location.reload());
                return;
             }
@@ -854,8 +851,8 @@ function generatePendingLines(drw, pending)
       pending.tool = getTool();
       pending.page = getPageNumber();
       pending.erasing = pending.tool.indexOf("erase") >= 0;
-      pending.ignoredColors = getIgnoredColors();
-      pending.complex = getComplexLineRect(pending.ignoredColors);
+      pending.ignoredColors = getIgnoredColors(); //WILL BE an empty list, NOT falsy!
+      pending.complex = getComplexLineRect(pending.ignoredColors); //Will be falsy on no complex
       pending.color = pending.erasing ? null : getLineColor();
       pending.lines = [];
    }
@@ -997,6 +994,7 @@ function flood(drw, currentLines, color)
 
 function createMessageChunk(username, message)
 {
+   //TODO:
    //This DAMN SPACE is here to stay, half the first giant journal already uses
    //it. Perhpaps swap it out when you get to the second journal.
    var m = username + ": " + message;

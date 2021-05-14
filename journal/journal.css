@@ -199,15 +199,14 @@ button[data-selected] { background-color: skyblue !important; }
 }
 
 #palette .ignorebubble {
-   width: 10px;
-   height: 10px;
+   width: 9px;
+   height: 9px;
    border: 1px solid darkred;
    border-radius: 10px;
    background-color: red;
    position: absolute;
-   right: 0;
-   bottom: 0;
-   padding: 3px;
+   right: 1px;
+   bottom: 1px;
    box-sizing: border-box;
    display: none;
 }
