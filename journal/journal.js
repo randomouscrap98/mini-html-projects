@@ -990,7 +990,10 @@ function createLineData(pending)
    //I'm adding are just characters or data appended to the beginning of the
    //line data, and are non-stream characters
    if(pending.under)
+   {
+      //console.log("CREATE UNDER");
       result += symbols.under;
+   }
 
    if(pending.type == symbols.stroke)
    {
@@ -1070,6 +1073,7 @@ function parseLineData(data, start, length, type)
       start++;
       length--;
       under = true;
+      //console.log("PARSE UNDER");
    }
 
    if(type == symbols.stroke)
