@@ -840,7 +840,8 @@ function generatePendingLines(drw, pending)
          pending.type = symbols.stroke;
          currentLines.push(new MiniDraw.LineData(pending.size, pending.color,
             Math.round(drw.lastX), Math.round(drw.lastY), 
-            Math.round(drw.currentX), Math.round(drw.currentY)));
+            Math.round(drw.currentX), Math.round(drw.currentY),
+            false, pending.under));
       }
       //Complex big boy fill
       else if(pending.tool == "fill")
@@ -865,7 +866,8 @@ function generatePendingLines(drw, pending)
          {
             pending.lines.push(new MiniDraw.LineData(pending.size, pending.color,
                Math.round(Math.max(drw.currentX,0)), Math.round(Math.max(drw.currentY,0)),
-               Math.round(Math.max(drw.currentX,0)), Math.round(Math.max(drw.currentY,0)), true));
+               Math.round(Math.max(drw.currentX,0)), Math.round(Math.max(drw.currentY,0)), 
+               true, pending.under));
          }
          else
          {
@@ -1267,6 +1269,9 @@ function drawLocal(drawer, pending)
       }
       else
       {
+         //This creates pending lines from our current drawing tool/etc for
+         //posting later. The generated lines are drawn NOW though, so the line
+         //data must be correct/working/etc (including stuff like under)
          drawLines(generatePendingLines(drawer, pending));
 
          //These are NOT performed every frame because the drawing events are

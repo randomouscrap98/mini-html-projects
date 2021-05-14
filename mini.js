@@ -289,14 +289,40 @@ var MiniDraw =
       this.rect = rect;
       this.under = under;
    },
-   SimpleRect : function(ctx, x, y, w, h, clear)
+   SimpleRect : function(ctx, x, y, w, h, clear, under)
    {
       //LOTS of if statements, but hopefully those are supremely outshadowed by
       //the drawing time
       if(clear)
+      {
          ctx.clearRect(Math.round(x), Math.round(y), w, h);
+      }
+      else if(under)
+      {
+         var c = [ 
+            parseInt(ctx.fillStyle.substr(1,2), 16), 
+            parseInt(ctx.fillStyle.substr(3,2), 16), 
+            parseInt(ctx.fillStyle.substr(5,2), 16)
+         ];
+         //console.log(ctx.fillStyle,c);
+         var d = ctx.getImageData(Math.round(x), Math.round(y), w, h);
+         for(var i = 0; i < d.data.length; i+=4)
+         {
+            //Fill with color
+            if(!d.data[i+3])
+            {
+               d.data[i] = c[0];
+               d.data[i+1] = c[1];
+               d.data[i+2] = c[2];
+               d.data[i+3] = 255;
+            }
+         }
+         ctx.putImageData(d, Math.round(x), Math.round(y));
+      }
       else
+      {
          ctx.fillRect(Math.round(x), Math.round(y), w, h);
+      }
    },
    SimpleLine : function (ctx, ld)
    {
@@ -315,14 +341,14 @@ var MiniDraw =
       if(Math.abs(ydiff) < 0.1) //A 0.1 diff shouldn't change anything...
       {
          MiniDraw.SimpleRect(ctx, Math.min(ld.x1, ld.x2) - ofs, ld.y1 - ofs, 
-            Math.abs(xdiff) + ld.width, ld.width, !ld.color);
+            Math.abs(xdiff) + ld.width, ld.width, !ld.color, ld.under);
       }
       else
       {
          for(var i=0;i<dist;i+=0.5) 
          {
             MiniDraw.SimpleRect(ctx, ld.x1+Math.cos(ang)*i-ofs, 
-               ld.y1+Math.sin(ang)*i-ofs, ld.width, ld.width, !ld.color);
+               ld.y1+Math.sin(ang)*i-ofs, ld.width, ld.width, !ld.color, ld.under);
          }
       }
    },
@@ -333,7 +359,7 @@ var MiniDraw =
          if(ld.color)
             ctx.fillStyle = ld.color;
          MiniDraw.SimpleRect(ctx, Math.min(ld.x1, ld.x2), Math.min(ld.y1, ld.y2),
-            Math.abs(ld.x1 - ld.x2), Math.abs(ld.y1 - ld.y2), !ld.color);
+            Math.abs(ld.x1 - ld.x2), Math.abs(ld.y1 - ld.y2), !ld.color, ld.under);
       }
       else
       {
