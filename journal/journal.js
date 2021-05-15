@@ -46,8 +46,16 @@ var symbols =
 
 var palettes = 
 {
+   "0grafx2" : ["#000000","#0000a8","#00ff00","#fffb00","#82ff00","#00ff7d","#00ffff","#0082ff","#0000ff","#7900ff","#cf00ff","#ff00d7","#ff0082","#ff0000","#ff7d00","#cb9a45","#963c18","#610000","#fff782","#c3ff82","#82ff82","#82ffbe","#82ffff","#82c3ff","#8282ff","#a682ff","#cf82ff","#fb82ff","#ff82c3","#ff8282","#ff9e82","#820000","#821c00","#823c00","#825100","#826500","#827900","#418200","#008200","#00823c","#008282","#004182","#000082","#280082","#4d0082","#790082","#820041","#101010","#202020","#303030","#454545","#555555","#656565","#757575","#868686","#9a9a9a","#aaaaaa","#bababa","#cbcbcb","#dfdfdf","#efefef","#ffffff","#4d0000","#590000","#710000","#860000","#9e0000","#b60000","#cf0000","#e70000","#ff1c1c","#ff3434","#ff5151","#ff6d6d","#ff8a8a","#ffa2a2","#ffbebe","#4d2400","#552800","#6d3400","#863c00","#9e4900","#b65900","#cf6500","#e77100","#ff8e1c","#ff9a34","#ffa651","#ffb26d","#ffbe86","#ffcfa2","#ffdfbe","#4d4900","#595100","#716900","#868200","#9e9600","#b6ae00","#cfc700","#e7e300","#ffff00","#ffff1c","#fffb34","#fffb51","#fff76d","#fffb86","#fffba2","#fffbbe","#004d00","#006100","#007900","#008e00","#00a600","#00ba00","#00d300","#00eb00","#1cff1c","#38ff34","#55ff51","#71ff6d","#8aff86","#a6ffa2","#c3ffbe","#004141","#005959","#007171","#008686","#009e9e","#00b6b6","#00cfcf","#00e7e7","#59fffb","#75fffb","#8affff","#9efffb","#baffff","#cbffff","#dbffff","#002041","#002c59","#003871","#004586","#00519e","#005db6","#0069cf","#0075e7","#1c8eff","#349eff","#51aaff","#6dbaff","#8acbff","#a2d7ff","#bee3ff","#00004d","#000065","#000479","#00048e","#0004a6","#0000be","#0000d3","#0000eb","#1c24ff","#343cff","#515dff","#6d79ff","#8a92ff","#a2aaff","#bec7ff","#24004d","#300065","#410082","#4d009a","#5900b2","#6500cb","#7100e7","#8200ff","#8e1cff","#9634ff","#a651ff","#ae6dff","#be86ff","#cba2ff","#dbbeff","#49004d","#5f0063","#75007a","#8b0090","#a100a7","#b700bd","#cd00d4","#e300eb","#e617ed","#ea2ff0","#ed47f2","#f15ff5","#f476f7","#f88efa","#fba6fc","#ffbeff","#200000","#2c0000","#380404","#490c08","#551410","#612018","#712824","#7d382c","#864538","#9a594d","#aa6d5d","#ba8275","#cb9a8a","#dfb2a2","#efcfbe","#ffebdf","#202000","#3c3c00","#514d00","#655908","#79650c","#8e6d14","#a2791c","#b67d28","#be8238","#c78e4d","#cf9661","#dba675","#e3b28e","#ebc3a6","#f7d3c3","#ac7c7c","#6d6d6d"],
+   "blk-neo" : ["#000000","#12173D","#293268","#464B8C","#6B74B2","#909EDD","#C1D9F2","#FFFFFF","#FFCCD0","#F29FAA","#C37289","#994C69","#723352","#3F1F3C","#B22E69","#E54286","#FF6EAF","#FFA5D5","#8CFF9B","#42BC7F","#22896E","#14665B","#0F4A4C","#0A2A33","#1D1A59","#322D89","#354AB2","#3E83D1","#50B9EB","#8CDAFF","#B483EF","#854CBF","#5D2F8C","#431E66","#FFE091","#FFAA6E","#FF695A","#B23C40","#721C2F","#A52639","#DD3745","#FF6675","#78FAE6","#27D3CB","#00AAA5","#008782"],
    "cc-29" : ["#f2f0e5","#b8b5b9","#868188","#646365","#45444f","#3a3858","#212123","#352b42","#43436a","#4b80ca","#68c2d3","#a2dcc7","#ede19e","#d3a068","#b45252","#6a536e","#4b4158","#80493a","#a77b5b","#e5ceb4","#c2d368","#8ab060","#567b79","#4e584a","#7b7243","#b2b47e","#edc8c4","#cf8acb","#5f556a"],
-   "endesga-64" : ["#ff0040","#131313","#1b1b1b","#272727","#3d3d3d","#5d5d5d","#858585","#b4b4b4","#ffffff","#c7cfdd","#92a1b9","#657392","#424c6e","#2a2f4e","#1a1932","#0e071b","#1c121c","#391f21","#5d2c28","#8a4836","#bf6f4a","#e69c69","#f6ca9f","#f9e6cf","#edab50","#e07438","#c64524","#8e251d","#ff5000","#ed7614","#ffa214","#ffc825","#ffeb57","#d3fc7e","#99e65f","#5ac54f","#33984b","#1e6f50","#134c4c","#0c2e44","#00396d","#0069aa","#0098dc","#00cdf9","#0cf1ff","#94fdff","#fdd2ed","#f389f5","#db3ffd","#7a09fa","#3003d9","#0c0293","#03193f","#3b1443","#622461","#93388f","#ca52c9","#c85086","#f68187","#f5555d","#ea323c","#c42430","#891e2b","#571c27"]
+   "endesga-64" : ["#ff0040","#131313","#1b1b1b","#272727","#3d3d3d","#5d5d5d","#858585","#b4b4b4","#ffffff","#c7cfdd","#92a1b9","#657392","#424c6e","#2a2f4e","#1a1932","#0e071b","#1c121c","#391f21","#5d2c28","#8a4836","#bf6f4a","#e69c69","#f6ca9f","#f9e6cf","#edab50","#e07438","#c64524","#8e251d","#ff5000","#ed7614","#ffa214","#ffc825","#ffeb57","#d3fc7e","#99e65f","#5ac54f","#33984b","#1e6f50","#134c4c","#0c2e44","#00396d","#0069aa","#0098dc","#00cdf9","#0cf1ff","#94fdff","#fdd2ed","#f389f5","#db3ffd","#7a09fa","#3003d9","#0c0293","#03193f","#3b1443","#622461","#93388f","#ca52c9","#c85086","#f68187","#f5555d","#ea323c","#c42430","#891e2b","#571c27"],
+   "journey" : ["#050914","#110524","#3b063a","#691749","#9c3247","#d46453","#f5a15d","#ffcf8e","#ff7a7d","#ff417d","#d61a88","#94007a","#42004e","#220029","#100726","#25082c","#3d1132","#73263d","#bd4035","#ed7b39","#ffb84a","#fff540","#c6d831","#77b02a","#429058","#2c645e","#153c4a","#052137","#0e0421","#0c0b42","#032769","#144491","#488bd4","#78d7ff","#b0fff1","#faffff","#c7d4e1","#928fb8","#5b537d","#392946","#24142c","#0e0f2c","#132243","#1a466b","#10908e","#28c074","#3dff6e","#f8ffb8","#f0c297","#cf968c","#8f5765","#52294b","#0f022e","#35003b","#64004c","#9b0e3e","#d41e3c","#ed4c40","#ff9757","#d4662f","#9c341a","#691b22","#450c28","#2d002e"],
+   "lospec500" : ["#10121c","#2c1e31","#6b2643","#ac2847","#ec273f","#94493a","#de5d3a","#e98537","#f3a833","#4d3533","#6e4c30","#a26d3f","#ce9248","#dab163","#e8d282","#f7f3b7","#1e4044","#006554","#26854c","#5ab552","#9de64e","#008b8b","#62a477","#a6cb96","#d3eed3","#3e3b65","#3859b3","#3388de","#36c5f4","#6dead6","#5e5b8c","#8c78a5","#b0a7b8","#deceed","#9a4d76","#c878af","#cc99ff","#fa6e79","#ffa2ac","#ffd1d5","#f6e8e0","#ffffff"],
+   "pear36" : ["#5e315b","#8c3f5d","#ba6156","#f2a65e","#ffe478","#cfff70","#8fde5d","#3ca370","#3d6e70","#323e4f","#322947","#473b78","#4b5bab","#4da6ff","#66ffe3","#ffffeb","#c2c2d1","#7e7e8f","#606070","#43434f","#272736","#3e2347","#57294b","#964253","#e36956","#ffb570","#ff9166","#eb564b","#b0305c","#73275c","#422445","#5a265e","#80366b","#bd4882","#ff6b97","#ffb5b5"],
+   "pico-8" : ["#000000","#1D2B53","#7E2553","#008751","#AB5236","#5F574F","#C2C3C7","#FFF1E8","#FF004D","#FFA300","#FFEC27","#00E436","#29ADFF","#83769C","#FF77A8","#FFCCAA"],
+   "resurrect-64" : ["#2e222f","#3e3546","#625565","#966c6c","#ab947a","#694f62","#7f708a","#9babb2","#c7dcd0","#ffffff","#6e2727","#b33831","#ea4f36","#f57d4a","#ae2334","#e83b3b","#fb6b1d","#f79617","#f9c22b","#7a3045","#9e4539","#cd683d","#e6904e","#fbb954","#4c3e24","#676633","#a2a947","#d5e04b","#fbff86","#165a4c","#239063","#1ebc73","#91db69","#cddf6c","#313638","#374e4a","#547e64","#92a984","#b2ba90","#0b5e65","#0b8a8f","#0eaf9b","#30e1b9","#8ff8e2","#323353","#484a77","#4d65b4","#4d9be6","#8fd3ff","#45293f","#6b3e75","#905ea9","#a884f3","#eaaded","#753c54","#a24b6f","#cf657f","#ed8099","#831c5d","#c32454","#f04f78","#f68181","#fca790","#fdcbb0"],
+   "vinik24" : ["#000000","#6f6776","#9a9a97","#c5ccb8","#8b5580","#c38890","#a593a5","#666092","#9a4f50","#c28d75","#7ca1c0","#416aa3","#8d6268","#be955c","#68aca9","#387080","#6e6962","#93a167","#6eaa78","#557064","#9d9f7f","#7e9e99","#5d6872","#433455"]
 };
 
 window.onload = function()
@@ -163,12 +171,13 @@ function setDropperActive(active)
    if(active) { dropper.setAttribute("data-selected",""); } 
    else { dropper.removeAttribute("data-selected"); }
 }
-function getPaletteNumber() { return Number(palettedialog.getAttribute("data-palette")); }
+function getPaletteName() { return palettedialog.getAttribute("data-palette"); }
 function updatePaletteNumber(inc) {
    var keys = Object.keys(palettes);
-   var num = getPaletteNumber();
+   var num = keys.indexOf(getPaletteName()); //if it's not found, it's -1, whatever
    num = (num + inc + keys.length) % keys.length;
-   palettedialog.setAttribute("data-palette", num);
+   palettedialog.setAttribute("data-palette", keys[num]);
+   setSetting("palettechoice", keys[num]);
 }
 //Retrieve the list of STRING (ie regular color hex value) colors to ignore
 function getIgnoredColors() {
@@ -318,18 +327,21 @@ function setupColorControls()
    color.oninput = () => setLineColor(color.value);
    colortext.oninput = () => setLineColor(colortext.value);
 
-   var keys = Object.keys(palettes);
+   //Go find the origin selection OR first otherwise
+   palettedialog.setAttribute("data-palette", getSetting("palettechoice") || Object.keys(palettes)[0]);
+
    palettedialogleft.onclick = () => { updatePaletteNumber(-1); refreshPaletteDialog(); }
    palettedialogright.onclick = () => { updatePaletteNumber(1); refreshPaletteDialog(); }
    refreshPaletteDialog();
 }
 
+// Refresh the entire palette display (minus the standard color input) based on
+// the "data-palette" attribute
 function refreshPaletteDialog()
 {
    palettedialogpalette.innerHTML = "";
-   var keys = Object.keys(palettes);
-   var palettename = keys[getPaletteNumber()];
-   var palette = palettes[palettename];
+   var palettename = getPaletteName();
+   var palette = palettes[palettename] || palettes[0];
    palettedialogname.textContent = palettename;
    palette.forEach(p =>
    {
@@ -338,10 +350,8 @@ function refreshPaletteDialog()
       b.addEventListener("click", e =>
       {
          e.preventDefault();
-         //alert("Picked a color");
          setLineColor(b.getAttribute("data-color"));
          hide(palettedialog);
-         //hiddencontrols.appendChild(palettedialog);
       });
       palettedialogpalette.appendChild(b);
    });
