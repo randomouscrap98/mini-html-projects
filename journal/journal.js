@@ -44,6 +44,12 @@ var symbols =
    ignore : " "
 };
 
+var palettes = 
+{
+   "cc-29" : ["#f2f0e5","#b8b5b9","#868188","#646365","#45444f","#3a3858","#212123","#352b42","#43436a","#4b80ca","#68c2d3","#a2dcc7","#ede19e","#d3a068","#b45252","#6a536e","#4b4158","#80493a","#a77b5b","#e5ceb4","#c2d368","#8ab060","#567b79","#4e584a","#7b7243","#b2b47e","#edc8c4","#cf8acb","#5f556a"],
+   "endesga-64" : ["#ff0040","#131313","#1b1b1b","#272727","#3d3d3d","#5d5d5d","#858585","#b4b4b4","#ffffff","#c7cfdd","#92a1b9","#657392","#424c6e","#2a2f4e","#1a1932","#0e071b","#1c121c","#391f21","#5d2c28","#8a4836","#bf6f4a","#e69c69","#f6ca9f","#f9e6cf","#edab50","#e07438","#c64524","#8e251d","#ff5000","#ed7614","#ffa214","#ffc825","#ffeb57","#d3fc7e","#99e65f","#5ac54f","#33984b","#1e6f50","#134c4c","#0c2e44","#00396d","#0069aa","#0098dc","#00cdf9","#0cf1ff","#94fdff","#fdd2ed","#f389f5","#db3ffd","#7a09fa","#3003d9","#0c0293","#03193f","#3b1443","#622461","#93388f","#ca52c9","#c85086","#f68187","#f5555d","#ea323c","#c42430","#891e2b","#571c27"]
+};
+
 window.onload = function()
 {
    try
@@ -157,6 +163,13 @@ function setDropperActive(active)
    if(active) { dropper.setAttribute("data-selected",""); } 
    else { dropper.removeAttribute("data-selected"); }
 }
+function getPaletteNumber() { return Number(palettedialog.getAttribute("data-palette")); }
+function updatePaletteNumber(inc) {
+   var keys = Object.keys(palettes);
+   var num = getPaletteNumber();
+   num = (num + inc + keys.length) % keys.length;
+   palettedialog.setAttribute("data-palette", num);
+}
 //Retrieve the list of STRING (ie regular color hex value) colors to ignore
 function getIgnoredColors() {
    var colors = document.querySelectorAll("#palette [data-ignore]");
@@ -221,16 +234,22 @@ function doValueLink(target)
    update.value = target.value;
 }
 
+function makePaletteButton()
+{
+   var button = document.createElement("button");
+   var swatch = document.createElement("div");
+   swatch.className = "swatch";
+   button.appendChild(swatch);
+   return button;
+}
+
 function setupPalette(container, colors)
 {
    for(var i = 0; i < colors.length; i++)
    {
-      var button = document.createElement("button");
-      var swatch = document.createElement("div");
+      var button = makePaletteButton();
       var ignorebubble = document.createElement("div");
-      swatch.className = "swatch";
       ignorebubble.className = "ignorebubble";
-      button.appendChild(swatch);
       button.appendChild(ignorebubble);
       button.addEventListener("click", (e) => 
       {
@@ -244,25 +263,36 @@ function setupPalette(container, colors)
                e.currentTarget.setAttribute("data-ignore", "");
             setDropperActive(false);
          }
+         //They're clicking on it AGAIN. Toggle the hidden state
+         else if (e.currentTarget.hasAttribute("data-selected"))
+         {
+            toggleHidden(palettedialog);
+            //e.currentTarget.appendChild(palettedialog);
+         }
+         else //Something NEW was clicked, hide the dialog
+         {
+            hide(palettedialog);
+         }
 
+         var c = e.currentTarget.getAttribute("data-color");
+         setPickerColor(c);
          //Even though we DON'T want the color picker to show up on dropper
          //ignore select, we still want the color picker to into the selected
          //button. Because we stopped propagation, the color picker should
          //generally not be opened anyway.
-         var c = e.currentTarget.getAttribute("data-color");
-         if(color.parentNode != e.currentTarget)
-         {
-            e.currentTarget.appendChild(color);
-            setPickerColor(c);
-         }
+         //if(color.parentNode != e.currentTarget)
+         //{
+         //   e.currentTarget.appendChild(color);
+         //   setPickerColor(c);
+         //}
       });
       container.appendChild(button);
       updatePaletteSwatch(button, colors[i]);
 
       if(i == 0) 
       {
-         button.setAttribute("data-selected", "");
          button.click();
+         button.setAttribute("data-selected", "");
       }
    }
 }
@@ -287,6 +317,34 @@ function setupColorControls()
    dropper.onclick = () => setDropperActive(!isDropperActive()) ;
    color.oninput = () => setLineColor(color.value);
    colortext.oninput = () => setLineColor(colortext.value);
+
+   var keys = Object.keys(palettes);
+   palettedialogleft.onclick = () => { updatePaletteNumber(-1); refreshPaletteDialog(); }
+   palettedialogright.onclick = () => { updatePaletteNumber(1); refreshPaletteDialog(); }
+   refreshPaletteDialog();
+}
+
+function refreshPaletteDialog()
+{
+   palettedialogpalette.innerHTML = "";
+   var keys = Object.keys(palettes);
+   var palettename = keys[getPaletteNumber()];
+   var palette = palettes[palettename];
+   palettedialogname.textContent = palettename;
+   palette.forEach(p =>
+   {
+      var b = makePaletteButton();
+      updatePaletteSwatch(b, p);
+      b.addEventListener("click", e =>
+      {
+         e.preventDefault();
+         //alert("Picked a color");
+         setLineColor(b.getAttribute("data-color"));
+         hide(palettedialog);
+         //hiddencontrols.appendChild(palettedialog);
+      });
+      palettedialogpalette.appendChild(b);
+   });
 }
 
 function setupRadioEmulators(element)

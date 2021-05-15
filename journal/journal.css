@@ -134,16 +134,44 @@ canvas {
    font-family: monospace;
 }
 
-#color { 
-   opacity: 0; 
-   position: absolute; 
-   width: 23px;
-   height: 23px;
-   padding: 0;
-   border: 0;
-   left: 0;
+#palettedialog {
+   /*position: absolute;*/
+   width: 160px;
+   flex: none;
+   /*right: 25px;
    top: 0;
-} /*display: none; }*/
+   display: block;*/
+   padding: 3px;
+   background-color: white;
+}
+#palettedialogcontrols {
+   display: flex;
+}
+#palettedialogname {
+   flex: auto;
+   text-align: center;
+   text-overflow: ellipsis;
+   overflow: hidden;
+   white-space: nowrap;
+   padding: 0 3px;
+}
+#palettedialogcontrols button {
+   flex: none;
+}
+#palettedialogpalette {
+   margin: 3px 0;
+}
+#palettedialogpalette button {
+   width: 20px;
+   height: 20px;
+   border: 0;
+   padding: 0px;
+   cursor: pointer;
+}
+#color {
+   width: 100%;
+   height: 30px;
+}
 #dropper { 
    padding-bottom: 2px;
 }
@@ -192,7 +220,7 @@ button[data-selected] { background-color: skyblue !important; }
    position: relative;
 }
 
-#palette .swatch {
+.swatch {
    width: 100%;
    height: 100%;
    box-sizing: border-box;

@@ -62,9 +62,11 @@ function getChecked(form, name) { return getInput(form, name)[0].checked; }
 function getValue(form, name) { return getInput(form, name).val(); }
 function getLines(form, name) { return getValue(form, name).split('\n'); }
 
+function isHidden(elm) { return elm.hasAttribute("data-hidden"); }
 function setHidden(elm, hidden) {if(hidden)elm.setAttribute("data-hidden", "");else elm.removeAttribute("data-hidden");}
 function hide(elm) { setHidden(elm, true); }
 function show(elm) { setHidden(elm, false); }
+function toggleHidden(elm) { setHidden(elm, !isHidden(elm)); }
 
 function setDisabled(elm, disabled) {if(disabled)elm.setAttribute("data-disabled", "");else elm.removeAttribute("data-disabled");}
 function disable(elm) { setDisabled(elm, true); }
