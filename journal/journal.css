@@ -157,6 +157,9 @@ canvas {
 }
 #palettedialogcontrols button {
    flex: none;
+   border: none;
+   background: none;
+   cursor: pointer;
 }
 #palettedialogpalette {
    margin: 3px 0;
