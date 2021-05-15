@@ -323,16 +323,17 @@ var MiniDraw =
       }
    },
    //Draw only IN or OUT of the selective colors 
-   ComplexSelectiveRect : function(d, color, selective, except)
+   ComplexExceptionRect : function(d, color, except)
    {
+      var i,j;
       csr_datascan:
-      for(var i = 0; i < d.data.length; i+=4)
+      for(i = 0; i < d.data.length; i+=4)
       {
-         for(var j = 0; j < selective.length; j+=4)
-            if(d.data[i] != selective[j] || d.data[i+1] != selective[j+1] ||
-               d.data[i+2] != selective[j+2] || d.data[i+3] != selective[j+3])
-               continue csr_datascan;
-         for(var j = 0; j < except.length; j+=4)
+         //for(var j = 0; j < selective.length; j+=4)
+         //   if(d.data[i] != selective[j] || d.data[i+1] != selective[j+1] ||
+         //      d.data[i+2] != selective[j+2] || d.data[i+3] != selective[j+3])
+         //      continue csr_datascan;
+         for(j = 0; j < except.length; j+=4)
             if(d.data[i] == except[j] && d.data[i+1] == except[j+1] &&
                d.data[i+2] == except[j+2] && d.data[i+3] == except[j+3])
                continue csr_datascan;

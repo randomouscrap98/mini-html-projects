@@ -4,7 +4,7 @@
 var system = 
 {
    name: "journal",
-   version: "0.9.0_f2" //format 2
+   version: "0.9.1_f2" //format 2
 };
 
 var globals = 
@@ -167,13 +167,18 @@ function getIgnoredColors() {
 function getComplexLineRect(ignored) {
    if(!ignored || ignored.length == 0)
       return null;
-   //Convert ignored into proper broken up integers
-   var ignored_1d = [];
-   ignored.forEach(x => ignored_1d = ignored_1d.concat(MiniDraw.ParseHexColor(x)));
-   //Ignored colors are colors we DON'T apply transformations to, so it goes
-   //into "except" (the second parameter)
-   return (d,c) => MiniDraw.ComplexSelectiveRect(d,c,[],ignored_1d);
+   var key = ignored.toString();
+   if(!(key in getComplexLineRect.ignorememoize))
+   {
+      console.log('memoizing ' + key);
+      //Convert ignored into proper broken up integers
+      var ignored_1d = [];
+      ignored.forEach(x => ignored_1d = ignored_1d.concat(MiniDraw.ParseHexColor(x)));
+      getComplexLineRect.ignorememoize[key] = (d,c) => MiniDraw.ComplexExceptionRect(d,c,ignored_1d);
+   }
+   return getComplexLineRect.ignorememoize[key];
 }
+getComplexLineRect.ignorememoize = [];
 
 //title, text, showContainer, 
 function showCover(config)
