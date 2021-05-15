@@ -4,7 +4,7 @@
 var system = 
 {
    name: "journal",
-   version: "0.9.1_f2" //format 2
+   version: "0.9.2_f2" //format 2
 };
 
 var globals = 
@@ -104,6 +104,9 @@ window.onload = function()
             return;
          }
 
+         //Note: 'setupPalette' is for the personal custom palette displayed
+         //all the time; OTHER palette functions are for the static palette
+         //dialog that shows as the default color picker when double clicking
          setupPalette(palette, getSetting("palette") || [
             "#333333","#858585","#D6D6D6", 
             "#016E8F","#00A1D8","#93E3FD",
@@ -171,6 +174,7 @@ function setDropperActive(active)
    if(active) { dropper.setAttribute("data-selected",""); } 
    else { dropper.removeAttribute("data-selected"); }
 }
+//These palette functions are for the DIALOG, not user custom palettes
 function getPaletteName() { return palettedialog.getAttribute("data-palette"); }
 function updatePaletteNumber(inc) {
    var keys = Object.keys(palettes);
@@ -262,6 +266,9 @@ function setupPalette(container, colors)
       button.appendChild(ignorebubble);
       button.addEventListener("click", (e) => 
       {
+         //The dropper has a special action when used on colors: it overrides
+         //all other operations (except radio select) and toggles the 'ignore'
+         //feature on that color (used for drawing 'under' lines)
          if(isDropperActive())
          {
             e.preventDefault();
@@ -272,40 +279,37 @@ function setupPalette(container, colors)
                e.currentTarget.setAttribute("data-ignore", "");
             setDropperActive(false);
          }
-         //They're clicking on it AGAIN. Toggle the hidden state
+         //They're clicking on it AGAIN. Toggle the hidden state (a literal toggle)
          else if (e.currentTarget.hasAttribute("data-selected"))
          {
             toggleHidden(palettedialog);
-            //e.currentTarget.appendChild(palettedialog);
          }
-         else //Something NEW was clicked, hide the dialog
+         else //Something NEW was clicked, hide the dialog no matter what
          {
             hide(palettedialog);
          }
 
+         // On ANY palette button click, always update the picker color (this
+         // includes the color text at the top of the screen)
          var c = e.currentTarget.getAttribute("data-color");
          setPickerColor(c);
-         //Even though we DON'T want the color picker to show up on dropper
-         //ignore select, we still want the color picker to into the selected
-         //button. Because we stopped propagation, the color picker should
-         //generally not be opened anyway.
-         //if(color.parentNode != e.currentTarget)
-         //{
-         //   e.currentTarget.appendChild(color);
-         //   setPickerColor(c);
-         //}
       });
       container.appendChild(button);
       updatePaletteSwatch(button, colors[i]);
 
       if(i == 0) 
       {
+         //Note: set data-selected AFTERWARDS to avoid any special features
+         //that happen when selecting a palette button again (like opening the
+         //palette dialog)
          button.click();
          button.setAttribute("data-selected", "");
       }
    }
 }
 
+//Given ANY palette button (custom user palette or static), update the color
+//shown inside and assigned to the button
 function updatePaletteSwatch(button, color)
 {
    if(color) 
@@ -315,12 +319,14 @@ function updatePaletteSwatch(button, color)
       button.getAttribute("data-color");
 }
 
+//Call updatePaletteSwatch on the currently selected user custom palette button
 function updateCurrentSwatch(color)
 {
    updatePaletteSwatch(palette.querySelector("[data-selected]"), color);
    setSetting("palette", [...palette.querySelectorAll("[data-color]")].map(x => x.getAttribute("data-color")));
 }
 
+//Set up ANY controls related to color (including the palette dialog)
 function setupColorControls()
 {
    dropper.onclick = () => setDropperActive(!isDropperActive()) ;
@@ -385,7 +391,7 @@ function getClosable(element) { return element.querySelector(".closebutton"); }
 function exportSinglePage(page, tracker)
 {
    var context = buffer1.getContext("2d");
-   CanvasUtilities.Clear(buffer1); //, "#FFF");
+   CanvasUtilities.Clear(buffer1);
    tracker.drawpointer = 0;
    tracker.scheduledLines = [];
    processLines(tracker, Number.MAX_SAFE_INTEGER, page, Number.MAX_SAFE_INTEGER);
@@ -413,15 +419,15 @@ function setDrawAbility(drawer, canvas, ability)
    }
 }
 
-function setupScrollTest()
-{
-   var ctx = drawing.getContext("2d");
-   ctx.font = "10px Arial";
-   for(var i = 0; i < constants.pheight; i += 100)
-      ctx.fillText(String(i), 10, i);
-   for(var i = 0; i < constants.pwidth; i += 100)
-      ctx.fillRect(i, 0, 1, constants.pwidth);
-}
+//function setupScrollTest()
+//{
+//   var ctx = drawing.getContext("2d");
+//   ctx.font = "10px Arial";
+//   for(var i = 0; i < constants.pheight; i += 100)
+//      ctx.fillText(String(i), 10, i);
+//   for(var i = 0; i < constants.pwidth; i += 100)
+//      ctx.fillRect(i, 0, 1, constants.pwidth);
+//}
 
 //This sets up a storage system on the checkbox given, so the state is
 //remembered. It can also run functions based on check state
