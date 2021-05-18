@@ -214,7 +214,7 @@ StreamDrawCore1.prototype.ParseMessage = function(data, start, length)
 };
 
 
-StreamDrawCore1.prototype.CreateStroke = function(lines, ignoredColors)
+StreamDrawCore1.prototype.CreateStroke = function(lines, ignoredColors, recurseJoiner)
 {
    var result = "";
 
@@ -240,10 +240,17 @@ StreamDrawCore1.prototype.CreateStroke = function(lines, ignoredColors)
       if(lines[i].x1 != lastx || lines[i].y1 != lasty)
       {
          //Oof, we have to stop and recurse!
-         console.warn("Stroke break, recursing at ", i);
-         lines.splice(0, i);
-         result.nextResult = this.CreateStroke(lines, ignoredColors);
-         return result;
+         if(typeof recurseJoiner === "string")
+         {
+            console.warn("Stroke break, recursing at ", i);
+            lines.splice(0, i);
+            return result + recurseJoiner + 
+               this.CreateStroke(lines, ignoredColors, recurseJoiner);
+         }
+         else
+         {
+            console.warn("Stroke break, NOT SENDING at ", i);
+         }
       }
 
       ofsx = lines[i].x2 - lastx;

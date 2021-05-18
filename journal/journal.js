@@ -51,8 +51,6 @@ window.onload = function()
 {
    try
    {
-      //setupComputedConstants();
-
       var url = new URL(location.href);
       var sidebar = document.getElementById("sidebar");
 
@@ -924,25 +922,16 @@ function createLineData(pending)
 {
    var startChunk = pending.type + StreamConvert.IntToVariableWidth(pending.page);
    var result = startChunk;
-   var subResult = null;
 
    if(pending.type == globals.system.symbols.stroke)
-      subResult = globals.system.CreateStroke(pending.lines, pending.ignoredColors);
-   else if(pending.type == globals.system.symbols.lines)// || pending.type == symbols.rectangles)
-      subResult = globals.system.CreateBatchLines(pending.lines, pending.ignoredColors);
-   else if(pending.type == globals.system.symbols.rectangles)// || pending.type == symbols.rectangles)
-      subResult = globals.system.CreateBatchRects(pending.lines, pending.ignoredColors);
+      result += globals.system.CreateStroke(pending.lines, pending.ignoredColors, 
+         globals.system.symbols.cap + startChunk);
+   else if(pending.type == globals.system.symbols.lines)
+      result += globals.system.CreateBatchLines(pending.lines, pending.ignoredColors);
+   else if(pending.type == globals.system.symbols.rectangles)
+      result += globals.system.CreateBatchRects(pending.lines, pending.ignoredColors);
    else
       throw "Unknown pending lines type!";
-
-   result += subResult;
-
-   //A special silliness because of linebreaks in strokes. We COULD ignore them but... 
-   while(subResult.nextResult)
-   {
-      result += globals.system.symbols.cap + startChunk;
-      subResult = subResult.nextResult;
-   }
 
    return result + globals.system.symbols.cap;
 }
