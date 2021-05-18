@@ -80,6 +80,7 @@ window.onload = function()
 
       HTMLUtilities.SimulateScrollbar(scrollbar, scrollbarbar, scrollblock, true);
       globals.context = drawing.getContext("2d");
+      globals.system = new StreamDrawCore1(constants.pwidth, constants.pheight);
 
       handlePageHash(location.hash);
 
@@ -102,7 +103,6 @@ window.onload = function()
          setupColorControls();
          setupChat();
          globals.drawer = setupDrawer(drawing);
-         globals.system = new StreamDrawCore1(constants.pwidth, constants.pheight);
          setupToggleSetting("drawtoggle", drawtoggle, 
             () => setDrawAbility(globals.drawer, drawing, true),
             () => setDrawAbility(globals.drawer, drawing, false));
@@ -534,6 +534,9 @@ function performStaticExport()
       appendScroll(coverscreencontainer, downloadLink);
    };
 
+   //A fun hack so there's no ending script tag in the html
+   var scriptTag = "script";
+
    //It will never be higher than 8000 (I think). We do both html AND svg export!
    var svg = HTMLUtilities.CreateSvg(constants.pwidth,constants.pheight); 
    var htmlexport = document.implementation.createHTMLDocument();
@@ -558,9 +561,9 @@ body { width: 1700px; font-family: sans-serif; margin: 8px; padding: 0; }
 .exported { color: #777; font-size: 0.8em; display: block; margin: 7px 0 3px 0;
    font-style: italic; }
 </style>
-<script>
+<${scriptTag}>
 function hashtag(e) { e.preventDefault(); }
-</script>
+</${scriptTag}>
 <div id="leftpane" class="pane">
    <div id="imagebox"></div>
 </div>
