@@ -214,12 +214,12 @@ StreamDrawCore1.prototype.ParseMessage = function(data, start, length)
 };
 
 
-StreamDrawCore1.prototype.CreateStroke = function(lines, ignoreColors)
+StreamDrawCore1.prototype.CreateStroke = function(lines, ignoredColors)
 {
    var result = "";
 
-   if(ignoreColors && ignoreColors.length)
-      result += this.CreateIgnoreData(ignoreColors);
+   if(ignoredColors && ignoredColors.length)
+      result += this.CreateIgnoreData(ignoredColors);
 
    //NOTE: Assume all line colors/size/etc are the same.
    result += this.CreateStandardPoint(lines[0].x1, lines[0].y1, lines[0].color);
@@ -242,7 +242,7 @@ StreamDrawCore1.prototype.CreateStroke = function(lines, ignoreColors)
          //Oof, we have to stop and recurse!
          console.warn("Stroke break, recursing at ", i);
          lines.splice(0, i);
-         result.nextResult = this.CreateStroke(lines, ignoreColors);
+         result.nextResult = this.CreateStroke(lines, ignoredColors);
          return result;
       }
 
@@ -340,8 +340,8 @@ StreamDrawCore1.prototype.CreateGenericBatch = function(lines, ignoredColors)
 {
    var result = "";
 
-   if(ignoreColors && ignoreColors.length)
-      result += this.CreateIgnoreData(ignoreColors);
+   if(ignoredColors && ignoredColors.length)
+      result += this.CreateIgnoreData(ignoredColors);
 
    result += this.CreateColorData(lines[0].color);
    result += (lines[0].rect ? "" : StreamConvert.IntToChars(lines[0].width, this.SIZEBYTES));
@@ -365,7 +365,7 @@ StreamDrawCore1.prototype.ParseGenericBatch = function(data, start, length, isRe
    var t2;
    var t = this.ParseColorData(data, start);
    var color = t.color;
-   var l = t.length;
+   var l = t.skip;
    var size = 1;
    
    if(!isRect)
@@ -382,6 +382,8 @@ StreamDrawCore1.prototype.ParseGenericBatch = function(data, start, length, isRe
       result.push(new MiniDraw.LineData(size, t.extra ? color : null, 
          t.x, t.y, t2.x, t2.y, isRect, ignoreData.complexRect));
    }
+
+   //console.log(result);
 
    return result;
 };
@@ -427,8 +429,8 @@ StreamDrawCore1.prototype.CreateIgnoreData = function(ignoredColors)
    //Put colors into the space between the ignores, we'll know it's done
    //when we encounter another ignore character
    var result = this.symbols.ignore;
-   pending.ignoredColors.forEach(x => result += this.CreateColorData(x));
-   return result + symbols.ignore;
+   ignoredColors.forEach(x => result += this.CreateColorData(x));
+   return result + this.symbols.ignore;
 };
 
 //Ignore data in a DATASTREAM is optional, and thus we must test for the

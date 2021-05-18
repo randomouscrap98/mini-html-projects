@@ -867,7 +867,8 @@ function generatePendingLines(drw, pending)
          pending.size = 1;
          pending.accepting = false; //DON'T do any more fills on this stroke!!
          var context = copyToBackbuffer(drw._canvas);
-         globals.system.Flood(context, drw.currentX, drw.currentY, currentLines, pending.color);
+         globals.system.Flood(context, drw.currentX, drw.currentY, pending.color, currentLines,
+            constants.maxLines);
       }
       else if (pending.tool.indexOf("rect") >= 0)
       {
@@ -1024,6 +1025,7 @@ function frameFunction()
             {
                var ldata = createLineData(globals.pendingStroke);
                post(endpoint(globals.roomname), ldata, () => setStatus("ok"), () => setStatus("error"));
+               //console.log("POSTED: ", ldata);
                if(globals.pendingStroke.displayAtEnd)
                   drawLines(globals.pendingStroke.lines);
                //console.log("Stroke complete: " + ldata);
