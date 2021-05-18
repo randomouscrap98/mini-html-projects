@@ -37,15 +37,15 @@ function StreamDrawCore1(width, height)
    this.POINTBYTES = 4;
    this.SIZEBYTES = 1;
 
-   this.RecomputeConstants();
+   //this.RecomputeConstants();
 };
 
 StreamDrawCore1.prototype.SetSize = function(width, height)
 {
    //Take width/height, find the closest power of 2 that will contain it, and
    //compute the shift and max value from that.
-   this.xShift = Math.Ceil(Math.log2(width));
-   this.yShift = Math.Ceil(Math.log2(height));
+   this.xShift = Math.ceil(Math.log2(width));
+   this.yShift = Math.ceil(Math.log2(height));
 
    var maxBits = this.POINTBYTES * 6;
 
@@ -94,8 +94,7 @@ StreamDrawCore1.prototype.DataScan = function(data, start, func, maxScan)
       }
       else
       {
-         console.error("Unrecoverable data error! Unknown character in stream!");
-         return;
+         throw `Unrecoverable data error! Unknown character in stream! cc: ${cc} pos: ${current}`;
       }
 
       if(clength <= 0)
@@ -104,7 +103,7 @@ StreamDrawCore1.prototype.DataScan = function(data, start, func, maxScan)
       //Just make life easier: assume the start symbol is always 1 char, report 
       //the start + length as the core data without the symbol. if, in the
       //future, you need data tracking, put it in THIS DataScan function.
-      if(func(current + 1, clength - 1, cc))
+      if(func(current + 1, clength - 1, cc, current + clength))
          return;
       
       current += clength;
@@ -264,23 +263,24 @@ StreamDrawCore1.prototype.CreateStroke = function(lines, ignoreColors)
 // This converts a stroke chunk into MiniDraw line data
 StreamDrawCore1.prototype.ParseStroke = function(data, start, length)
 {
-   var ignoreData = this.ParseIgnoreData(data, start);
-   start += ignoreData.length;
-   length -= ignoreData.length;
+   var ignoreData = this.ParseIgnoreData(data, start, length);
+
+   start += ignoreData.skip;
+   length -= ignoreData.skip;
 
    var result = [];
    var t, t2; //These are temp variables, used throughout
    var point = this.ParseStandardPoint(data, start);
    var segment = [ point.x, point.y ];
    var color = false;
-   var size = StreamConvert.CharsToInt(data, start + point.length, this.SIZEBYTES);
-   var l = point.length + this.SIZEBYTES;
+   var size = StreamConvert.CharsToInt(data, start + point.skip, this.SIZEBYTES);
+   var l = point.skip + this.SIZEBYTES;
 
    if(point.extra)
    {
       t = this.ParseColorData(data, start + l);
       color = t.color;
-      l += t.length;
+      l += t.skip;
    }
 
    while(l < length)
@@ -355,15 +355,15 @@ StreamDrawCore1.prototype.CreateGenericBatch = function(lines, ignoredColors)
 };
 
 //Lines and rectangles have nearly the same data format!
-StreamDrawCore1.prototype.ParseGenericLineRect = function(data, start, length, isRect)
+StreamDrawCore1.prototype.ParseGenericBatch = function(data, start, length, isRect)
 {
-   var ignoreData = this.ParseIgnoreData(data, start);
-   start += ignoreData.length;
-   length -= ignoreData.length;
+   var ignoreData = this.ParseIgnoreData(data, start, length);
+   start += ignoreData.skip;
+   length -= ignoreData.skip;
 
    var result = [];
-   var t = this.ParseColorData(data, start);
    var t2;
+   var t = this.ParseColorData(data, start);
    var color = t.color;
    var l = t.length;
    var size = 1;
@@ -402,7 +402,7 @@ StreamDrawCore1.prototype.ParseStandardPoint = function(data, start)
       x : (header >> 1) & this.xMax, 
       y : (header >> (1 + this.xShift)) & this.yMax, 
       extra : header & 1,
-      length : this.POINTBYTES 
+      skip : this.POINTBYTES 
    };
 };
 
@@ -416,7 +416,7 @@ StreamDrawCore1.prototype.ParseColorData = function(data, start)
    return { 
       color : "#" + StreamConvert.CharsToInt(data, start, this.COLORBYTES)
          .toString(16).toUpperCase().padStart(6, "0"),
-      length : this.COLORBYTES
+      skip : this.COLORBYTES
    };
 };
 
@@ -433,14 +433,14 @@ StreamDrawCore1.prototype.CreateIgnoreData = function(ignoredColors)
 
 //Ignore data in a DATASTREAM is optional, and thus we must test for the
 //existence of it (checking for symbols isn't normally what we do in these)
-StreamDrawCore1.prototype.ParseIgnoreData = function(data, start)
+StreamDrawCore1.prototype.ParseIgnoreData = function(data, start, length)
 {
    if(data.charAt(start) === this.symbols.ignore)
    {
       //There IS data out there that, unfortunately, has this non-ending
       //glitch. If so, just ignore the space.
       var iglength = data.indexOf(this.symbols.ignore, start + 1);
-      var complexRect;
+      var complexRect = null;
 
       //If a space is not found, or a space is found outside of the designated
       //line data, this is an error. Just assume the space is erroneous (from
@@ -461,15 +461,15 @@ StreamDrawCore1.prototype.ParseIgnoreData = function(data, start)
          //loop will run for 1, then stop at 5
          var ignoredColors = [];
          for(var i = 1; i < iglength - 1; i += 4) //where does 4 come from? is this a constant?
-            ignoredColors.push(this.ParseColorData(data, start + i));
+            ignoredColors.push(this.ParseColorData(data, start + i).color);
          //Generate the complex rectangle function to be used to draw this thing.
          //We track the FOR REAL individual line data for drawing in this
          //parsing function so we can draw the lines immediately without posting.
          complexRect = MiniDraw.GetComplexRectFromIgnore(ignoredColors);
       }
 
-      return { length : iglength, complexRect : complexRect };  
+      return { skip : iglength, complexRect : complexRect };  
    }
 
-   return { length : 0, complexRect : null };
+   return { skip : 0, complexRect : null };
 };

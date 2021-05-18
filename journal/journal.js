@@ -4,12 +4,12 @@
 var system = 
 {
    name: "journal",
-   version: "0.9.3_f2" //format 2
+   version: "1.0.0_f2" //format 2
 };
 
 var globals = 
 {
-   //roomdata: "",
+   roomdata: "",
    roomname: "",
    preamble: {},
    chatpointer: 0,
@@ -1099,7 +1099,7 @@ function doDropper(x, y)
    }
 }
 
-function dataScan(data, start, func, maxScan)
+function dataScan(start, func, maxScan)
 {
    //always skip preamble
    if(start < globals.preamble.skip)
@@ -1107,7 +1107,7 @@ function dataScan(data, start, func, maxScan)
 
    maxScan = maxScan || constants.maxScan;
 
-   globals.system.DataScan(data, start, func, maxScan);
+   globals.system.DataScan(globals.roomdata, start, func, maxScan);
 }
 
 //The message handler
@@ -1115,9 +1115,9 @@ function processMessages(tracker, max, scanLimit)
 {
    var messages = []; 
 
-   dataScan(tracker.chatpointer, (start, length, cc) =>
+   dataScan(tracker.chatpointer, (start, length, cc, end) =>
    {
-      tracker.chatpointer = start + length;
+      tracker.chatpointer = end; //start + length;
 
       if(cc != globals.system.symbols.text)
          return;
@@ -1133,9 +1133,9 @@ function processMessages(tracker, max, scanLimit)
 
 function processLines(tracker, limit, page, scanLimit)
 {
-   dataScan(tracker.drawpointer, (start, length, cc) =>
+   dataScan(tracker.drawpointer, (start, length, cc, end) =>
    {
-      tracker.drawpointer = start + length;
+      tracker.drawpointer = end; //start + length;
 
       //We only handle certain things in draw
       if(cc != globals.system.symbols.lines && 
@@ -1144,7 +1144,7 @@ function processLines(tracker, limit, page, scanLimit)
          return;
 
       //We ALSO only handle the draw if it's the right PAGE.
-      var pageDat = StreamConvert.VariableWidthToInt(globals.roomdata, start + 1);
+      var pageDat = StreamConvert.VariableWidthToInt(globals.roomdata, start);
 
       if(pageDat.value > tracker.maxPage)
          tracker.maxPage = pageDat.value;
@@ -1153,9 +1153,10 @@ function processLines(tracker, limit, page, scanLimit)
          return;
 
       //Parse the lines, draw them, and update the line count all in one
-      //(drawLines returns the lines again)
+      //(drawLines returns the lines again). The minus one in length is the
+      //ending cap (needs to be removed in DataScan)
       tracker.scheduledLines = tracker.scheduledLines.concat(
-         parseLineData(globals.roomdata, start + 1 + pageDat.length, length - pageDat.length - 2, cc));
+         parseLineData(globals.roomdata, start + pageDat.length, length - pageDat.length - 1, cc));
 
       return tracker.scheduledLines.length > limit;
    }, scanLimit);
