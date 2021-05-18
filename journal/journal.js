@@ -4,12 +4,12 @@
 var system = 
 {
    name: "journal",
-   version: "0.9.2_f2" //format 2
+   version: "0.9.3_f2" //format 2
 };
 
 var globals = 
 {
-   roomdata: "",
+   //roomdata: "",
    roomname: "",
    preamble: {},
    chatpointer: 0,
@@ -28,20 +28,9 @@ var constants =
    pheight : 8000,
    roomPrepend : "journal_",
    settingPrepend : "mini_journal_",
-   messageLengthBytes : 2,
    maxLines : 5000,        //A single stroke (or fill) can't have more than this
    maxMessageRender : 100, //per frame
    maxScan : 50000,        //per frame
-};
-
-var symbols = 
-{
-   text : "~",
-   stroke : "|",
-   lines : "-",
-   rectangles : "+",
-   cap : "'",
-   ignore : " "
 };
 
 var palettes = 
@@ -62,7 +51,7 @@ window.onload = function()
 {
    try
    {
-      setupComputedConstants();
+      //setupComputedConstants();
 
       var url = new URL(location.href);
       var sidebar = document.getElementById("sidebar");
@@ -115,6 +104,7 @@ window.onload = function()
          setupColorControls();
          setupChat();
          globals.drawer = setupDrawer(drawing);
+         globals.system = new StreamDrawCore1(constants.pwidth, constants.pheight);
          setupToggleSetting("drawtoggle", drawtoggle, 
             () => setDrawAbility(globals.drawer, drawing, true),
             () => setDrawAbility(globals.drawer, drawing, false));
@@ -189,22 +179,6 @@ function getIgnoredColors() {
    return [...colors].map(x => x.getAttribute("data-color"));
 }
 
-//Generate a function (or null if none provided) for the complex line drawing
-function getComplexLineRect(ignored) {
-   if(!ignored || ignored.length == 0)
-      return null;
-   var key = ignored.toString();
-   if(!(key in getComplexLineRect.ignorememoize))
-   {
-      console.log('memoizing ' + key);
-      //Convert ignored into proper broken up integers
-      var ignored_1d = [];
-      ignored.forEach(x => ignored_1d = ignored_1d.concat(MiniDraw.ParseHexColor(x)));
-      getComplexLineRect.ignorememoize[key] = (d,c) => MiniDraw.ComplexExceptionRect(d,c,ignored_1d);
-   }
-   return getComplexLineRect.ignorememoize[key];
-}
-getComplexLineRect.ignorememoize = [];
 
 //title, text, showContainer, 
 function showCover(config)
@@ -230,21 +204,9 @@ function showCover(config)
 }
 function hideCover() { hide(coverscreen); }
 
-function setupComputedConstants()
-{
-   constants.messageHeaderLength = 1 + constants.messageLengthBytes;
-}
-
 function setupValueLinks(element)
 {
    [...element.querySelectorAll("[data-link]")].forEach(x => (x.oninput = e => doValueLink(e.target)) );
-}
-
-function doValueLink(target)
-{
-   var linked = target.getAttribute("data-link");
-   var update = document.getElementById(linked);
-   update.value = target.value;
 }
 
 function makePaletteButton()
@@ -396,7 +358,8 @@ function exportSinglePage(page, tracker)
    tracker.scheduledLines = [];
    processLines(tracker, Number.MAX_SAFE_INTEGER, page, Number.MAX_SAFE_INTEGER);
    drawLines(tracker.scheduledLines, context);
-   //Need this so images are saved with backgrounds.
+   //Need this so images are saved with backgrounds. Can only do it AFTER all
+   //drawings, because often times an eraser is used!
    CanvasUtilities.SwapColor(context, new Color(0,0,0,0), new Color(255,255,255,1), 0);
    return buffer1.toDataURL();
 }
@@ -418,16 +381,6 @@ function setDrawAbility(drawer, canvas, ability)
       canvas.removeAttribute("data-drawactive");
    }
 }
-
-//function setupScrollTest()
-//{
-//   var ctx = drawing.getContext("2d");
-//   ctx.font = "10px Arial";
-//   for(var i = 0; i < constants.pheight; i += 100)
-//      ctx.fillText(String(i), 10, i);
-//   for(var i = 0; i < constants.pwidth; i += 100)
-//      ctx.fillRect(i, 0, 1, constants.pwidth);
-//}
 
 //This sets up a storage system on the checkbox given, so the state is
 //remembered. It can also run functions based on check state
@@ -476,7 +429,9 @@ function setupPlaybackControls()
    cmclick(document.getElementById("canvas" + getSetting("canvassize")) || size1);
 }
 
-//This might be a dumb function idk
+//This might be a dumb function idk. Increment is by default the amount to
+//change the page, but if 'exact' is set to true, increment will be EXACTLY the
+//page to set rather than just the offset.
 function changePage(increment, exact)
 {
    globals.drawpointer = 0;
@@ -856,7 +811,7 @@ function startLongPoller()
    }, () =>
    { 
       setStatus("error");
-   });
+   }, globals.readonly);
 }
 
 
@@ -867,52 +822,6 @@ function handleIncomingData(data)
    refreshInfo(data);
 }
 
-//Scan data starting at start until func returns true or data ends
-function dataScan(start, func, maxScan)
-{
-   //always skip preamble
-   if(start < globals.preamble.skip)
-      start = globals.preamble.skip;
-
-   maxScan = maxScan || constants.maxScan;
-   var current = start;
-   var clength = 0;
-   var scanned = 0;
-   var cc;
-
-   //Now start looping
-   while(true)
-   {
-      if(current >= globals.roomdata.length || scanned > maxScan)
-         return;
-
-      cc = globals.roomdata.charAt(current);
-
-      if(cc == symbols.text)
-      {
-         clength = 1 + constants.messageLengthBytes + 
-            StreamConvert.CharsToInt(globals.roomdata, current + 1, constants.messageLengthBytes);
-      }
-      else if(cc == symbols.stroke || cc == symbols.lines || cc == symbols.rectangles)
-      {
-         clength = globals.roomdata.indexOf(symbols.cap, current) - current + 1;
-      }
-      else
-      {
-         console.error("Unrecoverable data error! Unknown character in stream!");
-         return;
-      }
-
-      if(clength <= 0)
-         clength = globals.roomdata.length - current;
-
-      if(func(current, clength, cc))
-         return;
-      
-      current += clength;
-      scanned++;
-   }
-}
 
 //For now, the big function that generates the generic "lines" the journal
 //uses. The journal doesn't care about alpha or aliasing or any of that, it
@@ -931,7 +840,7 @@ function generatePendingLines(drw, pending)
       pending.page = getPageNumber();
       pending.erasing = pending.tool.indexOf("erase") >= 0;
       pending.ignoredColors = getIgnoredColors(); //WILL BE an empty list, NOT falsy!
-      pending.complex = getComplexLineRect(pending.ignoredColors); //Will be falsy on no complex
+      pending.complex = MiniDraw.GetComplexRectFromIgnore(pending.ignoredColors); //Will be falsy on no complex
       pending.color = pending.erasing ? null : getLineColor();
       pending.lines = [];
    }
@@ -945,7 +854,7 @@ function generatePendingLines(drw, pending)
       //Simple stroke
       if(pending.tool == "eraser" || pending.tool == "pen")
       {
-         pending.type = symbols.stroke;
+         pending.type = globals.system.symbols.stroke;
          currentLines.push(new MiniDraw.LineData(pending.size, pending.color,
             Math.round(drw.lastX), Math.round(drw.lastY), 
             Math.round(drw.currentX), Math.round(drw.currentY),
@@ -954,14 +863,15 @@ function generatePendingLines(drw, pending)
       //Complex big boy fill
       else if(pending.tool == "fill")
       {
-         pending.type = symbols.lines;
+         pending.type = globals.system.symbols.lines;
          pending.size = 1;
          pending.accepting = false; //DON'T do any more fills on this stroke!!
-         flood(drw, currentLines, pending.color);
+         var context = copyToBackbuffer(drw._canvas);
+         globals.system.Flood(context, drw.currentX, drw.currentY, currentLines, pending.color);
       }
       else if (pending.tool.indexOf("rect") >= 0)
       {
-         pending.type = symbols.rectangles;
+         pending.type = globals.system.symbols.rectangles;
          pending.displayAtEnd = true;
 
          if(pending.tool == "exportrect")
@@ -1006,303 +916,48 @@ function copyToBackbuffer(canvas)
    return context;
 }
 
-function flood(drw, currentLines, color)
-{
-   //Do the east/west thing, generate the lines, IGNORE future strokes
-   //Using a buffer because working with image data can (does) cause it to go
-   //into software rendering mode, which is very slow
-   var context = copyToBackbuffer(drw._canvas);
-   var width = buffer1.width;
-   var height = buffer1.height;
-   var iData = context.getImageData(0, 0, width, height);
-   var img = iData.data;
-   var queue = [[Math.round(drw.currentX), Math.round(drw.currentY)]];
-   var rIndex = MiniDraw.GetIndex(iData, drw.currentX, drw.currentY);
-   var replaceColor = [img[rIndex], img[rIndex+1], img[rIndex+2], img[rIndex+3]];
-   console.log("Flood into color: ", replaceColor, drw.currentX, drw.currentY);
-   var west, east, i, j;
-   var shouldFill = (x, y) =>
-   {
-      if(x < 0 || y < 0 || x >= width || y >= height)
-         return false;
-      var i = MiniDraw.GetIndex(iData, x, y);
-      return img[i] == replaceColor[0] && img[i + 1] == replaceColor[1] &&
-         img[i + 2] == replaceColor[2] && img[i + 3] == replaceColor[3];
-   };
-   while(queue.length)
-   {
-      var p = queue.pop();
-      if(shouldFill(p[0],p[1]))
-      {
-         //March left until not should fill, march right
-         for(west = p[0] - 1; west >= 0 && shouldFill(west, p[1]); west--);
-         for(east = p[0] + 1; west < width && shouldFill(east, p[1]); east++);
-
-         //Bring them back in range
-         west++; east--;
-
-         //NOTE: flood fill doesn't CARE about fancy additional complexity like
-         //rectangle drawing or complex line fill, WE are the complexity already
-         currentLines.push(new MiniDraw.LineData(1, color, west, p[1], east, p[1]));
-
-         //Don't allow huge fills at all, just quit
-         if(currentLines.length > constants.maxLines)
-         {
-            alert("Flood fill area too large!");
-            currentLines.length = 0;
-            break;
-         }
-
-         //Now travel from west to east, adding all pixels (we check later anyway)
-         for(i = west; i <= east; i++)
-         {
-            //Just has to be DIFFERENT, not the color we're filling.
-            j = MiniDraw.GetIndex(iData, i, p[1]);
-            img[j + 3] = (img[j + 3] + 10) & 255;
-            //Queue the north and south (regardless of fill requirement)
-            queue.push([i, p[1] + 1]);
-            queue.push([i, p[1] - 1]);
-         }
-      }
-   }
-
-   iData = null;
-   img = null;
-   console.log("Flood lines: ", currentLines.length);
-}
-
-function createMessageChunk(username, message)
-{
-   //TODO:
-   //This DAMN SPACE is here to stay, half the first giant journal already uses
-   //it. Perhpaps swap it out when you get to the second journal.
-   var m = username + ": " + message;
-   var max = StreamConvert.MaxValue(constants.messageLengthBytes);
-   if(m.length > max)
-      m = m.substr(0, max);
-   return symbols.text + StreamConvert.IntToChars(m.length, constants.messageLengthBytes) + m;
-}
-
-function createStandardPoint(x, y, extra)
-{
-   return StreamConvert.IntToChars((extra ? 1 : 0) + ((x & 1023) << 1) + ((y & 8191) << 11), 4);
-}
-
-function createColorData(color)
-{
-   return StreamConvert.IntToChars(parseInt((color || "#000000").replace("#", "0x")),4);
-}
 
 //Consider moving some of this out of here so the line data portion (the
 //"payload" so to speak) can be abstracted away from the idea of pages? but why?
 function createLineData(pending)
 {
-   var result = pending.type + StreamConvert.IntToVariableWidth(pending.page);
+   var startChunk = pending.type + StreamConvert.IntToVariableWidth(pending.page);
+   var result = startChunk;
+   var subResult = null;
 
-   //"IgnoredColors" is a list of colors where the transformation is not
-   //applied. These kinds of post-design flags that
-   //I'm adding are just characters or data appended to the beginning of the
-   //line data, and are non-stream characters
-   if(pending.complex)
-   {
-      //console.log("CREATE UNDER");
-      result += symbols.ignore;
-      //Put colors into the space between the ignores, we'll know it's done
-      //when we encounter another ignore character
-      pending.ignoredColors.forEach(x => result += createColorData(x));
-      result += symbols.ignore;
-   }
-
-   if(pending.type == symbols.stroke)
-   {
-      //lowest bit erase, next 10 x, next 13 y of START point
-      result += createStandardPoint(pending.lines[0].x1, pending.lines[0].y1, pending.color) +
-         StreamConvert.IntToChars(pending.size, 1);
-
-      //Color is ONLY added if we're not erasing. It's a sort of space optimization,
-      //saves 4 whole bytes on erasing
-      if(pending.color)
-         result += createColorData(pending.color);
-
-      var lastx = pending.lines[0].x1;
-      var lasty = pending.lines[0].y1;
-      var ofsx, ofsy;
-
-      //Now do all relative points until we run out
-      for(var i = 0; i < pending.lines.length; i++)
-      {
-         if(pending.lines[i].x1 != lastx || pending.lines[i].y1 != lasty)
-         {
-            //Oof, we have to stop and recurse!
-            console.warn("Stroke break, recursing at ", i);
-            pending.lines.splice(0, i);
-            return result + symbols.cap + createLineData(pending);
-         }
-
-         ofsx = pending.lines[i].x2 - lastx;
-         ofsy = pending.lines[i].y2 - lasty;
-
-         result += 
-            StreamConvert.IntToVariableWidth(StreamConvert.SignedToSpecial(ofsx)) +
-            StreamConvert.IntToVariableWidth(StreamConvert.SignedToSpecial(ofsy));
-
-         lastx = pending.lines[i].x2;
-         lasty = pending.lines[i].y2;
-      }
-   }
-   else if(pending.type == symbols.lines || pending.type == symbols.rectangles)
-   {
-      result += createColorData(pending.color) +
-         (pending.type == symbols.rectangles ? "" : StreamConvert.IntToChars(pending.size, 1));
-
-      //And now, just all the line data as-is (literally);
-      pending.lines.forEach(x => result += 
-         createStandardPoint(x.x1, x.y1, x.color) +
-         createStandardPoint(x.x2, x.y2, x.color));
-   }
+   if(pending.type == globals.system.symbols.stroke)
+      subResult = globals.system.CreateStroke(pending.lines, pending.ignoredColors);
+   else if(pending.type == globals.system.symbols.lines)// || pending.type == symbols.rectangles)
+      subResult = globals.system.CreateBatchLines(pending.lines, pending.ignoredColors);
+   else if(pending.type == globals.system.symbols.rectangles)// || pending.type == symbols.rectangles)
+      subResult = globals.system.CreateBatchRects(pending.lines, pending.ignoredColors);
    else
-   {
       throw "Unknown pending lines type!";
+
+   result += subResult;
+
+   //A special silliness because of linebreaks in strokes. We COULD ignore them but... 
+   while(subResult.nextResult)
+   {
+      result += globals.system.symbols.cap + startChunk;
+      subResult = subResult.nextResult;
    }
 
-   return result + symbols.cap;
-}
-
-function parseStandardPoint(data, start)
-{
-   var header = StreamConvert.CharsToInt(data, start, 4);
-   return { x : (header >> 1) & 1023, y : (header >> 11) & 8191, extra : header & 1,
-      length : 4 };
-}
-
-function parseColorData(data, start)
-{
-   return "#" + StreamConvert.CharsToInt(data, start, 4).toString(16).toUpperCase().padStart(6, "0");
+   return result + globals.system.symbols.cap;
 }
 
 //Get a collection of lines from the given data. Assume start starts at actual
 //line data and not page/type/etc (type is given)
 function parseLineData(data, start, length, type)
 {
-   var i, l = 0, x, y, t, t2, result = [], complexRect = false;
-
-   if(data.charAt(start) === symbols.ignore)
-   {
-      //There IS data out there that, unfortunately, has this non-ending
-      //glitch. If so, just ignore the space.
-      var iglength = data.indexOf(symbols.ignore, start + 1);
-
-      //If a space is not found, or a space is found outside of the designated
-      //line data, this is an error. Just assume the space is erroneous (from
-      //an old system) and move on
-      if(iglength < 0 || iglength >= start + length) 
-      {
-         console.warn("Found erroneous ignore symbol (probably from old 'under' system'), ignoring");
-         iglength = 1;
-      }
-      else
-      {
-         //This is the length of the WHOLE ignore section, which includes the
-         //front and end symbols
-         iglength = iglength - start + 1;
-         //Now pull the ignored colors out of the line data, starting right
-         //after the initial identifying symbol and ending before the last
-         //symbol. So for instance, if iglength is 6 (meaning 1 color), the 
-         //loop will run for 1, then stop at 5
-         var ignoredColors = [];
-         for(var i = 1; i < iglength - 1; i += 4) //where does 4 come from? is this a constant?
-            ignoredColors.push(parseColorData(data, start + i));
-         //Generate the complex rectangle function to be used to draw this thing.
-         //We track the FOR REAL individual line data for drawing in this
-         //parsing function so we can draw the lines immediately without posting.
-         complexRect = getComplexLineRect(ignoredColors);
-         //console.log("PARSE UNDER: " + iglength);
-      }
-
-      //Skip over the ignored colors section
-      start += iglength;
-      length -= iglength;
-   }
-
-   if(type == symbols.stroke)
-   {
-      //Remember, start is at line payload, length doesn't include cap
-      var point = parseStandardPoint(data, start);
-      var segment = [ point.x, point.y ];
-      var color = false;
-      var size = StreamConvert.CharsToInt(data, start + point.length, 1);
-      l += point.length + 1;
-
-      if(point.extra)
-      {
-         color = parseColorData(data, start + l);
-         l += 4;
-      }
-
-      while(l < length)
-      {
-         t = StreamConvert.VariableWidthToInt(data, start + l);
-         l += t.length;
-         t2 = segment[segment.length - 2] + StreamConvert.SpecialToSigned(t.value);
-         segment.push(t2);
-      }
-
-      if(segment.length % 2)
-      {
-         //As often as possible. try to recover from errors.
-         console.error("Dangling point on parsed stroke!");
-         segment.pop();
-      }
-
-      if(segment.length < 2)
-      {
-         console.error("Parsed stroke too short!");
-         return result;
-      }
-
-      //Duplicate the last point in case it doesn't line up nicely
-      if(segment.length < 4)
-      {
-         x = segment[0];
-         y = segment[1]
-         segment.push(x, y);
-      }
-
-      //Now generate the lines
-      for(i = 0; i < segment.length - 2; i += 2)
-      {
-         result.push(new MiniDraw.LineData(size, color, 
-            segment[i], segment[i + 1], segment[i + 2], segment[i + 3], 
-            false, complexRect));
-      }
-   }
-   else if(type == symbols.lines || type == symbols.rectangles)
-   {
-      var color = parseColorData(data, start);
-      var size = 1;
-      l += 4;
-      
-      if(type == symbols.lines)
-      {
-         size = StreamConvert.CharsToInt(data, start + l, 1);
-         l++;
-      }
-
-      //This one is actually simpler, it's just blobs of lines (or rectangles)
-      for(i = start + l; i < start + length; i += 8)
-      {
-         t = parseStandardPoint(data, i);
-         t2 = parseStandardPoint(data, i + 4);
-         result.push(new MiniDraw.LineData(size, t.extra ? color : null, 
-            t.x, t.y, t2.x, t2.y, type == symbols.rectangles, complexRect));
-      }
-   }
+   if(type == globals.system.symbols.stroke)
+      return globals.system.ParseStroke(data, start, length);
+   else if(type == globals.system.symbols.lines)
+      return globals.system.ParseBatchLines(data, start, length);
+   else if(type == globals.system.symbols.rectangles)
+      return globals.system.ParseBatchRects(data, start, length);
    else
-   {
       throw "Unparseable data type " + type;
-   }
-
-   return result;
 }
 
 function drawLines(lines, context, overridecolor) 
@@ -1444,6 +1099,17 @@ function doDropper(x, y)
    }
 }
 
+function dataScan(data, start, func, maxScan)
+{
+   //always skip preamble
+   if(start < globals.preamble.skip)
+      start = globals.preamble.skip;
+
+   maxScan = maxScan || constants.maxScan;
+
+   globals.system.DataScan(data, start, func, maxScan);
+}
+
 //The message handler
 function processMessages(tracker, max, scanLimit)
 {
@@ -1453,11 +1119,11 @@ function processMessages(tracker, max, scanLimit)
    {
       tracker.chatpointer = start + length;
 
-      if(cc != symbols.text)
+      if(cc != globals.system.symbols.text)
          return;
 
-      messages.push(parseMessage(globals.roomdata.substr(
-         start + constants.messageHeaderLength, length - constants.messageHeaderLength)));
+      messages.push(globals.system.ParseMessage(globals.roomdata, start, length));
+         //start + constants.messageHeaderLength, length - constants.messageHeaderLength)));
 
       return messages.length > max;
    }, scanLimit);
@@ -1472,7 +1138,9 @@ function processLines(tracker, limit, page, scanLimit)
       tracker.drawpointer = start + length;
 
       //We only handle certain things in draw
-      if(cc != symbols.lines && cc != symbols.stroke && cc != symbols.rectangles)
+      if(cc != globals.system.symbols.lines && 
+         cc != globals.system.symbols.stroke && 
+         cc != globals.system.symbols.rectangles)
          return;
 
       //We ALSO only handle the draw if it's the right PAGE.
@@ -1491,20 +1159,6 @@ function processLines(tracker, limit, page, scanLimit)
 
       return tracker.scheduledLines.length > limit;
    }, scanLimit);
-}
-
-function parseMessage(fullMessage)
-{
-   var colon = fullMessage.indexOf(":");
-   var result = { username : "???", message : fullMessage }; //, time : null };
-
-   if(colon >= 0)
-   {
-      result.username = fullMessage.substr(0, colon);
-      result.message = fullMessage.substr(colon + 1);
-   }
-
-   return result;
 }
 
 function hashtag(e)

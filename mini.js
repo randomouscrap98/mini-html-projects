@@ -81,6 +81,14 @@ function any(array, check)
    return false;
 }
 
+function doValueLink(target)
+{
+   var linked = target.getAttribute("data-link");
+   var update = document.getElementById(linked);
+   update.value = target.value;
+}
+
+
 function endpoint(room, readonly) { return "/stream/" + room + 
    (readonly ? "?readonlykey=true" : ""); }
 
@@ -279,6 +287,8 @@ function attachBasicDrawerAction(drawer)
 
 var MiniDraw = 
 {
+   //'Private' variables
+   _rectignorememoize : [],
    //An object to store a single line
    LineData : function (width, color, x1, y1, x2, y2, rect, complex)
    {
@@ -331,10 +341,6 @@ var MiniDraw =
       csr_datascan:
       for(i = 0; i < d.data.length; i+=4)
       {
-         //for(var j = 0; j < selective.length; j+=4)
-         //   if(d.data[i] != selective[j] || d.data[i+1] != selective[j+1] ||
-         //      d.data[i+2] != selective[j+2] || d.data[i+3] != selective[j+3])
-         //      continue csr_datascan;
          for(j = 0; j < except.length; j+=4)
             if(d.data[i] == except[j] && d.data[i+1] == except[j+1] &&
                d.data[i+2] == except[j+2] && d.data[i+3] == except[j+3])
@@ -393,6 +399,24 @@ var MiniDraw =
    GetIndex : function(idata, x, y)
    {
       return 4 * (Math.round(x) + Math.round(y) * idata.width);
+   },
+   //Generate a function (or null if none provided) for complex line drawing
+   //when certain colors are ignored. 'ignored' param must be a list of
+   //standard HEX STRING colors, like #FF8899
+   GetComplexRectFromIgnore : function (ignored) 
+   {
+      if(!ignored || ignored.length == 0)
+         return null;
+      var key = ignored.toString();
+      if(!(key in MiniDraw._rectignorememoize))
+      {
+         console.debug(`memoizing complexrect ignore color list: ${key}`);
+         //Convert ignored into proper broken up integers
+         var ignored_1d = [];
+         ignored.forEach(x => ignored_1d = ignored_1d.concat(MiniDraw.ParseHexColor(x)));
+         MiniDraw._rectignorememoize[key] = (d,c) => MiniDraw.ComplexExceptionRect(d,c,ignored_1d);
+      }
+      return MiniDraw._rectignorememoize[key];
    }
 };
 
