@@ -478,7 +478,8 @@ function setupChat()
             d.getHours())}${zs(d.getMinutes())}`;
       }
          
-      post(endpoint(globals.roomname), createMessageChunk(username.value, message.value));
+      post(endpoint(globals.roomname), 
+         globals.system.symbols.text + globals.system.CreateMessage(username.value, message.value));
       message.value = "";
       return false;
    });
