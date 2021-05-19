@@ -413,7 +413,7 @@ var MiniDraw =
          console.debug(`memoizing complexrect ignore color list: ${key}`);
          //Convert ignored into proper broken up integers
          var ignored_1d = [];
-         ignored.forEach(x => ignored_1d = ignored_1d.concat(MiniDraw.ParseHexColor(x)));
+         ignored.forEach(x => ignored_1d.push(...MiniDraw.ParseHexColor(x)));
          MiniDraw._rectignorememoize[key] = (d,c) => MiniDraw.ComplexExceptionRect(d,c,ignored_1d);
       }
       return MiniDraw._rectignorememoize[key];
