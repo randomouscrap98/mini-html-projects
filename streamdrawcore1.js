@@ -6,7 +6,6 @@
 //only provides the functionality
 function StreamDrawCore1(width, height)
 {
-   //this.preambleSkip = 0;  //Set to the length of your preamble for this draw session
    this.symbols =          //The default symbols; can be overridden as necessary
    {
       text : "~",
@@ -17,27 +16,13 @@ function StreamDrawCore1(width, height)
       ignore : " "
    };
 
-   //The big variables! The data and such!
-   //this.roomData = "";
-
    this.SetSize(width, height);
-   //Stuff you can override if you want. But if you change some of these,
-   //please call .RecomputeConstants()
-   //this.width = 2048;
-   //this.height = 2048;
-   //this.maxScan = 50000;         //depending on implementation, probably per-frame
-   //this.maxLines = 5000;         //Max lines this drawer can generate (it is a stream draw after all)
-
-   //maxLines : 5000,        //A single stroke (or fill) can't have more than this
-   //maxMessageRender : 100, //per frame
 
    //These are technically constants! 
    this.COLORBYTES = 4;
    this.MESSAGELENGTHBYTES = 2;
    this.POINTBYTES = 4;
    this.SIZEBYTES = 1;
-
-   //this.RecomputeConstants();
 };
 
 StreamDrawCore1.prototype.SetSize = function(width, height)
@@ -63,13 +48,13 @@ StreamDrawCore1.prototype.SetSize = function(width, height)
 //datascan doesn't care about parsing or special circumstances or anything. All
 //it understands is a VERY generic idea of "chunks". Imagine TCP/IP stack and
 //the various levels of switches/etc.
-StreamDrawCore1.prototype.DataScan = function(data, start, func, maxScan)
+StreamDrawCore1.prototype.DataScan = function(data, start, func)
 {
    //always skip preamble
    //if(start < this.preambleSkip)
    //   start = this.preambleSkip;
 
-   maxScan = maxScan || 999999999;
+   //maxScan = maxScan || 999999999;
    var current = start;
    var clength = 0;
    var scanned = 0;
@@ -78,7 +63,7 @@ StreamDrawCore1.prototype.DataScan = function(data, start, func, maxScan)
    //Now start looping
    while(true)
    {
-      if(current >= data.length || scanned > maxScan)
+      if(current >= data.length) // || scanned > maxScan)
          return;
 
       cc = data.charAt(current);
@@ -103,11 +88,8 @@ StreamDrawCore1.prototype.DataScan = function(data, start, func, maxScan)
       //Just make life easier: assume the start symbol is always 1 char, report 
       //the start + length as the core data without the symbol. if, in the
       //future, you need data tracking, put it in THIS DataScan function.
-      if(func(current + 1, clength - 1, cc, current + clength))
+      if(func(current + 1, clength - 1, cc, current += clength, ++scanned))
          return;
-      
-      current += clength;
-      scanned++;
    }
 };
 
@@ -213,6 +195,18 @@ StreamDrawCore1.prototype.ParseMessage = function(data, start, length)
    return result;
 };
 
+//Parse a single blob of lines within a single stroke or idea or whatever. Just ONE
+StreamDrawCore1.prototype.ParseLineChunk = function(data, start, length, type)
+{
+   if(type == this.symbols.stroke)
+      return this.ParseStroke(data, start, length);
+   else if(type == this.symbols.lines)
+      return this.ParseBatchLines(data, start, length);
+   else if(type == this.symbols.rectangles)
+      return this.ParseBatchRects(data, start, length);
+   else
+      throw `Unparseable data type ${type}`;
+};
 
 StreamDrawCore1.prototype.CreateStroke = function(lines, ignoredColors, recurseJoiner)
 {
@@ -482,3 +476,107 @@ StreamDrawCore1.prototype.ParseIgnoreData = function(data, start, length)
 
    return { skip : 0, complexRect : null };
 };
+
+
+//The "system" is a containerized version of Core which includes pagination
+//(for version 1) and further parsing abilities
+function StreamDrawSystem1(core, existingData)
+{
+   this.core = core;
+
+   this.ResetDrawTracking();
+   this.ResetMessageTracking();
+   this.SetData(existingData);
+}
+
+StreamDrawSystem1.prototype.ResetDrawTracking = function()
+{
+   this.drawPointer = 0;
+   this.scheduledLines = [];
+   this.maxPage = 0;
+};
+
+StreamDrawSystem1.prototype.ResetDrawTracking = function()
+{
+   this.messagePointer = 0;
+   this.scheduledMessages = [];
+};
+
+StreamDrawSystem1.prototype.SetData = function(data)
+{
+   this.rawData = data || "";
+
+   if(this.rawData)
+      this.preamble = parsePreamble(data);
+   else
+      this.preamble = false;
+};
+
+StreamDrawSystem1.prototype.CreateMessage = function(username, message)
+{
+   return this.core.symbols.text + this.core.CreateMessage(username, message));
+};
+
+//A critical function: scan through data in chunks to parse out lines. 
+StreamDrawSystem1.prototype.ProcessLines = function(scanLimit, page)
+{
+   var me = this;
+   //var totalLines = 0;
+
+   me.core.DataScan(
+      me.rawData, 
+      Math.max(me.drawPointer, me.preamble.skip), 
+      (start, length, cc, end, scanCount) =>
+      {
+         //Always at least complete ONE round
+         me.drawPointer = end;
+
+         //We only handle certain things in draw
+         if(cc != me.core.symbols.lines && 
+            cc != me.core.symbols.stroke && 
+            cc != me.core.symbols.rectangles)
+            return false;
+
+         //We ALSO only handle the draw if it's the right PAGE.
+         var pageDat = StreamConvert.VariableWidthToInt(me.rawData, start);
+         me.maxPage = Math.max(me.maxPage, pageDat.value);
+
+         if(pageDat.value != page)
+            return false;
+
+         //Parse the lines, draw them, and update the line count all in one
+         //(drawLines returns the lines again). The minus one in length is the
+         //ending cap (needs to be removed in DataScan)
+         var lines = me.core.ParseLineChunk(me.rawData, start + pageDat.length, length - pageDat.length - 1, cc);
+         me.scheduledLines = me.scheduledLines.concat(lines);
+         //totalLines += lines.length;
+
+         //return (totalLines > lineLimit) || (scanCount > me.maxScan);
+         return scanCount > scanLimit;
+      }
+   );
+};
+
+//The message handler
+StreamDrawSystem1.prototype.ProcessMessages(scanLimit)
+{
+   var me = this;
+
+   me.core.DataScan(
+      me.rawData, 
+      Math.max(me.messagePointer, me.preamble.skip), 
+      (start, length, cc, end, scanCount) =>
+      {
+         //Always at least complete ONE round
+         me.messagePointer = end;
+
+         if(cc != me.core.symbols.text)
+            return false;
+
+         me.scheduledMessages.push(me.core.ParseMessage(me.rawData, start, length));
+
+         return scanCount > scanLimit;
+      }
+   );
+};
+

@@ -9,16 +9,16 @@ var system =
 
 var globals = 
 {
-   roomdata: "",
+   //roomdata: "",
    roomname: "",
-   preamble: {},
-   chatpointer: 0,
-   drawpointer: 0,
+   //preamble: {},
+   //chatpointer: 0,
+   //drawpointer: 0,
    drawer: null,
    context: null,
-   maxPage : 0,
+   //maxPage : 0,
    pendingStroke: {},
-   scheduledLines: [],
+   //scheduledLines: [],
    scheduledScrolls: []
 };
 
@@ -30,7 +30,7 @@ var constants =
    settingPrepend : "mini_journal_",
    maxLines : 5000,        //A single stroke (or fill) can't have more than this
    maxMessageRender : 100, //per frame
-   maxScan : 50000,        //per frame
+   //maxScan : 50000,        //per frame
 };
 
 var palettes = 
@@ -80,7 +80,7 @@ window.onload = function()
 
       HTMLUtilities.SimulateScrollbar(scrollbar, scrollbarbar, scrollblock, true);
       globals.context = drawing.getContext("2d");
-      globals.system = new StreamDrawCore1(constants.pwidth, constants.pheight);
+      globals.system = createSystem(); 
 
       handlePageHash(location.hash);
 
@@ -348,21 +348,6 @@ function setupClosable(element)
 
 function getClosable(element) { return element.querySelector(".closebutton"); }
 
-function exportSinglePage(page, tracker)
-{
-   var context = buffer1.getContext("2d");
-   CanvasUtilities.Clear(buffer1);
-   tracker.drawpointer = 0;
-   tracker.scheduledLines = [];
-   processLines(tracker, Number.MAX_SAFE_INTEGER, page, Number.MAX_SAFE_INTEGER);
-   drawLines(tracker.scheduledLines, context);
-   //Need this so images are saved with backgrounds. Can only do it AFTER all
-   //drawings, because often times an eraser is used!
-   CanvasUtilities.SwapColor(context, new Color(0,0,0,0), new Color(255,255,255,1), 0);
-   return buffer1.toDataURL();
-}
-
-
 function setDrawAbility(drawer, canvas, ability)
 {
    if(ability)
@@ -427,15 +412,47 @@ function setupPlaybackControls()
    cmclick(document.getElementById("canvas" + getSetting("canvassize")) || size1);
 }
 
+function setupDrawer(canvas)
+{
+   var drawer = new CanvasPerformer();
+   attachBasicDrawerAction(drawer);
+   CanvasUtilities.Clear(canvas);
+   return drawer;
+}
+
+
+// ------------------------------------------------
+// -- BEGINNING OF STREAMDRAW SYSTEM INTEGRATION --
+// ------------------------------------------------
+
+function createSystem()
+{
+   return new StreamDrawSystem1(
+      new StreamDrawCore1(constants.pwidth, constants.pheight)
+   );
+}
+
+function exportSinglePage(page, system)
+{
+   var context = buffer1.getContext("2d");
+   CanvasUtilities.Clear(buffer1);
+   system.ResetDrawTracking();
+   system.ProcessLines(Number.MAX_SAFE_INTEGER, page);
+   drawLines(system.scheduledLines, context);
+   //Need this so images are saved with backgrounds. Can only do it AFTER all
+   //drawings, because often times an eraser is used!
+   CanvasUtilities.SwapColor(context, new Color(0,0,0,0), new Color(255,255,255,1), 0);
+   return buffer1.toDataURL();
+}
+
 //This might be a dumb function idk. Increment is by default the amount to
 //change the page, but if 'exact' is set to true, increment will be EXACTLY the
 //page to set rather than just the offset.
 function changePage(increment, exact)
 {
-   globals.drawpointer = 0;
-   globals.scheduledLines = [];
-   setPageNumber(MathUtilities.MinMax((exact ? 0 : getPageNumber()) + increment, 0, 1000000));
    CanvasUtilities.Clear(drawing);
+   globals.system.ResetDrawTracking();
+   setPageNumber(MathUtilities.MinMax((exact ? 0 : getPageNumber()) + increment, 0, 1000000));
    location.hash = "page" + (getPageNumber() + 1);
 
    if(getPageNumber() <= 0)
@@ -450,7 +467,6 @@ function handlePageHash(hash)
    if(match)
       changePage(Number(match[1]) - 1, true);
 }
-
 
 function setupChat()
 {
@@ -478,19 +494,10 @@ function setupChat()
             d.getHours())}${zs(d.getMinutes())}`;
       }
          
-      post(endpoint(globals.roomname), 
-         globals.system.symbols.text + globals.system.CreateMessage(username.value, message.value));
+      post(endpoint(globals.roomname), globals.system.CreateMessage(username.value, message.value));
       message.value = "";
       return false;
    });
-}
-
-function setupDrawer(canvas)
-{
-   var drawer = new CanvasPerformer();
-   attachBasicDrawerAction(drawer);
-   CanvasUtilities.Clear(canvas);
-   return drawer;
 }
 
 function setupExports()
@@ -580,7 +587,7 @@ function hashtag(e) { e.preventDefault(); }
    var imagebox = htmlexport.getElementById("imagebox");
 
    //Have to do this repeat parsing in order to reduce memory usage.
-   var tracker = { maxPage : 0, chatpointer : 0 };
+   //var tracker = { maxPage : 0, chatpointer : 0 };
    var page = 0;
    var ready = true;
 
@@ -590,7 +597,7 @@ function hashtag(e) { e.preventDefault(); }
       {
          ready = false;
 
-         var pageURI = exportSinglePage(page++, tracker);
+         var pageURI = exportSinglePage(page++, globals.system);
 
          //The html element
          var pageID = document.createElement("a");
@@ -617,12 +624,14 @@ function hashtag(e) { e.preventDefault(); }
          ready = true;
       }
 
-      if(page > tracker.maxPage)
+      if(page > system.maxPage)
       {
          clearInterval(wait);
 
-         var msgs = processMessages(tracker, Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER);
-         msgs.forEach(x => textbox.appendChild(createMessageElement(x)));
+         globals.system.ResetMessageTracking();
+         globals.system.ProcessMessages(Number.MAX_SAFE_INTEGER);
+         //var msgs = processMessages(tracker, Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER);
+         globals.system.scheduledMessages.forEach(x => textbox.appendChild(createMessageElement(x)));
 
          //Finalize SVG. Set viewbox just in case (it's not necessary but it
          //helps with scaling if you need it later)
@@ -680,6 +689,8 @@ function performFunctionalExport(room)
 
    $.get(endpoint(room), data => 
    { 
+      var preamble = parsePreamble(data);
+
       //Scripts MUST come AFTER data (since we need to insert it INTO a script)
       [...scripts].forEach(x =>
       {
@@ -688,10 +699,16 @@ function performFunctionalExport(room)
             if(x.src.indexOf("journal.js") >= 0)
             {
                console.log("MATCH: ", x.src);
-               var preamble = parsePreamble(data);
-               d = d.replace('roomname: ""', 'roomname: ' + JSON.stringify(room))
+               d = d.replace('roomname: ""', 'roomname: ' + JSON.stringify(room));
                   .replace('roomdata: ""', 'roomdata: ' + JSON.stringify(data))
                   .replace('preamble: {}', 'preamble: ' + JSON.stringify(preamble));
+            }
+            else if(x.src.indexOf("streamdrawcore") >= 0)
+            {
+               //TODO: this may be a problem with the new system
+               console.log("MATCH: ", x.src);
+               d = d.replace('rawData: ""', 'rawData: ' + JSON.stringify(data))
+                     .replace('preamble: {}', 'preamble: ' + JSON.stringify(preamble));
             }
 
             x.innerHTML = d;
@@ -781,10 +798,12 @@ function pullInitialStream(continuation)
          }
          else
          {
-            globals.preamble = parsePreamble(data.data);
+            globals.system.SetData(data.data);
+            //globals.preamble = parsePreamble(data.data);
 
-            if(!(globals.preamble && globals.preamble.version && globals.preamble.name == system.name &&
-               globals.preamble.version.endsWith("f2")))
+            if(!(globals.system.preamble && globals.system.preamble.version && 
+                 globals.system.preamble.name == system.name &&
+                 globals.system.preamble.version.endsWith("f2")))
             {
                showCover({
                   title: "Incompatible format", 
@@ -792,7 +811,9 @@ function pullInitialStream(continuation)
                } );
             }
 
-            handleIncomingData(data);
+            //We already set our data, don't need to do it again
+            //TODO: fix this weirdness!
+            handleIncomingData("");
 
             if(continuation) 
                continuation();
@@ -806,7 +827,7 @@ function pullInitialStream(continuation)
 
 function startLongPoller()
 {
-   queryEnd(globals.roomname, globals.roomdata.length, (data, start) =>
+   queryEnd(globals.roomname, globals.system.rawData.length, (data, start) =>
    {
       handleIncomingData(data);
       return data.data.length;
@@ -819,7 +840,7 @@ function startLongPoller()
 
 function handleIncomingData(data)
 {
-   globals.roomdata += data.data;
+   globals.system.rawData += data.data;
    setStatus("ok");
    refreshInfo(data);
 }
@@ -856,7 +877,7 @@ function generatePendingLines(drw, pending)
       //Simple stroke
       if(pending.tool == "eraser" || pending.tool == "pen")
       {
-         pending.type = globals.system.symbols.stroke;
+         pending.type = globals.system.core.symbols.stroke;
          currentLines.push(new MiniDraw.LineData(pending.size, pending.color,
             Math.round(drw.lastX), Math.round(drw.lastY), 
             Math.round(drw.currentX), Math.round(drw.currentY),
@@ -865,16 +886,16 @@ function generatePendingLines(drw, pending)
       //Complex big boy fill
       else if(pending.tool == "fill")
       {
-         pending.type = globals.system.symbols.lines;
+         pending.type = globals.system.core.symbols.lines;
          pending.size = 1;
          pending.accepting = false; //DON'T do any more fills on this stroke!!
          var context = copyToBackbuffer(drw._canvas);
-         globals.system.Flood(context, drw.currentX, drw.currentY, pending.color, currentLines,
+         globals.system.core.Flood(context, drw.currentX, drw.currentY, pending.color, currentLines,
             constants.maxLines);
       }
       else if (pending.tool.indexOf("rect") >= 0)
       {
-         pending.type = globals.system.symbols.rectangles;
+         pending.type = globals.system.core.symbols.rectangles;
          pending.displayAtEnd = true;
 
          if(pending.tool == "exportrect")
@@ -927,31 +948,17 @@ function createLineData(pending)
    var startChunk = pending.type + StreamConvert.IntToVariableWidth(pending.page);
    var result = startChunk;
 
-   if(pending.type == globals.system.symbols.stroke)
-      result += globals.system.CreateStroke(pending.lines, pending.ignoredColors, 
+   if(pending.type == globals.system.core.symbols.stroke)
+      result += globals.system.core.CreateStroke(pending.lines, pending.ignoredColors, 
          globals.system.symbols.cap + startChunk);
-   else if(pending.type == globals.system.symbols.lines)
-      result += globals.system.CreateBatchLines(pending.lines, pending.ignoredColors);
-   else if(pending.type == globals.system.symbols.rectangles)
-      result += globals.system.CreateBatchRects(pending.lines, pending.ignoredColors);
+   else if(pending.type == globals.system.core.symbols.lines)
+      result += globals.system.core.CreateBatchLines(pending.lines, pending.ignoredColors);
+   else if(pending.type == globals.system.core.symbols.rectangles)
+      result += globals.system.core.CreateBatchRects(pending.lines, pending.ignoredColors);
    else
       throw "Unknown pending lines type!";
 
-   return result + globals.system.symbols.cap;
-}
-
-//Get a collection of lines from the given data. Assume start starts at actual
-//line data and not page/type/etc (type is given)
-function parseLineData(data, start, length, type)
-{
-   if(type == globals.system.symbols.stroke)
-      return globals.system.ParseStroke(data, start, length);
-   else if(type == globals.system.symbols.lines)
-      return globals.system.ParseBatchLines(data, start, length);
-   else if(type == globals.system.symbols.rectangles)
-      return globals.system.ParseBatchRects(data, start, length);
-   else
-      throw "Unparseable data type " + type;
+   return result + globals.system.core.symbols.cap;
 }
 
 function drawLines(lines, context, overridecolor) 
@@ -1029,23 +1036,25 @@ function frameFunction()
       }
    }
 
-   var msgs = processMessages(globals, constants.maxMessageRender);
+   globals.system.ProcessMessages(constants.maxScan);
+   //var msgs = processMessages(globals, constants.maxMessageRender);
    
-   if(msgs.length > 0)
+   if(globals.system.scheduledMessages.length > 0)
    {
       var fragment = new DocumentFragment();
-      msgs.forEach(x => fragment.appendChild(createMessageElement(x)));
+      globals.system.scheduledMessages.forEach(x => fragment.appendChild(createMessageElement(x)));
       messages.appendChild(fragment);
       globals.scheduledScrolls.push(messagecontainer);
    }
 
    //The incoming draw data handler
    var pbspeed = getPlaybackSpeed();
-   processLines(globals, pbspeed, getPageNumber());
+   globals.system.ProcessLines(constants.maxScan, getPageNumber());
+   //processLines(globals, pbspeed, getPageNumber());
 
    //Now draw lines based on playback speed (if there are any)
-   if(globals.scheduledLines.length > 0)
-      drawLines(globals.scheduledLines.splice(0, pbspeed));
+   if(globals.system.scheduledLines.length > 0)
+      drawLines(globals.system.scheduledLines.splice(0, pbspeed));
 
    requestAnimationFrame(frameFunction);
 }
@@ -1092,69 +1101,6 @@ function doDropper(x, y)
       setLineColor(color.ToHexString());
       setDropperActive(false);
    }
-}
-
-function dataScan(start, func, maxScan)
-{
-   //always skip preamble
-   if(start < globals.preamble.skip)
-      start = globals.preamble.skip;
-
-   maxScan = maxScan || constants.maxScan;
-
-   globals.system.DataScan(globals.roomdata, start, func, maxScan);
-}
-
-//The message handler
-function processMessages(tracker, max, scanLimit)
-{
-   var messages = []; 
-
-   dataScan(tracker.chatpointer, (start, length, cc, end) =>
-   {
-      tracker.chatpointer = end; //start + length;
-
-      if(cc != globals.system.symbols.text)
-         return;
-
-      messages.push(globals.system.ParseMessage(globals.roomdata, start, length));
-         //start + constants.messageHeaderLength, length - constants.messageHeaderLength)));
-
-      return messages.length > max;
-   }, scanLimit);
-
-   return messages;
-}
-
-function processLines(tracker, limit, page, scanLimit)
-{
-   dataScan(tracker.drawpointer, (start, length, cc, end) =>
-   {
-      tracker.drawpointer = end; //start + length;
-
-      //We only handle certain things in draw
-      if(cc != globals.system.symbols.lines && 
-         cc != globals.system.symbols.stroke && 
-         cc != globals.system.symbols.rectangles)
-         return;
-
-      //We ALSO only handle the draw if it's the right PAGE.
-      var pageDat = StreamConvert.VariableWidthToInt(globals.roomdata, start);
-
-      if(pageDat.value > tracker.maxPage)
-         tracker.maxPage = pageDat.value;
-
-      if(pageDat.value != page)
-         return;
-
-      //Parse the lines, draw them, and update the line count all in one
-      //(drawLines returns the lines again). The minus one in length is the
-      //ending cap (needs to be removed in DataScan)
-      tracker.scheduledLines = tracker.scheduledLines.concat(
-         parseLineData(globals.roomdata, start + pageDat.length, length - pageDat.length - 1, cc));
-
-      return tracker.scheduledLines.length > limit;
-   }, scanLimit);
 }
 
 function hashtag(e)
