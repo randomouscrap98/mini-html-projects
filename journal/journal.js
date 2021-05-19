@@ -571,7 +571,7 @@ function hashtag(e) { e.preventDefault(); }
 <div id="rightpane" class="pane">
    <div id="infobox">
       <h3>${globals.roomname}</h3>
-      <time>${globals.preamble.date}</time>
+      <time>${globals.system.preamble.date}</time>
       <time class="exported">Exported: ${(new Date()).toISOString()}</time>
    </div>
    <div id="textbox"></div>
@@ -618,7 +618,7 @@ function hashtag(e) { e.preventDefault(); }
          ready = true;
       }
 
-      if(page > system.maxPage)
+      if(page > globals.system.maxPage)
       {
          clearInterval(wait);
 
