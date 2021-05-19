@@ -535,6 +535,9 @@ function performStaticExport()
       appendScroll(coverscreencontainer, downloadLink);
    };
 
+   var sys = createSystem();
+   sys.SetData(globals.system.rawData);
+
    //A fun hack so there's no ending script tag in the html
    var scriptTag = "script";
 
@@ -571,7 +574,7 @@ function hashtag(e) { e.preventDefault(); }
 <div id="rightpane" class="pane">
    <div id="infobox">
       <h3>${globals.roomname}</h3>
-      <time>${globals.system.preamble.date}</time>
+      <time>${sys.preamble.date}</time>
       <time class="exported">Exported: ${(new Date()).toISOString()}</time>
    </div>
    <div id="textbox"></div>
@@ -581,7 +584,6 @@ function hashtag(e) { e.preventDefault(); }
    var imagebox = htmlexport.getElementById("imagebox");
 
    //Have to do this repeat parsing in order to reduce memory usage.
-   //var tracker = { maxPage : 0, chatpointer : 0 };
    var page = 0;
    var ready = true;
 
@@ -591,7 +593,7 @@ function hashtag(e) { e.preventDefault(); }
       {
          ready = false;
 
-         var pageURI = exportSinglePage(page++, globals.system);
+         var pageURI = exportSinglePage(page++, sys);
 
          //The html element
          var pageID = document.createElement("a");
@@ -618,14 +620,13 @@ function hashtag(e) { e.preventDefault(); }
          ready = true;
       }
 
-      if(page > globals.system.maxPage)
+      if(page > sys.maxPage)
       {
          clearInterval(wait);
 
-         globals.system.ResetMessageTracking();
-         globals.system.ProcessMessages(Number.MAX_SAFE_INTEGER);
-         //var msgs = processMessages(tracker, Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER);
-         globals.system.scheduledMessages.forEach(x => textbox.appendChild(createMessageElement(x)));
+         sys.ResetMessageTracking();
+         sys.ProcessMessages(Number.MAX_SAFE_INTEGER);
+         sys.scheduledMessages.forEach(x => textbox.appendChild(createMessageElement(x)));
 
          //Finalize SVG. Set viewbox just in case (it's not necessary but it
          //helps with scaling if you need it later)

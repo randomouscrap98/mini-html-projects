@@ -484,11 +484,7 @@ StreamDrawCore1.prototype.ParseIgnoreData = function(data, start, length)
 function StreamDrawSystem1(core, existingData)
 {
    this.core = core;
-
-   this.ResetDrawTracking();
-   this.ResetMessageTracking();
    this.SetData(existingData);
-
    this.skippedDataWorth = 0.1;
 }
 
@@ -507,6 +503,9 @@ StreamDrawSystem1.prototype.ResetMessageTracking = function()
 
 StreamDrawSystem1.prototype.SetData = function(data)
 {
+   this.ResetDrawTracking();
+   this.ResetMessageTracking();
+
    this.rawData = data || "";
 
    if(this.rawData)
