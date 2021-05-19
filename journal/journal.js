@@ -700,8 +700,8 @@ function performFunctionalExport(room)
             {
                console.log("MATCH: ", x.src);
                d = d.replace('roomname: ""', 'roomname: ' + JSON.stringify(room));
-                  .replace('roomdata: ""', 'roomdata: ' + JSON.stringify(data))
-                  .replace('preamble: {}', 'preamble: ' + JSON.stringify(preamble));
+                  //.replace('roomdata: ""', 'roomdata: ' + JSON.stringify(data))
+                  //.replace('preamble: {}', 'preamble: ' + JSON.stringify(preamble));
             }
             else if(x.src.indexOf("streamdrawcore") >= 0)
             {
@@ -813,7 +813,7 @@ function pullInitialStream(continuation)
 
             //We already set our data, don't need to do it again
             //TODO: fix this weirdness!
-            handleIncomingData("");
+            successfulDataCallback(data);
 
             if(continuation) 
                continuation();
@@ -829,7 +829,8 @@ function startLongPoller()
 {
    queryEnd(globals.roomname, globals.system.rawData.length, (data, start) =>
    {
-      handleIncomingData(data);
+      globals.system.rawData += data.data;
+      successfulDataCallback(data);
       return data.data.length;
    }, () =>
    { 
@@ -838,9 +839,8 @@ function startLongPoller()
 }
 
 
-function handleIncomingData(data)
+function successfulDataCallback(data)
 {
-   globals.system.rawData += data.data;
    setStatus("ok");
    refreshInfo(data);
 }

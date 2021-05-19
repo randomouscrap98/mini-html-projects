@@ -496,7 +496,7 @@ StreamDrawSystem1.prototype.ResetDrawTracking = function()
    this.maxPage = 0;
 };
 
-StreamDrawSystem1.prototype.ResetDrawTracking = function()
+StreamDrawSystem1.prototype.ResetMessageTracking = function()
 {
    this.messagePointer = 0;
    this.scheduledMessages = [];
@@ -514,7 +514,7 @@ StreamDrawSystem1.prototype.SetData = function(data)
 
 StreamDrawSystem1.prototype.CreateMessage = function(username, message)
 {
-   return this.core.symbols.text + this.core.CreateMessage(username, message));
+   return this.core.symbols.text + this.core.CreateMessage(username, message);
 };
 
 //A critical function: scan through data in chunks to parse out lines. 
@@ -558,7 +558,7 @@ StreamDrawSystem1.prototype.ProcessLines = function(scanLimit, page)
 };
 
 //The message handler
-StreamDrawSystem1.prototype.ProcessMessages(scanLimit)
+StreamDrawSystem1.prototype.ProcessMessages = function(scanLimit)
 {
    var me = this;
 
