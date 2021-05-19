@@ -696,19 +696,9 @@ function performFunctionalExport(room)
             if(x.src.indexOf("journal.js") >= 0)
             {
                console.log("MATCH: ", x.src);
-               //d = d.replace('roomname: ""', 'roomname: ' + JSON.stringify(room));
                d = 'var exportData = { roomname: ' + JSON.stringify(room) + 
                    ', roomdata: \n' + JSON.stringify(data) + '\n};\n' + d;
-                  //.replace('roomdata: ""', 'roomdata: ' + JSON.stringify(data))
-                  //.replace('preamble: {}', 'preamble: ' + JSON.stringify(preamble));
             }
-            //else if(x.src.indexOf("streamdrawcore") >= 0)
-            //{
-            //   //TODO: this may be a problem with the new system
-            //   console.log("MATCH: ", x.src);
-            //   d = d.replace('rawData: ""', 'rawData: ' + JSON.stringify(data))
-            //         .replace('preamble: {}', 'preamble: ' + JSON.stringify(preamble));
-            //}
 
             x.innerHTML = d;
             x.removeAttribute("src");
