@@ -4,7 +4,7 @@
 var system = 
 {
    name: "journal",
-   version: "1.0.0_f2" //format 2
+   version: "1.0.1_f2" //format 2
 };
 
 var globals = 
@@ -920,7 +920,7 @@ function trackPendingStroke(drw, pending)
          pending.accepting = false;
       }
 
-      pending.lines = pending.lines.concat(currentLines);
+      pending.lines.push(...currentLines);
    }
 
    return currentLines;
@@ -943,7 +943,7 @@ function createLineData(pending)
 
    if(pending.type == globals.system.core.symbols.stroke)
       result += globals.system.core.CreateStroke(pending.lines, pending.ignoredColors, 
-         globals.system.symbols.cap + startChunk);
+         globals.system.core.symbols.cap + startChunk);
    else if(pending.type == globals.system.core.symbols.lines)
       result += globals.system.core.CreateBatchLines(pending.lines, pending.ignoredColors);
    else if(pending.type == globals.system.core.symbols.rectangles)
@@ -982,6 +982,9 @@ function clearSelectRect()
 
 function frameFunction()
 {
+   //var start;
+   //var times = { }; 
+
    if(globals.scheduledScrolls.length > 0)
    {
       globals.scheduledScrolls.forEach(x => x.scrollTop = x.scrollHeight);
@@ -991,27 +994,39 @@ function frameFunction()
    //Only do drawing stuff on frame if there IS a drawer.
    if(globals.drawer)
    {
+      //start = performance.now();
       drawerTick(globals.drawer, globals.pendingStroke);
+      //times.dt = performance.now() - start;
    }
 
+   //start = performance.now();
    globals.system.ProcessMessages(constants.maxScan);
+   //times.pm = performance.now() - start;
    
    if(globals.system.scheduledMessages.length > 0)
    {
+      //start = performance.now();
       var fragment = new DocumentFragment();
       var displayMessages = globals.system.scheduledMessages.splice(0, constants.maxMessageRender);
       displayMessages.forEach(x => fragment.appendChild(createMessageElement(x)));
       messages.appendChild(fragment);
       globals.scheduledScrolls.push(messagecontainer);
+      //times.rm = performance.now() - start;
    }
 
    //The incoming draw data handler
-   var pbspeed = getPlaybackSpeed();
+   //start = performance.now();
    globals.system.ProcessLines(constants.maxScan, getPageNumber());
+   //times.pl = performance.now() - start;
 
    //Now draw lines based on playback speed (if there are any)
+   //start = performance.now();
    if(globals.system.scheduledLines.length > 0)
-      drawLines(globals.system.scheduledLines.splice(0, pbspeed));
+      drawLines(globals.system.scheduledLines.splice(0, getPlaybackSpeed()));
+   //times.dl = performance.now() - start;
+
+   //if(globals.system.scheduledLines.length)
+   //   console.log(times);
 
    requestAnimationFrame(frameFunction);
 }

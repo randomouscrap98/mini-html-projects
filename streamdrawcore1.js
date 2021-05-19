@@ -50,11 +50,6 @@ StreamDrawCore1.prototype.SetSize = function(width, height)
 //the various levels of switches/etc.
 StreamDrawCore1.prototype.DataScan = function(data, start, func)
 {
-   //always skip preamble
-   //if(start < this.preambleSkip)
-   //   start = this.preambleSkip;
-
-   //maxScan = maxScan || 999999999;
    var current = start;
    var clength = 0;
    var scanned = 0;
@@ -63,7 +58,7 @@ StreamDrawCore1.prototype.DataScan = function(data, start, func)
    //Now start looping
    while(true)
    {
-      if(current >= data.length) // || scanned > maxScan)
+      if(current >= data.length)
          return;
 
       cc = data.charAt(current);
@@ -266,8 +261,11 @@ StreamDrawCore1.prototype.ParseStroke = function(data, start, length)
 {
    var ignoreData = this.ParseIgnoreData(data, start, length);
 
-   start += ignoreData.skip;
-   length -= ignoreData.skip;
+   if(ignoreData)
+   {
+      start += ignoreData.skip;
+      length -= ignoreData.skip;
+   }
 
    var result = [];
    var t, t2; //These are temp variables, used throughout
@@ -318,7 +316,7 @@ StreamDrawCore1.prototype.ParseStroke = function(data, start, length)
    {
       result.push(new MiniDraw.LineData(size, color, 
          segment[i], segment[i + 1], segment[i + 2], segment[i + 3], 
-         false, ignoreData.complexRect));
+         false, ignoreData ? ignoreData.complexRect : null));
    }
 
    return result;
@@ -359,8 +357,11 @@ StreamDrawCore1.prototype.CreateGenericBatch = function(lines, ignoredColors)
 StreamDrawCore1.prototype.ParseGenericBatch = function(data, start, length, isRect)
 {
    var ignoreData = this.ParseIgnoreData(data, start, length);
-   start += ignoreData.skip;
-   length -= ignoreData.skip;
+   if(ignoreData)
+   {
+      start += ignoreData.skip;
+      length -= ignoreData.skip;
+   }
 
    var result = [];
    var t2;
@@ -381,7 +382,7 @@ StreamDrawCore1.prototype.ParseGenericBatch = function(data, start, length, isRe
       t = this.ParseStandardPoint(data, i);
       t2 = this.ParseStandardPoint(data, i + this.POINTBYTES);
       result.push(new MiniDraw.LineData(size, t.extra ? color : null, 
-         t.x, t.y, t2.x, t2.y, isRect, ignoreData.complexRect));
+         t.x, t.y, t2.x, t2.y, isRect, ignoreData ? ignoreData.complexRect : null));
    }
 
    //console.log(result);
@@ -474,7 +475,7 @@ StreamDrawCore1.prototype.ParseIgnoreData = function(data, start, length)
       return { skip : iglength, complexRect : complexRect };  
    }
 
-   return { skip : 0, complexRect : null };
+   return null; //{ skip : 0, complexRect : null };
 };
 
 
@@ -487,6 +488,8 @@ function StreamDrawSystem1(core, existingData)
    this.ResetDrawTracking();
    this.ResetMessageTracking();
    this.SetData(existingData);
+
+   this.skippedDataWorth = 0.1;
 }
 
 StreamDrawSystem1.prototype.ResetDrawTracking = function()
@@ -521,36 +524,50 @@ StreamDrawSystem1.prototype.CreateMessage = function(username, message)
 StreamDrawSystem1.prototype.ProcessLines = function(scanLimit, page)
 {
    var me = this;
+   var skips = 0;
 
    me.core.DataScan(
       me.rawData, 
       Math.max(me.drawPointer, me.preamble.skip), 
       (start, length, cc, end, scanCount) =>
       {
-         //console.log("ProcessingLines: ", me.drawPointer, start, length);
-         //Always at least complete ONE round
+         //Honor a scanLimit of 0 by doing this first
+         if ((scanCount - skips * (1 - me.skippedDataWorth)) > scanLimit)
+            return true;
+
+         //lastcount = scanCount;
          me.drawPointer = end;
 
          //We only handle certain things in draw
          if(cc != me.core.symbols.lines && 
             cc != me.core.symbols.stroke && 
             cc != me.core.symbols.rectangles)
+         {
+            skips++;
             return false;
+         }
 
          //We ALSO only handle the draw if it's the right PAGE.
          var pageDat = StreamConvert.VariableWidthToInt(me.rawData, start);
          me.maxPage = Math.max(me.maxPage, pageDat.value);
 
          if(pageDat.value != page)
+         {
+            skips++;
             return false;
+         }
 
          //Parse the lines, draw them, and update the line count all in one
          //(drawLines returns the lines again). The minus one in length is the
          //ending cap (needs to be removed in DataScan)
+         //var s = performance.now();
          var lines = me.core.ParseLineChunk(me.rawData, start + pageDat.length, length - pageDat.length - 1, cc);
-         me.scheduledLines = me.scheduledLines.concat(lines);
+         me.scheduledLines.push(...lines);
+         //s = performance.now() - s;
+         //if(s > 1)
+         //   console.log(s, start, length, cc);
 
-         return scanCount > scanLimit;
+         return false;
       }
    );
 };
@@ -559,22 +576,26 @@ StreamDrawSystem1.prototype.ProcessLines = function(scanLimit, page)
 StreamDrawSystem1.prototype.ProcessMessages = function(scanLimit)
 {
    var me = this;
+   var skips = 0;
 
    me.core.DataScan(
       me.rawData, 
       Math.max(me.messagePointer, me.preamble.skip), 
       (start, length, cc, end, scanCount) =>
       {
-         //console.log("Processingmessages: ", me.messagePointer, start, length);
-         //Always at least complete ONE round
+         if((scanCount - skips * (1 - me.skippedDataWorth)) > scanLimit)
+            return true;
+
          me.messagePointer = end;
 
          if(cc != me.core.symbols.text)
+         {
+            skips++;
             return false;
+         }
 
          me.scheduledMessages.push(me.core.ParseMessage(me.rawData, start, length));
-
-         return scanCount > scanLimit;
+         return false;
       }
    );
 };
