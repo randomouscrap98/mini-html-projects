@@ -9,16 +9,10 @@ var system =
 
 var globals = 
 {
-   //roomdata: "",
    roomname: "",
-   //preamble: {},
-   //chatpointer: 0,
-   //drawpointer: 0,
    drawer: null,
    context: null,
-   //maxPage : 0,
    pendingStroke: {},
-   //scheduledLines: [],
    scheduledScrolls: []
 };
 
@@ -30,7 +24,7 @@ var constants =
    settingPrepend : "mini_journal_",
    maxLines : 5000,        //A single stroke (or fill) can't have more than this
    maxMessageRender : 100, //per frame
-   //maxScan : 50000,        //per frame
+   maxScan : 2000          //per frame; should be about the max line draw per frame
 };
 
 var palettes = 
@@ -799,7 +793,6 @@ function pullInitialStream(continuation)
          else
          {
             globals.system.SetData(data.data);
-            //globals.preamble = parsePreamble(data.data);
 
             if(!(globals.system.preamble && globals.system.preamble.version && 
                  globals.system.preamble.name == system.name &&
@@ -849,7 +842,7 @@ function successfulDataCallback(data)
 //For now, the big function that generates the generic "lines" the journal
 //uses. The journal doesn't care about alpha or aliasing or any of that, it
 //only draws collections of pixel perfect lines.
-function generatePendingLines(drw, pending)
+function trackPendingStroke(drw, pending)
 {
    //If the pending stroke isn't active, activate it (since they're asking for generation)
    if(!pending.active)
@@ -995,54 +988,19 @@ function frameFunction()
       globals.scheduledScrolls = [];
    }
 
-   //First, perform self-lines
+   //Only do drawing stuff on frame if there IS a drawer.
    if(globals.drawer)
    {
-      drawLocal(globals.drawer, globals.pendingStroke);
-
-      if(globals.drawer.currentlyDrawing)
-      {
-         if(getTool().indexOf("rect") >= 0)
-         {
-            selectRect(globals.drawer.startAction.clientX, globals.drawer.startAction.clientY,
-               globals.drawer.currentAction.clientX, globals.drawer.currentAction.clientY);
-         }
-      }
-      //Post lines when we're done (why is this in the frame drawer again?)
-      else 
-      {
-         //Hopefully this doesn't become a performance concern
-         clearSelectRect();
-
-         //Don't need to continuously look at the pending stroke when there is none
-         if(globals.pendingStroke.active)
-         {
-            if(globals.pendingStroke.tool == "exportrect")
-               exportSection(globals.pendingStroke.lines[0]);
-
-            //This saves us in a few ways: some tools don't actually generate lines!
-            if(globals.pendingStroke.lines.length > 0 && globals.pendingStroke.postLines)
-            {
-               var ldata = createLineData(globals.pendingStroke);
-               post(endpoint(globals.roomname), ldata, () => setStatus("ok"), () => setStatus("error"));
-               //console.log("POSTED: ", ldata);
-               if(globals.pendingStroke.displayAtEnd)
-                  drawLines(globals.pendingStroke.lines);
-               //console.log("Stroke complete: " + ldata);
-               //drawLines(parseLineData(ldata, 2, ldata.length - 3, ldata.charAt(0)), "#FF0000");
-            }
-            globals.pendingStroke.active = false;
-         }
-      }
+      drawerTick(globals.drawer, globals.pendingStroke);
    }
 
    globals.system.ProcessMessages(constants.maxScan);
-   //var msgs = processMessages(globals, constants.maxMessageRender);
    
    if(globals.system.scheduledMessages.length > 0)
    {
       var fragment = new DocumentFragment();
-      globals.system.scheduledMessages.forEach(x => fragment.appendChild(createMessageElement(x)));
+      var displayMessages = globals.system.scheduledMessages.splice(0, constants.maxMessageRender);
+      displayMessages.forEach(x => fragment.appendChild(createMessageElement(x)));
       messages.appendChild(fragment);
       globals.scheduledScrolls.push(messagecontainer);
    }
@@ -1050,7 +1008,6 @@ function frameFunction()
    //The incoming draw data handler
    var pbspeed = getPlaybackSpeed();
    globals.system.ProcessLines(constants.maxScan, getPageNumber());
-   //processLines(globals, pbspeed, getPageNumber());
 
    //Now draw lines based on playback speed (if there are any)
    if(globals.system.scheduledLines.length > 0)
@@ -1059,10 +1016,14 @@ function frameFunction()
    requestAnimationFrame(frameFunction);
 }
 
-function drawLocal(drawer, pending)
+//The drawing function to be performed per frame
+function drawerTick(drawer, pending)
 {
+   //Do NOTHING if the drawer is basically inactive! There's nothing to do on
+   //each tick unless the drawer is trying to do things!
    if(drawer.currentX !== null)
    {
+      //Dropper overrides other actions
       if(isDropperActive())
       {
          doDropper(drawer.currentX, drawer.currentY);
@@ -1076,7 +1037,7 @@ function drawLocal(drawer, pending)
          //This creates pending lines from our current drawing tool/etc for
          //posting later. The generated lines are drawn NOW though, so the line
          //data must be correct/working/etc (including stuff like complex func)
-         drawLines(generatePendingLines(drawer, pending));
+         drawLines(trackPendingStroke(drawer, pending));
 
          //These are NOT performed every frame because the drawing events are
          //NOT synchronized to the frame, so we could be removing that very
@@ -1085,6 +1046,38 @@ function drawLocal(drawer, pending)
          drawer.lastY = drawer.currentY;
          drawer.currentX = null;
          drawer.currentY = null;
+      }
+   }
+
+   if(drawer.currentlyDrawing)
+   {
+      if(getTool().indexOf("rect") >= 0)
+      {
+         selectRect(drawer.startAction.clientX, drawer.startAction.clientY,
+            drawer.currentAction.clientX, drawer.currentAction.clientY);
+      }
+   }
+   //Not currently drawing, post lines since we're done (why is this in the frame drawer again?)
+   else
+   {
+      //Hopefully this doesn't become a performance concern
+      clearSelectRect();
+
+      //Don't need to continuously look at the pending stroke when there is none
+      if(pending.active)
+      {
+         if(pending.tool == "exportrect")
+            exportSection(pending.lines[0]);
+
+         //This saves us in a few ways: some tools don't actually generate lines!
+         if(pending.lines.length > 0 && pending.postLines)
+         {
+            var ldata = createLineData(pending);
+            post(endpoint(globals.roomname), ldata, () => setStatus("ok"), () => setStatus("error"));
+            if(pending.displayAtEnd)
+               drawLines(pending.lines);
+         }
+         pending.active = false;
       }
    }
 }

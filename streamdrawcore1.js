@@ -521,13 +521,13 @@ StreamDrawSystem1.prototype.CreateMessage = function(username, message)
 StreamDrawSystem1.prototype.ProcessLines = function(scanLimit, page)
 {
    var me = this;
-   //var totalLines = 0;
 
    me.core.DataScan(
       me.rawData, 
       Math.max(me.drawPointer, me.preamble.skip), 
       (start, length, cc, end, scanCount) =>
       {
+         //console.log("ProcessingLines: ", me.drawPointer, start, length);
          //Always at least complete ONE round
          me.drawPointer = end;
 
@@ -549,9 +549,7 @@ StreamDrawSystem1.prototype.ProcessLines = function(scanLimit, page)
          //ending cap (needs to be removed in DataScan)
          var lines = me.core.ParseLineChunk(me.rawData, start + pageDat.length, length - pageDat.length - 1, cc);
          me.scheduledLines = me.scheduledLines.concat(lines);
-         //totalLines += lines.length;
 
-         //return (totalLines > lineLimit) || (scanCount > me.maxScan);
          return scanCount > scanLimit;
       }
    );
@@ -567,6 +565,7 @@ StreamDrawSystem1.prototype.ProcessMessages = function(scanLimit)
       Math.max(me.messagePointer, me.preamble.skip), 
       (start, length, cc, end, scanCount) =>
       {
+         //console.log("Processingmessages: ", me.messagePointer, start, length);
          //Always at least complete ONE round
          me.messagePointer = end;
 
