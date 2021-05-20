@@ -484,9 +484,12 @@ var StreamConvert =
 
       return result;
    },
-   VariableWidthToInt : function(chars, start)
+   //for optimization, can pass existing result object
+   VariableWidthToInt : function(chars, start, result) 
    {
-      var result = {value:0,length:0};
+      if(!result) { result = {value:0,length:0}; }
+      else { result.value = 0; result.length = 0; }
+
       var c = 0;
 
       do 
