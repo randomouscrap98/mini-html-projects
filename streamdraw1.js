@@ -247,14 +247,15 @@ StreamDrawElementParser.prototype.ParseStroke = function(data, start, length)
    segment[0] = point.x;
    segment[1] = point.y;
    var si = 2;
-   t = {};
 
+   //CAREFUL: t is still an object at this point, which is why we can use it in
+   //the Fast function. If you change/use t before here, PLEASE fix that!
    while(l < length)
    {
       //This is an excessive optimization: the stroke uses DISTANCES between
       //points instead of actual points, which allows for 50% less data usage
       //for any two points within 5 bits (31) of each other, which is most.
-      StreamConvert.VariableWidthToInt_Fast(data, start + l, t);
+      t = StreamConvert.VariableWidthToInt(data, start + l);
       l += t.length;
       //Minus 2 for the last matching x/y coordinate (remember it's a distance)
       t2 = segment[si - 2] + StreamConvert.SpecialToSigned(t.value);
@@ -453,7 +454,7 @@ StreamDrawSystemParser.prototype.CreateLines = function(type, page, lines, ignor
       throw "Unknown pending lines type!";
    }
 
-   return startChunk + result + globals.system.core.symbols.cap;
+   return startChunk + result + this.symbols.cap;
 };
 
 //Parse a single blob of lines within a single stroke or idea or whatever. Just ONE

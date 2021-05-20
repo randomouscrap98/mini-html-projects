@@ -959,8 +959,8 @@ function clearSelectRect()
 
 function frameFunction()
 {
-   //var start;
-   //var times = { }; 
+   var start;
+   var times = { }; 
 
    if(globals.scheduledScrolls.length > 0)
    {
@@ -971,36 +971,36 @@ function frameFunction()
    //Only do drawing stuff on frame if there IS a drawer.
    if(globals.drawer)
    {
-      //start = performance.now();
+      start = performance.now();
       drawerTick(globals.drawer, globals.pendingStroke);
-      //times.dt = performance.now() - start;
+      times.dt = performance.now() - start;
    }
 
-   //start = performance.now();
+   start = performance.now();
    globals.system.ProcessMessages(constants.maxParse, constants.maxScan);
-   //times.pm = performance.now() - start;
+   times.pm = performance.now() - start;
    
    if(globals.system.scheduledMessages.length > 0)
    {
-      //start = performance.now();
+      start = performance.now();
       var fragment = new DocumentFragment();
       var displayMessages = globals.system.scheduledMessages.splice(0, constants.maxMessageRender);
       displayMessages.forEach(x => fragment.appendChild(createMessageElement(x)));
       messages.appendChild(fragment);
       globals.scheduledScrolls.push(messagecontainer);
-      //times.rm = performance.now() - start;
+      times.rm = performance.now() - start;
    }
 
    //The incoming draw data handler
-   //start = performance.now();
+   start = performance.now();
    globals.system.ProcessLines(constants.maxParse, constants.maxScan, getPageNumber());
-   //times.pl = performance.now() - start;
+   times.pl = performance.now() - start;
 
    //Now draw lines based on playback speed (if there are any)
-   //start = performance.now();
+   start = performance.now();
    if(globals.system.scheduledLines.length > 0)
       drawLines(globals.system.scheduledLines.splice(0, getPlaybackSpeed()));
-   //times.dl = performance.now() - start;
+   times.dl = performance.now() - start;
 
    //if(globals.system.scheduledLines.length)
    //   console.log(times);
