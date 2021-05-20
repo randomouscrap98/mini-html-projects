@@ -326,21 +326,8 @@ var MiniDraw =
          ctx.putImageData(d, x, y);
       }
       else if(clear) { ctx.clearRect(x, y, w, h); }
-      else { ctx.rect(x, y, w, h); }//ctx.fillRect(Math.round(x), Math.round(y), w, h); }
+      else { ctx.rect(x, y, w, h); }
    },
-   //SimpleRectPath : function(ctx, x, y, w, h, clear, complex)
-   //{
-   //   x = Math.round(x); y = Math.round(y);
-   //   if(complex)
-   //   {
-   //      var c = clear ? [0,0,0,0] : MiniDraw.ParseHexColor(ctx.fillStyle); 
-   //      var d = ctx.getImageData(x, y, w, h);
-   //      complex(d, c); 
-   //      ctx.putImageData(d, x, y);
-   //   }
-   //   else if(clear) { ctx.clearRect(x, y, w, h); }
-   //   else { ctx.rect(x, y, w, h); }
-   //},
    //Draw only IN or OUT of the selective colors 
    ComplexExceptionRect : function(d, color, except)
    {
@@ -376,6 +363,8 @@ var MiniDraw =
       if(Math.abs(ydiff) < 0.1) //A 0.1 diff shouldn't change anything...
       {
          ctx.beginPath();
+         //Remember that there is no 'height' because it's all LINE width, so
+         //the ld.width used for height makes sense
          MiniDraw.SimpleRect(ctx, Math.min(ld.x1, ld.x2) - ofs, ld.y1 - ofs, 
             Math.abs(xdiff) + ld.width, ld.width, !ld.color, ld.complex);
          ctx.fill();

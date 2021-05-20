@@ -958,12 +958,16 @@ function clearSelectRect()
 }
 
 var ffst = 0;
+var perfmon = 1; //Set this to like 10000 to do single page draw
 
 function frameFunction()
 {
    //var start;
    //var times = { }; 
+   if(perfmon > 1)
+   {
       ffst = performance.now();
+   }
 
    if(globals.scheduledScrolls.length > 0)
    {
@@ -980,14 +984,14 @@ function frameFunction()
    }
 
    //start = performance.now();
-   globals.system.ProcessMessages(constants.maxParse * 1000, constants.maxScan * 1000);
+   globals.system.ProcessMessages(constants.maxParse * perfmon, constants.maxScan * perfmon);
    //times.pm = performance.now() - start;
    
    if(globals.system.scheduledMessages.length > 0)
    {
       //start = performance.now();
       var fragment = new DocumentFragment();
-      var displayMessages = globals.system.scheduledMessages.splice(0, constants.maxMessageRender * 1000);
+      var displayMessages = globals.system.scheduledMessages.splice(0, constants.maxMessageRender * perfmon);
       displayMessages.forEach(x => fragment.appendChild(createMessageElement(x)));
       messages.appendChild(fragment);
       globals.scheduledScrolls.push(messagecontainer);
@@ -998,7 +1002,7 @@ function frameFunction()
 
    //The incoming draw data handler
    //start = performance.now();
-   globals.system.ProcessLines(constants.maxParse * 1000, constants.maxScan * 1000, getPageNumber());
+   globals.system.ProcessLines(constants.maxParse * perfmon, constants.maxScan * perfmon, getPageNumber());
    //times.pl = performance.now() - start;
 
    //if(oldcnt == 0 && globals.system.scheduledLines.length > 0)
@@ -1007,11 +1011,11 @@ function frameFunction()
    //Now draw lines based on playback speed (if there are any)
    //start = performance.now();
    if(globals.system.scheduledLines.length > 0)
-      drawLines(globals.system.scheduledLines.splice(0, getPlaybackSpeed() * 10000));
+      drawLines(globals.system.scheduledLines.splice(0, getPlaybackSpeed() * perfmon));
    //times.dl = performance.now() - start;
 
    //if(oldcnt > 0 && globals.system.scheduledLines.length == 0)
-   if(performance.now() - ffst > 10)
+   if(perfmon > 1 && performance.now() - ffst > 10)
       console.log("draw chunk: ", (performance.now() - ffst));
       //ffst = performance.now();
 

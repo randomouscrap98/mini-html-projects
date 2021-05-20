@@ -15,8 +15,6 @@ function StreamDrawElementParser(width, height)
    this.MESSAGELENGTHBYTES = 2;
    this.POINTBYTES = 4;
    this.SIZEBYTES = 1;
-
-   //this._pcdmemoize = {};
 }
 
 StreamDrawElementParser.prototype.SetSize = function(width, height)
@@ -77,18 +75,6 @@ StreamDrawElementParser.prototype.ParseColorData = function(data, start)
          .toString(16).toUpperCase().padStart(6, "0"),
       skip : this.COLORBYTES
    };
-   //var key = data.substr(start, this.COLORBYTES);
-
-   //if(!this._pcdmemoize[key])
-   //{
-   //   this._pcdmemoize[key] = { 
-   //      color : "#" + StreamConvert.CharsToInt(data, start, this.COLORBYTES)
-   //      .toString(16).toUpperCase().padStart(6, "0"),
-   //   skip : this.COLORBYTES
-   //   };
-   //}
-
-   //return this._pcdmemoize[key];
 };
 
 //Creating ignore data is a choice, so there are no checks performed to see if
