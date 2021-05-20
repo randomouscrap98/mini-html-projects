@@ -24,7 +24,8 @@ var constants =
    settingPrepend : "mini_journal_",
    maxLines : 5000,        //A single stroke (or fill) can't have more than this
    maxMessageRender : 100, //per frame
-   maxScan : 2000          //per frame; should be about the max line draw per frame
+   maxScan : 10000,        //per frame; should be about the max line draw per frame
+   maxParse : 2000
 };
 
 var palettes = 
@@ -423,8 +424,10 @@ function setupDrawer(canvas)
 
 function createSystem()
 {
-   return new StreamDrawSystem1(
-      new StreamDrawCore1(constants.pwidth, constants.pheight)
+   return new StreamDrawSystem(
+      new StreamDrawSystemParser(
+         new StreamDrawElementParser(constants.pwidth, constants.pheight)
+      )
    );
 }
 
@@ -433,7 +436,7 @@ function exportSinglePage(page, system)
    var context = buffer1.getContext("2d");
    CanvasUtilities.Clear(buffer1);
    system.ResetDrawTracking();
-   system.ProcessLines(Number.MAX_SAFE_INTEGER, page);
+   system.ProcessLines(Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER, page);
    drawLines(system.scheduledLines, context);
    //Need this so images are saved with backgrounds. Can only do it AFTER all
    //drawings, because often times an eraser is used!
@@ -490,7 +493,7 @@ function setupChat()
             d.getHours())}${zs(d.getMinutes())}`;
       }
          
-      post(endpoint(globals.roomname), globals.system.CreateMessage(username.value, message.value));
+      post(endpoint(globals.roomname), globals.system.parser.CreateMessage(username.value, message.value));
       message.value = "";
       return false;
    });
@@ -865,7 +868,7 @@ function trackPendingStroke(drw, pending)
       //Simple stroke
       if(pending.tool == "eraser" || pending.tool == "pen")
       {
-         pending.type = globals.system.core.symbols.stroke;
+         pending.type = "stroke"; //globals.system.core.symbols.stroke;
          currentLines.push(new MiniDraw.LineData(pending.size, pending.color,
             Math.round(drw.lastX), Math.round(drw.lastY), 
             Math.round(drw.currentX), Math.round(drw.currentY),
@@ -874,16 +877,16 @@ function trackPendingStroke(drw, pending)
       //Complex big boy fill
       else if(pending.tool == "fill")
       {
-         pending.type = globals.system.core.symbols.lines;
+         pending.type = "lines"; //globals.system.core.symbols.lines;
          pending.size = 1;
          pending.accepting = false; //DON'T do any more fills on this stroke!!
          var context = copyToBackbuffer(drw._canvas);
-         globals.system.core.Flood(context, drw.currentX, drw.currentY, pending.color, currentLines,
-            constants.maxLines);
+         currentLines.push(...MiniDraw.Flood(context, drw.currentX, drw.currentY, 
+            pending.color, constants.maxLines));
       }
       else if (pending.tool.indexOf("rect") >= 0)
       {
-         pending.type = globals.system.core.symbols.rectangles;
+         pending.type = "rectangles"; //globals.system.core.symbols.rectangles;
          pending.displayAtEnd = true;
 
          if(pending.tool == "exportrect")
@@ -929,25 +932,25 @@ function copyToBackbuffer(canvas)
 }
 
 
-//Consider moving some of this out of here so the line data portion (the
-//"payload" so to speak) can be abstracted away from the idea of pages? but why?
-function createLineData(pending)
-{
-   var startChunk = pending.type + StreamConvert.IntToVariableWidth(pending.page);
-   var result = startChunk;
-
-   if(pending.type == globals.system.core.symbols.stroke)
-      result += globals.system.core.CreateStroke(pending.lines, pending.ignoredColors, 
-         globals.system.core.symbols.cap + startChunk);
-   else if(pending.type == globals.system.core.symbols.lines)
-      result += globals.system.core.CreateBatchLines(pending.lines, pending.ignoredColors);
-   else if(pending.type == globals.system.core.symbols.rectangles)
-      result += globals.system.core.CreateBatchRects(pending.lines, pending.ignoredColors);
-   else
-      throw "Unknown pending lines type!";
-
-   return result + globals.system.core.symbols.cap;
-}
+////Consider moving some of this out of here so the line data portion (the
+////"payload" so to speak) can be abstracted away from the idea of pages? but why?
+//function createLineData(pending)
+//{
+//   var startChunk = pending.type + StreamConvert.IntToVariableWidth(pending.page);
+//   var result = startChunk;
+//
+//   if(pending.type == globals.system.core.symbols.stroke)
+//      result += globals.system.core.CreateStroke(pending.lines, pending.ignoredColors, 
+//         globals.system.core.symbols.cap + startChunk);
+//   else if(pending.type == globals.system.core.symbols.lines)
+//      result += globals.system.core.CreateBatchLines(pending.lines, pending.ignoredColors);
+//   else if(pending.type == globals.system.core.symbols.rectangles)
+//      result += globals.system.core.CreateBatchRects(pending.lines, pending.ignoredColors);
+//   else
+//      throw "Unknown pending lines type!";
+//
+//   return result + globals.system.core.symbols.cap;
+//}
 
 function drawLines(lines, context, overridecolor) 
 { 
@@ -995,7 +998,7 @@ function frameFunction()
    }
 
    //start = performance.now();
-   globals.system.ProcessMessages(constants.maxScan);
+   globals.system.ProcessMessages(constants.maxParse, constants.maxScan);
    //times.pm = performance.now() - start;
    
    if(globals.system.scheduledMessages.length > 0)
@@ -1011,7 +1014,7 @@ function frameFunction()
 
    //The incoming draw data handler
    //start = performance.now();
-   globals.system.ProcessLines(constants.maxScan, getPageNumber());
+   globals.system.ProcessLines(constants.maxParse, constants.maxScan, getPageNumber());
    //times.pl = performance.now() - start;
 
    //Now draw lines based on playback speed (if there are any)
@@ -1082,7 +1085,9 @@ function drawerTick(drawer, pending)
          //This saves us in a few ways: some tools don't actually generate lines!
          if(pending.lines.length > 0 && pending.postLines)
          {
-            var ldata = createLineData(pending);
+            var ldata = globals.system.parser.CreateLines(pending.type, //createLineData(pending);
+               pending.page, pending.lines, pending.ignoredColors);
+            //StreamDrawSystemParser.prototype.CreateLines = function(type, page, lines, ignoredColors)
             post(endpoint(globals.roomname), ldata, () => setStatus("ok"), () => setStatus("error"));
             if(pending.displayAtEnd)
                drawLines(pending.lines);

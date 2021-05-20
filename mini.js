@@ -417,6 +417,75 @@ var MiniDraw =
          MiniDraw._rectignorememoize[key] = (d,c) => MiniDraw.ComplexExceptionRect(d,c,ignored_1d);
       }
       return MiniDraw._rectignorememoize[key];
+   },
+   //Perform a flood on the given context at the given point, returning the
+   //MiniDraw lines that could be used to represent the flood.
+   Flood : function(context, cx, cy, color, maxLines)
+   {
+      //Do the east/west thing, generate the lines, IGNORE future strokes
+      //Using a buffer because working with image data can (does) cause it to go
+      //into software rendering mode, which is very slow
+      var currentLines = [];
+      var width = context.canvas.width;
+      var height = context.canvas.height;
+      var iData = context.getImageData(0, 0, width, height);
+      var img = iData.data;
+      var queue = [[Math.round(cx), Math.round(cy)]];
+      var rIndex = MiniDraw.GetIndex(iData, cx, cy);
+      var replaceColor = [img[rIndex], img[rIndex+1], img[rIndex+2], img[rIndex+3]];
+      console.log("Flood into color: ", replaceColor, cx, cy);
+      maxLines = maxLines || 999999999;
+      var west, east, i, j;
+      var shouldFill = (x, y) =>
+      {
+         if(x < 0 || y < 0 || x >= width || y >= height)
+            return false;
+         var i = MiniDraw.GetIndex(iData, x, y);
+         return img[i] == replaceColor[0] && img[i + 1] == replaceColor[1] &&
+            img[i + 2] == replaceColor[2] && img[i + 3] == replaceColor[3];
+      };
+      while(queue.length)
+      {
+         var p = queue.pop();
+         if(shouldFill(p[0],p[1]))
+         {
+            //March left until not should fill, march right
+            for(west = p[0] - 1; west >= 0 && shouldFill(west, p[1]); west--);
+            for(east = p[0] + 1; west < width && shouldFill(east, p[1]); east++);
+
+            //Bring them back in range
+            west++; east--;
+
+            //NOTE: flood fill doesn't CARE about fancy additional complexity like
+            //rectangle drawing or complex line fill, WE are the complexity already
+            currentLines.push(new MiniDraw.LineData(1, color, west, p[1], east, p[1]));
+
+            //Don't allow huge fills at all, just quit
+            if(currentLines.length > maxLines)
+            {
+               //TODO: fix this to have better error handling
+               alert("Flood fill area too large!");
+               currentLines.length = 0;
+               break;
+            }
+
+            //Now travel from west to east, adding all pixels (we check later anyway)
+            for(i = west; i <= east; i++)
+            {
+               //Just has to be DIFFERENT, not the color we're filling.
+               j = MiniDraw.GetIndex(iData, i, p[1]);
+               img[j + 3] = (img[j + 3] + 10) & 255;
+               //Queue the north and south (regardless of fill requirement)
+               queue.push([i, p[1] + 1]);
+               queue.push([i, p[1] - 1]);
+            }
+         }
+      }
+
+      iData = null;
+      img = null;
+      console.log("Flood lines: ", currentLines.length);
+      return currentLines;
    }
 };
 
