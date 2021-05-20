@@ -15,6 +15,8 @@ function StreamDrawElementParser(width, height)
    this.MESSAGELENGTHBYTES = 2;
    this.POINTBYTES = 4;
    this.SIZEBYTES = 1;
+
+   //this._pcdmemoize = {};
 }
 
 StreamDrawElementParser.prototype.SetSize = function(width, height)
@@ -70,11 +72,23 @@ StreamDrawElementParser.prototype.CreateColorData = function(color)
 
 StreamDrawElementParser.prototype.ParseColorData = function(data, start)
 {
-   return { 
+   return {
       color : "#" + StreamConvert.CharsToInt(data, start, this.COLORBYTES)
          .toString(16).toUpperCase().padStart(6, "0"),
       skip : this.COLORBYTES
    };
+   //var key = data.substr(start, this.COLORBYTES);
+
+   //if(!this._pcdmemoize[key])
+   //{
+   //   this._pcdmemoize[key] = { 
+   //      color : "#" + StreamConvert.CharsToInt(data, start, this.COLORBYTES)
+   //      .toString(16).toUpperCase().padStart(6, "0"),
+   //   skip : this.COLORBYTES
+   //   };
+   //}
+
+   //return this._pcdmemoize[key];
 };
 
 //Creating ignore data is a choice, so there are no checks performed to see if
@@ -117,7 +131,7 @@ StreamDrawElementParser.prototype.ParseIgnoreData = function(data, start, length
          //symbol. So for instance, if iglength is 6 (meaning 1 color), the 
          //loop will run for 1, then stop at 5
          var ignoredColors = [];
-         for(var i = 1; i < iglength - 1; i += 4) //where does 4 come from? is this a constant?
+         for(var i = 1; i < iglength - 1; i += this.COLORBYTES)
             ignoredColors.push(this.ParseColorData(data, start + i).color);
          //Generate the complex rectangle function to be used to draw this thing.
          //We track the FOR REAL individual line data for drawing in this
@@ -128,7 +142,7 @@ StreamDrawElementParser.prototype.ParseIgnoreData = function(data, start, length
       return { skip : iglength, complexRect : complexRect };  
    }
 
-   return null;
+   return { skip: 0, complexRect: null };
 };
 
 // ---------------------
@@ -222,12 +236,8 @@ StreamDrawElementParser.prototype.CreateStroke = function(lines, ignoredColors, 
 StreamDrawElementParser.prototype.ParseStroke = function(data, start, length)
 {
    var ignoreData = this.ParseIgnoreData(data, start, length);
-
-   if(ignoreData)
-   {
-      start += ignoreData.skip;
-      length -= ignoreData.skip;
-   }
+   start += ignoreData.skip;
+   length -= ignoreData.skip;
 
    var t, t2; //These are temp variables, used throughout
    var point = this.ParseStandardPoint(data, start);
@@ -325,11 +335,8 @@ StreamDrawElementParser.prototype.CreateGenericBatch = function(lines, ignoredCo
 StreamDrawElementParser.prototype.ParseGenericBatch = function(data, start, length, isRect)
 {
    var ignoreData = this.ParseIgnoreData(data, start, length);
-   if(ignoreData)
-   {
-      start += ignoreData.skip;
-      length -= ignoreData.skip;
-   }
+   start += ignoreData.skip;
+   length -= ignoreData.skip;
 
    var result = [];
    var t2;
@@ -350,7 +357,7 @@ StreamDrawElementParser.prototype.ParseGenericBatch = function(data, start, leng
       t = this.ParseStandardPoint(data, i);
       t2 = this.ParseStandardPoint(data, i + this.POINTBYTES);
       result.push(new MiniDraw.LineData(size, t.extra ? color : null, 
-         t.x, t.y, t2.x, t2.y, isRect, ignoreData ? ignoreData.complexRect : null));
+         t.x, t.y, t2.x, t2.y, isRect, ignoreData.complexRect));
    }
 
    return result;

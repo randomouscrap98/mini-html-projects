@@ -310,81 +310,55 @@ var MiniDraw =
          c.length == 9 ? parseInt(c.substr(7,2),16) : 255
       ];
    },
-   //ParseHexColorFull : function(c)
-   //{
-   //   //var b = MiniDraw.ParseHexColor(c);
-   //   //return (b[0] << 24) + (b[1] << 16) + (b[2] << 8) + b[3];
-   //   return parseInt(c.length == 9 ? c.substr(1) : (c.substr(1) + "ff"), 16);
-   //   //(b[3] << 24) + (b[2] << 16) + (b[1] << 8) + b[0];
-   //   //c.length == 9 ? parseInt(c.substr(1), 16) : parseInt(c.substr(1) + "ff", 16);
-   //},
    SimpleRect : function(ctx, x, y, w, h, clear, complex)
    {
+      x = Math.round(x); y = Math.round(y);
       //LOTS of if statements, but hopefully those are supremely outshadowed by
       //the drawing time
       if(complex)
       {
          //Compute the color to use (the function could ignore this I guess)
-         //var c = clear ? 0 : MiniDraw.ParseHexColorFull(ctx.fillStyle);
          var c = clear ? [0,0,0,0] : MiniDraw.ParseHexColor(ctx.fillStyle); 
          //Get the image data
-         var d = ctx.getImageData(Math.round(x), Math.round(y), w, h);
+         var d = ctx.getImageData(x, y, w, h);
          //The complex function should modify the data in-place
-         if(complex(d, c)) //Then we reapply it
-            ctx.putImageData(d, Math.round(x), Math.round(y));
+         complex(d, c); //Then we reapply it
+         ctx.putImageData(d, x, y);
       }
-      else if(clear) { ctx.clearRect(Math.round(x), Math.round(y), w, h); }
-      else { ctx.fillRect(Math.round(x), Math.round(y), w, h); }
+      else if(clear) { ctx.clearRect(x, y, w, h); }
+      else { ctx.rect(x, y, w, h); }//ctx.fillRect(Math.round(x), Math.round(y), w, h); }
    },
+   //SimpleRectPath : function(ctx, x, y, w, h, clear, complex)
+   //{
+   //   x = Math.round(x); y = Math.round(y);
+   //   if(complex)
+   //   {
+   //      var c = clear ? [0,0,0,0] : MiniDraw.ParseHexColor(ctx.fillStyle); 
+   //      var d = ctx.getImageData(x, y, w, h);
+   //      complex(d, c); 
+   //      ctx.putImageData(d, x, y);
+   //   }
+   //   else if(clear) { ctx.clearRect(x, y, w, h); }
+   //   else { ctx.rect(x, y, w, h); }
+   //},
    //Draw only IN or OUT of the selective colors 
    ComplexExceptionRect : function(d, color, except)
    {
-      //console.log("slow complex: ", color, except);
-      var i,j,set = false;
+      var i,j;
       csr_datascan:
       for(i = 0; i < d.data.length; i+=4) 
       {
-         if(d.data[i] == color[j] && d.data[i+1] == color[j+1] &&
-            d.data[i+2] == color[j+2] && d.data[i+3] == color[j+3])
-            continue;
-
          for(j = 0; j < except.length; j+=4) 
             if(d.data[i] == except[j] && d.data[i+1] == except[j+1] &&
-               d.data[i+2] == except[j+2] && d.data[i+3] == except[j+3])
+               d.data[i+2] == except[j+2])// && d.data[i+3] == except[j+3])
                continue csr_datascan;
 
          d.data[i] = color[0];
          d.data[i+1] = color[1];
          d.data[i+2] = color[2];
          d.data[i+3] = color[3];
-         set = true;
       }
-
-      return set;
    },
-   //ComplexExceptionRect_Fast : function(d, color, except)
-   //{
-   //   //console.log("fast: ", color, except);
-   //   var data = new Uint32Array(d.data.buffer);
-   //   var i,j,set = false;
-   //   csr_datascan:
-   //   for(i = 0; i < data.length; i++)
-   //   {
-   //      //if(data[i] == color)
-   //      //   continue;
-
-   //      for(j = 0; j < except.length; j++) 
-   //         if(data[i] == except[j])
-   //            continue csr_datascan;
-
-   //      data[i] = color;
-   //      //data[i] = ((color >> 24) & 0xFF) + ((color >> 8) & 0xFF00) + 
-   //      //   ((color << 8) & 0xFF0000) + ((color << 24) & 0xFF000000);
-   //      //set = true;
-   //   }
-
-   //   return true; 
-   //},
    SimpleLine : function (ctx, ld)
    {
       var xdiff = ld.x2 - ld.x1;
@@ -401,17 +375,25 @@ var MiniDraw =
       //A nice optimization for flood fill (and perhaps other things?)
       if(Math.abs(ydiff) < 0.1) //A 0.1 diff shouldn't change anything...
       {
+         ctx.beginPath();
          MiniDraw.SimpleRect(ctx, Math.min(ld.x1, ld.x2) - ofs, ld.y1 - ofs, 
             Math.abs(xdiff) + ld.width, ld.width, !ld.color, ld.complex);
+         ctx.fill();
       }
       else
       {
-         for(var i=0;i<dist;i+=0.5) 
+         var x, y;
+         var setx = [], sety = [];
+         ctx.beginPath();
+         for(var i=0;i<dist;i+=0.5) //0.5) 
          {
-            MiniDraw.SimpleRect(ctx, ld.x1+Math.cos(ang)*i-ofs, 
-               ld.y1+Math.sin(ang)*i-ofs, ld.width, ld.width, 
-               !ld.color, ld.complex);
+            x = Math.round(ld.x1+Math.cos(ang)*i-ofs); 
+            y = Math.round(ld.y1+Math.sin(ang)*i-ofs);
+            if(setx[x] && sety[y]) continue;
+            MiniDraw.SimpleRect(ctx, x, y, ld.width, ld.width, !ld.color, ld.complex);
+            setx[x] = 1; sety[y] = 1;
          }
+         ctx.fill();
       }
    },
    SimpleRectLine : function(ctx, ld)
@@ -420,9 +402,11 @@ var MiniDraw =
       {
          if(ld.color)
             ctx.fillStyle = ld.color;
+         ctx.beginPath();
          MiniDraw.SimpleRect(ctx, Math.min(ld.x1, ld.x2), Math.min(ld.y1, ld.y2),
             Math.abs(ld.x1 - ld.x2), Math.abs(ld.y1 - ld.y2), 
             !ld.color, ld.complex);
+         ctx.fill();
       }
       else
       {
@@ -451,19 +435,6 @@ var MiniDraw =
       }
       return MiniDraw._rectignorememoize[key];
    },
-   //GetComplexRectFromIgnore_Fast : function (ignored) 
-   //{
-   //   if(!ignored || ignored.length == 0)
-   //      return null;
-   //   var key = ignored.toString();
-   //   if(!(key in MiniDraw._rectignorememoize))
-   //   {
-   //      console.debug(`memoizing complexrect ignore color list: ${key}`);
-   //      var ignored_1d = ignored.map(x => MiniDraw.ParseHexColorFull(x)); 
-   //      MiniDraw._rectignorememoize[key] = (d,c) => MiniDraw.ComplexExceptionRect_Fast(d,c,ignored_1d);
-   //   }
-   //   return MiniDraw._rectignorememoize[key];
-   //},
    //Perform a flood on the given context at the given point, returning the
    //MiniDraw lines that could be used to represent the flood.
    Flood : function(context, cx, cy, color, maxLines)

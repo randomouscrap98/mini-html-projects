@@ -961,8 +961,9 @@ var ffst = 0;
 
 function frameFunction()
 {
-   var start;
-   var times = { }; 
+   //var start;
+   //var times = { }; 
+      ffst = performance.now();
 
    if(globals.scheduledScrolls.length > 0)
    {
@@ -973,43 +974,44 @@ function frameFunction()
    //Only do drawing stuff on frame if there IS a drawer.
    if(globals.drawer)
    {
-      start = performance.now();
+      //start = performance.now();
       drawerTick(globals.drawer, globals.pendingStroke);
-      times.dt = performance.now() - start;
+      //times.dt = performance.now() - start;
    }
 
-   start = performance.now();
-   globals.system.ProcessMessages(constants.maxParse, constants.maxScan);
-   times.pm = performance.now() - start;
+   //start = performance.now();
+   globals.system.ProcessMessages(constants.maxParse * 1000, constants.maxScan * 1000);
+   //times.pm = performance.now() - start;
    
    if(globals.system.scheduledMessages.length > 0)
    {
-      start = performance.now();
+      //start = performance.now();
       var fragment = new DocumentFragment();
-      var displayMessages = globals.system.scheduledMessages.splice(0, constants.maxMessageRender);
+      var displayMessages = globals.system.scheduledMessages.splice(0, constants.maxMessageRender * 1000);
       displayMessages.forEach(x => fragment.appendChild(createMessageElement(x)));
       messages.appendChild(fragment);
       globals.scheduledScrolls.push(messagecontainer);
-      times.rm = performance.now() - start;
+      //times.rm = performance.now() - start;
    }
 
    var oldcnt = globals.system.scheduledLines.length;
 
    //The incoming draw data handler
-   start = performance.now();
-   globals.system.ProcessLines(constants.maxParse, constants.maxScan, getPageNumber());
-   times.pl = performance.now() - start;
+   //start = performance.now();
+   globals.system.ProcessLines(constants.maxParse * 1000, constants.maxScan * 1000, getPageNumber());
+   //times.pl = performance.now() - start;
 
-   if(oldcnt == 0 && globals.system.scheduledLines.length > 0)
-      ffst = performance.now();
+   //if(oldcnt == 0 && globals.system.scheduledLines.length > 0)
+   //   ffst = performance.now();
 
    //Now draw lines based on playback speed (if there are any)
-   start = performance.now();
+   //start = performance.now();
    if(globals.system.scheduledLines.length > 0)
-      drawLines(globals.system.scheduledLines.splice(0, getPlaybackSpeed()));
-   times.dl = performance.now() - start;
+      drawLines(globals.system.scheduledLines.splice(0, getPlaybackSpeed() * 10000));
+   //times.dl = performance.now() - start;
 
-   if(oldcnt > 0 && globals.system.scheduledLines.length == 0)
+   //if(oldcnt > 0 && globals.system.scheduledLines.length == 0)
+   if(performance.now() - ffst > 10)
       console.log("draw chunk: ", (performance.now() - ffst));
       //ffst = performance.now();
 
@@ -1075,9 +1077,8 @@ function drawerTick(drawer, pending)
          //This saves us in a few ways: some tools don't actually generate lines!
          if(pending.lines.length > 0 && pending.postLines)
          {
-            var ldata = globals.system.parser.CreateLines(pending.type, //createLineData(pending);
+            var ldata = globals.system.parser.CreateLines(pending.type,
                pending.page, pending.lines, pending.ignoredColors);
-            //StreamDrawSystemParser.prototype.CreateLines = function(type, page, lines, ignoredColors)
             post(endpoint(globals.roomname), ldata, () => setStatus("ok"), () => setStatus("error"));
             if(pending.displayAtEnd)
                drawLines(pending.lines);
