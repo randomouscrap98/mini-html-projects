@@ -931,27 +931,6 @@ function copyToBackbuffer(canvas)
    return context;
 }
 
-
-////Consider moving some of this out of here so the line data portion (the
-////"payload" so to speak) can be abstracted away from the idea of pages? but why?
-//function createLineData(pending)
-//{
-//   var startChunk = pending.type + StreamConvert.IntToVariableWidth(pending.page);
-//   var result = startChunk;
-//
-//   if(pending.type == globals.system.core.symbols.stroke)
-//      result += globals.system.core.CreateStroke(pending.lines, pending.ignoredColors, 
-//         globals.system.core.symbols.cap + startChunk);
-//   else if(pending.type == globals.system.core.symbols.lines)
-//      result += globals.system.core.CreateBatchLines(pending.lines, pending.ignoredColors);
-//   else if(pending.type == globals.system.core.symbols.rectangles)
-//      result += globals.system.core.CreateBatchRects(pending.lines, pending.ignoredColors);
-//   else
-//      throw "Unknown pending lines type!";
-//
-//   return result + globals.system.core.symbols.cap;
-//}
-
 function drawLines(lines, context, overridecolor) 
 { 
    context = context || globals.context;

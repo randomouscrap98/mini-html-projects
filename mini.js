@@ -554,10 +554,11 @@ var StreamConvert =
       return result;
    },
    //for optimization, can pass existing result object
-   VariableWidthToInt : function(chars, start, result) 
+   VariableWidthToInt : function(chars, start) //, result) 
    {
       if(!result) { result = {value:0,length:0}; }
       else { result.value = 0; result.length = 0; }
+      var result = {value:0,length:0};
 
       var c = 0;
 
@@ -570,6 +571,20 @@ var StreamConvert =
       while(c & StreamConvert.varVal);
 
       return result;
+   },
+   VariableWidthToInt_Fast : function(chars, start, result) 
+   {
+      result.value = 0; result.length = 0;
+
+      var c = 0;
+
+      do 
+      {
+         c = chars.charCodeAt(start + result.length) - StreamConvert.charStart;
+         result.value += (c & (StreamConvert.varVal - 1)) << (5 * result.length);
+         result.length++;
+      } 
+      while(c & StreamConvert.varVal);
    }
 };
 

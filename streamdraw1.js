@@ -247,14 +247,14 @@ StreamDrawElementParser.prototype.ParseStroke = function(data, start, length)
    segment[0] = point.x;
    segment[1] = point.y;
    var si = 2;
-   t = false;
+   t = {};
 
    while(l < length)
    {
       //This is an excessive optimization: the stroke uses DISTANCES between
       //points instead of actual points, which allows for 50% less data usage
       //for any two points within 5 bits (31) of each other, which is most.
-      StreamConvert.VariableWidthToInt(data, start + l, t);
+      StreamConvert.VariableWidthToInt_Fast(data, start + l, t);
       l += t.length;
       //Minus 2 for the last matching x/y coordinate (remember it's a distance)
       t2 = segment[si - 2] + StreamConvert.SpecialToSigned(t.value);
@@ -264,7 +264,7 @@ StreamDrawElementParser.prototype.ParseStroke = function(data, start, length)
    if(si & 1)
    {
       //As often as possible. try to recover from errors.
-      console.error("Dangling point on parsed stroke!");
+      console.error(`Dangling point on parsed stroke: ${si}`);
       si--;
    }
 
@@ -273,9 +273,10 @@ StreamDrawElementParser.prototype.ParseStroke = function(data, start, length)
    {
       segment[2] = segment[0];
       segment[3] = segment[2];
+      si = 4;
    }
 
-   var result = new Array(segment.length / 2);
+   var result = new Array(si / 2 - 1); //Stroke has 1 fewer lines than points
 
    //Now generate the lines
    for(i = 0; i < si - 2; i += 2)
