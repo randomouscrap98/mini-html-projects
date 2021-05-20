@@ -957,6 +957,8 @@ function clearSelectRect()
    selectrectangle.style.display = "none";
 }
 
+var ffst = 0;
+
 function frameFunction()
 {
    var start;
@@ -991,16 +993,25 @@ function frameFunction()
       times.rm = performance.now() - start;
    }
 
+   var oldcnt = globals.system.scheduledLines.length;
+
    //The incoming draw data handler
    start = performance.now();
    globals.system.ProcessLines(constants.maxParse, constants.maxScan, getPageNumber());
    times.pl = performance.now() - start;
+
+   if(oldcnt == 0 && globals.system.scheduledLines.length > 0)
+      ffst = performance.now();
 
    //Now draw lines based on playback speed (if there are any)
    start = performance.now();
    if(globals.system.scheduledLines.length > 0)
       drawLines(globals.system.scheduledLines.splice(0, getPlaybackSpeed()));
    times.dl = performance.now() - start;
+
+   if(oldcnt > 0 && globals.system.scheduledLines.length == 0)
+      console.log("draw chunk: ", (performance.now() - ffst));
+      //ffst = performance.now();
 
    //if(globals.system.scheduledLines.length)
    //   console.log(times);
