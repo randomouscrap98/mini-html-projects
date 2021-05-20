@@ -310,6 +310,14 @@ var MiniDraw =
          c.length == 9 ? parseInt(c.substr(7,2),16) : 255
       ];
    },
+   //ParseHexColorFull : function(c)
+   //{
+   //   var b = MiniDraw.ParseHexColor(c);
+   //   //return (b[0] << 24) + (b[1] << 16) + (b[2] << 8) + b[3];
+   //   return parseInt(c.length == 9 ? c.substr(1) : c.substr(1) + "ff", 16);
+   //   //(b[3] << 24) + (b[2] << 16) + (b[1] << 8) + b[0];
+   //   //c.length == 9 ? parseInt(c.substr(1), 16) : parseInt(c.substr(1) + "ff", 16);
+   //},
    SimpleRect : function(ctx, x, y, w, h, clear, complex)
    {
       //LOTS of if statements, but hopefully those are supremely outshadowed by
@@ -318,12 +326,13 @@ var MiniDraw =
       {
          //Compute the color to use (the function could ignore this I guess)
          var c = clear ? [0,0,0,0] : MiniDraw.ParseHexColor(ctx.fillStyle); 
+         //0 : MiniDraw.ParseHexColorFull(ctx.fillStyle);
          //Get the image data
          var d = ctx.getImageData(Math.round(x), Math.round(y), w, h);
          //The complex function should modify the data in-place
-         complex(d, c);
+         if(complex(d, c))
+            ctx.putImageData(d, Math.round(x), Math.round(y));
          //Then we reapply it
-         ctx.putImageData(d, Math.round(x), Math.round(y));
       }
       else if(clear)
       {
@@ -337,20 +346,35 @@ var MiniDraw =
    //Draw only IN or OUT of the selective colors 
    ComplexExceptionRect : function(d, color, except)
    {
-      var i,j;
+      //var data = new Uint32Array(d.data.buffer);
+      var i,j,set = false;
       csr_datascan:
-      for(i = 0; i < d.data.length; i+=4)
+      for(i = 0; i < d.data.length; i+=4) //=4)
       {
-         for(j = 0; j < except.length; j+=4)
+         //if(data[i] == color)
+         //   continue;
+         //if(d.data[i] == color[j] && d.data[i+1] == color[j+1] &&
+         //   d.data[i+2] == color[j+2] && d.data[i+3] == color[j+3])
+         //   continue;
+
+         for(j = 0; j < except.length; j+=4) //=4)
+            //if(data[i] == except[j])
+            //   continue csr_datascan;
             if(d.data[i] == except[j] && d.data[i+1] == except[j+1] &&
                d.data[i+2] == except[j+2] && d.data[i+3] == except[j+3])
                continue csr_datascan;
 
+         //data[i] = ((color >> 24) & 0xFF) + ((color >> 8) & 0xFF00) + 
+         //   ((color << 8) & 0xFF0000) + ((color << 24) & 0xFF000000);
          d.data[i] = color[0];
          d.data[i+1] = color[1];
          d.data[i+2] = color[2];
          d.data[i+3] = color[3];
+         //set = true;
       }
+
+      //d.data.set(buf);
+      return true; //set;//set;
    },
    SimpleLine : function (ctx, ld)
    {
@@ -413,7 +437,8 @@ var MiniDraw =
          console.debug(`memoizing complexrect ignore color list: ${key}`);
          //Convert ignored into proper broken up integers
          var ignored_1d = [];
-         ignored.forEach(x => ignored_1d.push(...MiniDraw.ParseHexColor(x)));
+         //ignored.forEach(x => ignored_1d.push(MiniDraw.ParseHexColorFull(x))); //...MiniDraw.ParseHexColorFull(x)));
+         ignored.forEach(x => ignored_1d.push(...MiniDraw.ParseHexColor(x))); //...MiniDraw.ParseHexColorFull(x)));
          MiniDraw._rectignorememoize[key] = (d,c) => MiniDraw.ComplexExceptionRect(d,c,ignored_1d);
       }
       return MiniDraw._rectignorememoize[key];
