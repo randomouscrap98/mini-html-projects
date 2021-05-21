@@ -4,7 +4,7 @@
 var system = 
 {
    name: "journal",
-   version: "1.1.0_f2" //format 2
+   version: "1.2.0_f2" //format 2
 };
 
 var globals = 
@@ -1005,7 +1005,7 @@ function copyToBackbuffer(canvas)
 
 function drawLines(lines, context, overridecolor) 
 { 
-   console.log("Drawing: " + lines.length + " lines");
+   //console.log("Drawing: " + lines.length + " lines");
    context = context || globals.context;
    lines.forEach(x => 
    {
