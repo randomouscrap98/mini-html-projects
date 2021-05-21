@@ -12,7 +12,7 @@ body[data-flipped] {
    flex-direction: row-reverse;
 }
 
-body[data-export] [data-hideexport] {
+body[data-pagereadonly] [data-hidepagereadonly] {
    display: none !important;
 }
 

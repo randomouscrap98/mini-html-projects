@@ -4,7 +4,7 @@
 var system = 
 {
    name: "journal",
-   version: "1.0.1_f2" //format 2
+   version: "1.1.0_f2" //format 2
 };
 
 var globals = 
@@ -49,9 +49,13 @@ window.onload = function()
       var url = new URL(location.href);
       var sidebar = document.getElementById("sidebar");
 
-      //Set roomname to either exportdata first, or the param
-      globals.roomname = window.exportData ? window.exportData.roomname :
-         constants.roomPrepend + (url.searchParams.get("room") || "");
+      computeRoomInfo(url, globals);
+
+      if(!globals.roomname)
+      {
+         showCover({title:"No room set", text:"Please provide a room using ?room=yourroomname"});
+         return;
+      }
 
       if(url.searchParams.get("export") == 1)
       {
@@ -80,14 +84,13 @@ window.onload = function()
 
       handlePageHash(location.hash);
 
-      if(!document.body.hasAttribute("data-export"))
+      if(globals.readonly)
       {
-         if(!globals.roomname || globals.roomname == constants.roomPrepend)
-         {
-            showCover({title:"No room set", text:"Please provide a room using ?room=yourroomname"});
-            return;
-         }
-
+         document.body.setAttribute("data-pagereadonly", "");
+         hide(viewonly);
+      }
+      else
+      {
          //Note: 'setupPalette' is for the personal custom palette displayed
          //all the time; OTHER palette functions are for the static palette
          //dialog that shows as the default color picker when double clicking
@@ -103,16 +106,10 @@ window.onload = function()
             () => setDrawAbility(globals.drawer, drawing, true),
             () => setDrawAbility(globals.drawer, drawing, false));
          hfliptoggle.oninput = (e) => globals.drawer.SetInvert(hfliptoggle.checked);
-
-         pullInitialStream(() =>
-         {
-            //DON'T start the frame function until we have the initial stream, this isn't an export!
-            enable(sidebar);
-            startLongPoller();
-            frameFunction(); 
-         });
       }
-      else
+
+      //Skip data retrieval if we're exported already
+      if(globals.exported)
       {
          //Exported, disable some stuff and don't set up listeners/etc. Can
          //instantly setup the frame function!
@@ -120,6 +117,16 @@ window.onload = function()
          frameFunction();
          enable(sidebar);
          refreshInfo();
+      }
+      else
+      {
+         pullInitialStream(() =>
+         {
+            //DON'T start the frame function until we have the initial stream, this isn't an export!
+            enable(sidebar);
+            startLongPoller();
+            frameFunction(); 
+         });
       }
 
       //Setup this crap as late as possible, since it's a generic thing and
@@ -174,6 +181,46 @@ function getIgnoredColors() {
    return [...colors].map(x => x.getAttribute("data-color"));
 }
 
+
+function computeRoomInfo(url, storeObject)
+{
+   storeObject = storeObject || {};
+
+   //Regardless of the rest of things, if we have export data, stop now. 
+   if(window.exportData)
+   {
+      storeObject.roomname = window.exportData.roomname;
+      storeObject.roomdata = window.exportData.roomdata;
+      storeObject.exported = true;
+      storeObject.readonly = true;
+   }
+   //Second highest priority is view (readonly) 
+   else if(url.searchParams.has("view"))
+   {
+      storeObject.roomname = url.searchParams.get("view");
+      storeObject.readonly = true;
+      storeObject.exported = false;
+   }
+   else if(url.searchParams.has("room")) 
+   {
+      storeObject.roomname = constants.roomPrepend + url.searchParams.get("room");
+      storeObject.readonly = false;
+      storeObject.exported = false;
+   }
+   else
+   {
+      storeObject.roomname = null;
+   }
+   //else
+   //{
+   //   //showCover({title:"No room set", text:"Please provide a room using ?room=yourroomname"});
+   //   return;
+   //}
+
+   //Set roomname to either exportdata first, or the param
+   //globals.roomname = window.exportData ? window.exportData.roomname : tempRoom;
+   return storeObject;
+}
 
 //title, text, showContainer, 
 function showCover(config)
@@ -670,7 +717,7 @@ function performFunctionalExport(room)
       appendScroll(coverscreencontainer, `Remaining Scripts: ${scriptsLeft}, Styles: ${stylesLeft}`);
       if(!(stylesLeft == 0 && scriptsLeft == 0)) return;
 
-      document.body.setAttribute("data-export", "");
+      //document.body.setAttribute("data-export", "");
 
       //We can't close the functional export screen (since we mangled the html)
       //so... oops, this is a little janky
@@ -764,6 +811,7 @@ function refreshInfo(data)
    {
       percenttext.innerHTML = (100 * (data.used / data.limit)).toFixed(2) + "%";
       percentbar.style.width = (75 * data.used / data.limit) + "px";
+      viewonly.href = "?view=" + data.readonlykey;
    }
 
    version.innerHTML = system.version;
@@ -774,12 +822,19 @@ function pullInitialStream(continuation)
    //Go out and get initial data. If it's empty, we alert to creating the
    //new data, then reload the page (it's just easier). Otherwise, we
    //pull the (maybe huge) initial blob 
-   $.getJSON(endpoint(globals.roomname) + "/json?nonblocking=true")
+   var url = endpoint(globals.roomname) + "/json?nonblocking=true";
+   if(globals.readonly) url += "&readonlykey=true";
+   $.getJSON(url)
       .done(data =>
       {
          if(data.used == 0)
          {
-            if(confirm("This appears to be a brand new journal, are you sure you want to create one here?"))
+            if(globals.readonly)
+            {
+               showCover({title:"Bad room key",text:"No viewable room here"});
+               return;
+            }
+            else if(confirm("This appears to be a brand new journal, are you sure you want to create one here?"))
             {
                //POST the preamble and move on to reload
                post(endpoint(globals.roomname), 
@@ -818,6 +873,7 @@ function pullInitialStream(continuation)
 
 function startLongPoller()
 {
+   //console.log(globals);
    queryEnd(globals.roomname, globals.system.rawData.length, (data, start) =>
    {
       globals.system.rawData += data.data;
