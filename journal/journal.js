@@ -25,7 +25,9 @@ var constants =
    maxLines : 5000,        //A single stroke (or fill) can't have more than this
    maxMessageRender : 100, //per frame
    maxScan : 10000,        //per frame; should be about the max line draw per frame
-   maxParse : 2000
+   maxParse : 2000,
+   autoScrollBuffer : 100,
+   autoLowLimit : 180
 };
 
 var palettes = 
@@ -91,7 +93,16 @@ window.onload = function()
 
          //Only show auto on very specifically readonly but reading 
          if(!globals.exported)
+         {
             show(autofollow.parentNode);
+            autofollow.oninput = (e) =>
+            {
+               setHidden(scrollbar, autofollow.checked);
+               setHidden(playbackcontrols, autofollow.checked);
+               //setHidden(playbackmodifier, autofollow.checked);
+               //setHidden(playbackslider, autofollow.checked);
+            };
+         }
       }
       else
       {
@@ -994,6 +1005,7 @@ function copyToBackbuffer(canvas)
 
 function drawLines(lines, context, overridecolor) 
 { 
+   console.log("Drawing: " + lines.length + " lines");
    context = context || globals.context;
    lines.forEach(x => 
    {
@@ -1069,25 +1081,48 @@ function frameFunction()
       constants.maxScan * perfmon, getPageNumber());
    //times.pl = performance.now() - start;
 
+   var pbspeed = getPlaybackSpeed();
+
    //AHA, we're doing autofollow! lots of complex crap. First thing, we change
    //to a new page if the data received is in another place
    if(shouldAutoFollow())
    {
-      //oops, pge isn't correct
-      if("lastPage" in tracking && getPageNumber() != tracking.lastPage)
+      //These things are only if we're getting lines
+      if (tracking.scanCount > 0)
       {
-         //Changing the page resets the tracking!
-         changePage(tracking.lastPage, true);
+         console.log("doing auto stuff", tracking, globals.system.scheduledLines.length);
+         var scrollTop = -Number(scrollblock.style.top.replace("px",""));
+         var windowrect = document.getElementById("window").getBoundingClientRect();
+         var scrollrect = scrollblock.getBoundingClientRect();
+         var scale = scrollrect.height / constants.pheight;
+         var autobuf = constants.autoScrollBuffer * scale;
+         var trueMinY = tracking.lastMinY * scale;
+         var trueMaxY = tracking.lastMaxY * scale;
 
-         //It's ok to continue this function, there's nothing to do.
-         //return;
-         //globals.system.drawPointer = oldPointer;
-         //globals.system.scheduledLines.length = oldScheduledLength; //Undo what you did
+         //oops, pge isn't correct
+         if(getPageNumber() != tracking.lastPage)
+         {
+            //Changing the page resets the tracking!
+            changePage(tracking.lastPage, true);
+            //It's ok to continue this function, there's nothing to do.
+         }
+         //Oops, we're out of scroll area. Do it per big parse chunk to reduce
+         //jumping around (it'll still jump around a bit)
+         else if(trueMinY < scrollTop)
+         {
+            scrollblock.style.top = -Math.max(0, trueMinY - autobuf) + "px";
+         }
+         else if(trueMaxY > scrollTop + windowrect.height)
+         {
+            scrollblock.style.top = -(Math.min(scrollrect.height, trueMaxY + autobuf) 
+               - windowrect.height) + "px";
+         }
       }
-      //globals.system.ProcessLines(constants.maxParse * perfmon, constants.maxScan * perfmon, -1);
 
+      //But this happens any time we're auto
+      pbspeed = (globals.system.scheduledLines.length < constants.autoLowLimit) ? 
+         1 : constants.maxParse;
    }
-
 
    //if(oldcnt == 0 && globals.system.scheduledLines.length > 0)
    //   ffst = performance.now();
@@ -1095,7 +1130,9 @@ function frameFunction()
    //Now draw lines based on playback speed (if there are any)
    //start = performance.now();
    if(globals.system.scheduledLines.length > 0)
-      drawLines(globals.system.scheduledLines.splice(0, getPlaybackSpeed() * perfmon));
+   {
+      drawLines(globals.system.scheduledLines.splice(0, pbspeed * perfmon));
+   }
    //times.dl = performance.now() - start;
 
    //if(oldcnt > 0 && globals.system.scheduledLines.length == 0)

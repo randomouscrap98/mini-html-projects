@@ -406,6 +406,8 @@ StreamDrawSystemParser.prototype.DataScan = function(data, start, textfunc, line
          throw `Unrecoverable data error! Unknown character in stream! cc: ${cc} pos: ${current}`;
       }
 
+      scanned++;
+
       //Just make life easier: assume the start symbol is always 1 char, report 
       //the start + length as the core data without the symbol. if, in the
       //future, you need data tracking, put it in THIS DataScan function.
@@ -413,7 +415,6 @@ StreamDrawSystemParser.prototype.DataScan = function(data, start, textfunc, line
          return;
 
       current += clength;
-      scanned++;
    }
 };
 
@@ -504,33 +505,41 @@ StreamDrawSystem.prototype.SetData = function(data)
 StreamDrawSystem.prototype.ProcessLines = function(parseLimit, scanLimit, page)
 {
    var me = this;
-   var realParsed = 0;
-   var tracker = {};
+   var tracker = { realParsed : 0, scanCount : 0 };
 
    me.parser.DataScan(me.rawData, Math.max(me.drawPointer, me.preamble.skip), false,
       (start, length, cc, end, scanCount) =>
       {
          //Honor a scanLimit of 0 by doing this first
-         if (scanCount > scanLimit || realParsed > parseLimit)
+         if (scanCount > scanLimit || tracker.realParsed > parseLimit)
             return true;
 
+         tracker.scanCount = scanCount;
          me.drawPointer = end;
 
          //We ALSO only handle the draw if it's the right PAGE.
          var pageDat = StreamConvert.VariableWidthToInt(me.rawData, start);
          me.maxPage = Math.max(me.maxPage, pageDat.value);
          tracker.lastPage = pageDat.value;
-         //processedPages[pageDat.value] = 1; //.push();
-         //The above could be intensive on the system, don't want to go 
-         //backwards on performance after that massive gain. benchmark again
 
          if(pageDat.value != page)
             return false;
 
-         me.scheduledLines.push(...me.parser.ParseLineChunk(
-            me.rawData, start + pageDat.length, length - pageDat.length, cc));
+         var newLines = me.parser.ParseLineChunk(me.rawData, 
+            start + pageDat.length, length - pageDat.length, cc);
 
-         realParsed++;
+         //This may tank performance. Want max/min for the LAST chunk
+         tracker.lastMinY = 999999999;
+         tracker.lastMaxY = 0;
+         for(const x of newLines)
+         {
+            tracker.lastMinY = Math.min(tracker.lastMinY, x.y1, x.y2);
+            tracker.lastMaxY = Math.max(tracker.lastMaxY, x.y1, x.y2);
+         }
+
+         me.scheduledLines.push(...newLines);
+
+         tracker.realParsed++;
 
          return false;
       }
