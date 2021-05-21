@@ -4,7 +4,7 @@
 var system = 
 {
    name: "journal",
-   version: "1.2.0_f2" //format 2
+   version: "1.2.1_f2" //format 2
 };
 
 var globals = 
@@ -1088,7 +1088,7 @@ function frameFunction()
    if(shouldAutoFollow())
    {
       //These things are only if we're getting lines
-      if (tracking.scanCount > 0)
+      if (tracking.scanCount > 0 && globals.system.drawPointer >= globals.system.rawData.length)
       {
          console.log("doing auto stuff", tracking, globals.system.scheduledLines.length);
          var scrollTop = -Number(scrollblock.style.top.replace("px",""));
