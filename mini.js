@@ -89,7 +89,7 @@ function doValueLink(target)
 }
 
 
-function endpoint(room, readonly) { return "/stream/" + room + 
+function endpoint(room, readonly) { return "https://oboy.smilebasicsource.com/stream/" + room + 
    (readonly ? "?readonlykey=true" : ""); }
 
 function queryEnd(room, start, handle, error, readonly)
