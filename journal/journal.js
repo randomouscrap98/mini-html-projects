@@ -88,6 +88,10 @@ window.onload = function()
       {
          document.body.setAttribute("data-pagereadonly", "");
          hide(viewonly);
+
+         //Only show auto on very specifically readonly but reading 
+         if(!globals.exported)
+            show(autofollow.parentNode);
       }
       else
       {
@@ -145,6 +149,7 @@ function safety(func) { try { func(); } catch(ex) { console.log(ex); } }
 function getSetting(name) { return StorageUtilities.ReadLocal(constants.settingPrepend + name) }
 function setSetting(name, value) { StorageUtilities.WriteLocal(constants.settingPrepend + name, value); }
 function setStatus(status) { percent.setAttribute("data-status", status); }
+function shouldAutoFollow() { return globals.readonly && !globals.exported && autofollow.checked; }
 function getPlaybackSpeed() { 
    return Number(playbacktext.value) * 
       Number(playbackmodifier.querySelector("[data-selected]").id.replace("playback",""));
@@ -1054,12 +1059,35 @@ function frameFunction()
       //times.rm = performance.now() - start;
    }
 
-   var oldcnt = globals.system.scheduledLines.length;
+   //var oldcnt = globals.system.scheduledLines.length;
 
    //The incoming draw data handler
    //start = performance.now();
-   globals.system.ProcessLines(constants.maxParse * perfmon, constants.maxScan * perfmon, getPageNumber());
+   //var oldPointer = globals.system.drawPointer;
+   //var oldScheduledLength = globals.system.scheduledLines.length;
+   var tracking = globals.system.ProcessLines(constants.maxParse * perfmon, 
+      constants.maxScan * perfmon, getPageNumber());
    //times.pl = performance.now() - start;
+
+   //AHA, we're doing autofollow! lots of complex crap. First thing, we change
+   //to a new page if the data received is in another place
+   if(shouldAutoFollow())
+   {
+      //oops, pge isn't correct
+      if("lastPage" in tracking && getPageNumber() != tracking.lastPage)
+      {
+         //Changing the page resets the tracking!
+         changePage(tracking.lastPage, true);
+
+         //It's ok to continue this function, there's nothing to do.
+         //return;
+         //globals.system.drawPointer = oldPointer;
+         //globals.system.scheduledLines.length = oldScheduledLength; //Undo what you did
+      }
+      //globals.system.ProcessLines(constants.maxParse * perfmon, constants.maxScan * perfmon, -1);
+
+   }
+
 
    //if(oldcnt == 0 && globals.system.scheduledLines.length > 0)
    //   ffst = performance.now();

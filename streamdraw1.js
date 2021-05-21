@@ -505,6 +505,7 @@ StreamDrawSystem.prototype.ProcessLines = function(parseLimit, scanLimit, page)
 {
    var me = this;
    var realParsed = 0;
+   var tracker = {};
 
    me.parser.DataScan(me.rawData, Math.max(me.drawPointer, me.preamble.skip), false,
       (start, length, cc, end, scanCount) =>
@@ -518,6 +519,10 @@ StreamDrawSystem.prototype.ProcessLines = function(parseLimit, scanLimit, page)
          //We ALSO only handle the draw if it's the right PAGE.
          var pageDat = StreamConvert.VariableWidthToInt(me.rawData, start);
          me.maxPage = Math.max(me.maxPage, pageDat.value);
+         tracker.lastPage = pageDat.value;
+         //processedPages[pageDat.value] = 1; //.push();
+         //The above could be intensive on the system, don't want to go 
+         //backwards on performance after that massive gain. benchmark again
 
          if(pageDat.value != page)
             return false;
@@ -530,6 +535,8 @@ StreamDrawSystem.prototype.ProcessLines = function(parseLimit, scanLimit, page)
          return false;
       }
    );
+
+   return tracker; 
 };
 
 //The message handler
