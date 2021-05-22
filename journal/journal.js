@@ -26,7 +26,7 @@ var constants =
    maxMessageRender : 100, //per frame
    maxScan : 10000,        //per frame; should be about the max line draw per frame
    maxParse : 2000,
-   autoScrollBuffer : 100,
+   autoScrollBuffer : 20,
    autoLowLimit : 180
 };
 
