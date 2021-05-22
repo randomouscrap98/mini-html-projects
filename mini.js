@@ -318,6 +318,7 @@ var MiniDraw =
       //the drawing time
       if(complex)
       {
+         //return;
          //Compute the color to use (the function could ignore this I guess)
          var c = clear ? [0,0,0,0] : MiniDraw.ParseHexColor(ctx.fillStyle); 
          //Get the image data

@@ -51,6 +51,16 @@ window.onload = function()
       var url = new URL(location.href);
       var sidebar = document.getElementById("sidebar");
 
+      if(navigator.userAgent.indexOf("Firefox") >= 0)
+      {
+         showCover({title:"Firefox bugs", text:"Unfortunately, this system doesn't run on firefox. " +
+            "There is a longstanding bug with firefox's 'getImageData' that makes it impossibly slow " +
+            "for this kind of system. 'getImageData' is used for painting, and runs at least " +
+            "30 times slower on firefox vs. chrome (couldn't benchmark because firefox just crashes). " +
+            "I apologize, but you have to use either chrome or edge (or safari)" });
+         return;
+      }
+
       computeRoomInfo(url, globals);
 
       if(!globals.roomname)
