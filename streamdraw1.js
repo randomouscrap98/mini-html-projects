@@ -403,10 +403,8 @@ StreamDrawSystemParser.prototype.DataScan = function(data, start, textfunc, line
       }
       else
       {
-         throw `Unrecoverable data error! Unknown character in stream! cc: ${cc} pos: ${current}`;
+         throw `Unrecoverable data error! Unknown character in stream! cc: ${cc} pos: ${current}, start: ${start}`;
       }
-
-      scanned++;
 
       //Just make life easier: assume the start symbol is always 1 char, report 
       //the start + length as the core data without the symbol. if, in the
@@ -414,6 +412,7 @@ StreamDrawSystemParser.prototype.DataScan = function(data, start, textfunc, line
       if(func && func(current + 1, clength - lengthModifier, cc, current + clength, scanned))
          return;
 
+      scanned++;
       current += clength;
    }
 };
@@ -510,10 +509,6 @@ StreamDrawSystem.prototype.ProcessLines = function(parseLimit, scanLimit, page)
    me.parser.DataScan(me.rawData, Math.max(me.drawPointer, me.preamble.skip), false,
       (start, length, cc, end, scanCount) =>
       {
-         //Honor a scanLimit of 0 by doing this first
-         if (scanCount > scanLimit || tracker.realParsed > parseLimit)
-            return true;
-
          tracker.scanCount = scanCount;
          me.drawPointer = end;
 
@@ -541,7 +536,7 @@ StreamDrawSystem.prototype.ProcessLines = function(parseLimit, scanLimit, page)
 
          tracker.realParsed++;
 
-         return false;
+         return (scanCount >= scanLimit || tracker.realParsed > parseLimit);
       }
    );
 
@@ -557,16 +552,14 @@ StreamDrawSystem.prototype.ProcessMessages = function(parseLimit, scanLimit)
    me.parser.DataScan(me.rawData, Math.max(me.messagePointer, me.preamble.skip), 
       (start, length, cc, end, scanCount) => 
       {
-         //Honor a scanLimit of 0 by doing this first
-         if (scanCount > scanLimit || realParsed > parseLimit)
-            return true;
-
-         me.messagePointer = end; //TODO: Fix this crazy parser.eparser thing
+         me.messagePointer = end;
          me.scheduledMessages.push(me.parser.eparser.ParseMessage(me.rawData, start, length));
 
          realParsed++;
 
-         return false;
+         //DON'T worry about a scanCount of 0, it's more important for us to be
+         //able to scan past big chunks! 
+         return (scanCount >= scanLimit || realParsed > parseLimit);
       }
    );
 };

@@ -65,6 +65,11 @@ window.onload = function()
          return;
       }
 
+      if(url.searchParams.get("auto") == 1)
+      {
+         autofollow.checked = true;
+      }
+
       setupToggleSetting("pageflip", pageflip, 
          () => document.body.setAttribute("data-flipped", ""),
          () => document.body.removeAttribute("data-flipped"));
@@ -693,7 +698,7 @@ function hashtag(e) { e.preventDefault(); }
          clearInterval(wait);
 
          sys.ResetMessageTracking();
-         sys.ProcessMessages(Number.MAX_SAFE_INTEGER);
+         sys.ProcessMessages(Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER);
          sys.scheduledMessages.forEach(x => textbox.appendChild(createMessageElement(x)));
 
          //Finalize SVG. Set viewbox just in case (it's not necessary but it
@@ -1063,9 +1068,11 @@ function frameFunction()
    if(globals.system.scheduledMessages.length > 0)
    {
       //start = performance.now();
+      //console.log("before: ", globals.system.scheduledMessages);
       var fragment = new DocumentFragment();
       var displayMessages = globals.system.scheduledMessages.splice(0, constants.maxMessageRender * perfmon);
       displayMessages.forEach(x => fragment.appendChild(createMessageElement(x)));
+      //console.log("after: ", displayMessages, globals.system.scheduledMessages);
       messages.appendChild(fragment);
       globals.scheduledScrolls.push(messagecontainer);
       //times.rm = performance.now() - start;
