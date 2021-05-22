@@ -313,6 +313,7 @@ var MiniDraw =
    SimpleRect : function(ctx, x, y, w, h, clear, complex)
    {
       x = Math.round(x); y = Math.round(y);
+      if(!w || !h) return;
       //LOTS of if statements, but hopefully those are supremely outshadowed by
       //the drawing time
       if(complex)
