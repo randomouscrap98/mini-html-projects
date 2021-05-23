@@ -4,7 +4,7 @@
 var system = 
 {
    name: "journal",
-   version: "1.2.1_f2" //format 2
+   version: "1.2.2_f2" //format 2
 };
 
 var globals = 
@@ -819,7 +819,13 @@ function copySection(ld)
 
 function exportSection(ld)
 {
-   var expcanv = copySection(globals.pendingStroke.lines[0])
+   if(ld.x1 - ld.x2 == 0 || ld.y1 - ld.y2 == 0)
+   {
+      console.warn("Tried to export 0 width/height section, ignoring");
+      return;
+   }
+
+   var expcanv = copySection(ld); //globals.pendingStroke.lines[0])
    showCover({
       title: "Region Export",
       showContainer: true,
