@@ -1,0 +1,100 @@
+<html>
+   <head>
+<style>
+#log {
+   font-family: monospace;
+   color: #333;
+   background-color: #CCC;
+   height: 50vh;
+   min-height: 10rem;
+   width: 100%;
+   overflow-x: auto;
+   overflow-y: scroll;
+   padding: 0.5rem;
+}
+.message {
+   white-space: pre-wrap;
+}
+.error {
+   color: red;
+}
+</style>
+<script>
+function log(msg, error)
+{
+   var m = document.createElement("div");
+   m.className = "message";
+   if(error) m.className += " error";
+   m.textContent = msg;
+   document.getElementById("log").appendChild(m);
+}
+function getBaseReq(method, url, token, success)
+{
+   var req = new XMLHttpRequest();
+   req.addEventListener("error", function() {
+      log(`${method}:${url} - some unknown network error! Browser security prevents us from knowing more`, true);
+   });
+   if(success)
+   {
+      req.addEventListener("loadend", function()
+      {
+         if(req.status <= 299 && req.status >= 200) { success(req); }
+         else { log(`${method}:${url} - ${req.status}/${req.statusText} DATA: ${req.responseText}`, true); }
+      });
+   }
+   req.open(method, url);
+   req.setRequestHeader("accept", "application/json");
+   req.setRequestHeader("Content-Type", "application/json");
+   //These are from 12me
+   req.setRequestHeader('Cache-Control', "no-cache, no-store, must-revalidate")
+   req.setRequestHeader('Pragma', "no-cache") // for internet explorer
+   if(token) req.setRequestHeader("Authorization", "Bearer " + token);
+   return req;
+}
+window.onerror = function(message, source, lineno, colno, error) 
+{
+   log(`[${source}:${lineno}|${colno}] ${error}\n- ${message}`, true);
+};
+window.onload = function()
+{
+   log("Starting...");
+   var params = new URLSearchParams(window.location.search);
+   var apibase = params.has("base") ? params.get("base") : "newdev.smilebasicsource.com/api";
+   var apiend = window.location.protocol + "//" + apibase;
+   var wsend = "ws" + (window.location.protocol == "https:" ? "s" : "") + "://" + apibase;
+   var tokenraw = params.has("token") ? params.get("token") : localStorage.usertoken;
+   if (!('WebSocket' in window && window.WebSocket.CLOSING === 2)) {
+      log("Websockets not supported, quitting");
+      return;
+   }
+   if(!tokenraw) {
+      log("You must login to sbs on oboy to use this page!");
+      return;
+   }
+   var token = tokenraw.indexOf('"') == 0 ? JSON.parse(tokenraw) : tokenraw;
+   log("Got your user token!");
+   var socket = new WebSocket(wsend + "/read/wslisten");
+   // Listen for possible errors
+   socket.addEventListener('error', function (event) {
+      log(`WebSocket error: check console for object`, true);
+      console.log("Websocket error: ", event);
+   });
+   socket.addEventListener('open', function (event) {
+      log("Socket opened!!!");
+       //socket.send('Hello Server!');
+   });
+   var auth = null;
+   var req = getBaseReq("GET", apiend + "/read/wsauth", token, function(r)
+   {
+      auth = req.responseText;
+      log("Got authorization token!");
+   });
+   req.send();
+
+};
+</script>
+   </head>
+   <body>
+      <div id="log"></div>
+   </body>
+</html>
