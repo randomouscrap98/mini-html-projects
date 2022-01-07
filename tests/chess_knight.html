@@ -1,0 +1,166 @@
+<html>
+   <head>
+   <meta charset="utf-8">
+<style>
+#boardelement {
+   border: 1px solid #777;
+   display: inline-block;
+}
+#boardelement .cell {
+   width: 8px;
+   height: 8px;
+   display: inline-block;
+}
+#boardelement * {
+   padding: 0;
+   margin: 0;
+}
+#log {
+   white-space: pre-wrap;
+   overflow-y: scroll;
+   overflow-x: auto;
+   background-color: #444;
+   color: #CCC;
+   border: 1px solid #555;
+   padding: 0.25em;
+   margin: 1.0em 0;
+}
+</style>
+<script>
+function addLog(message)
+{
+   log.textContent += message + "\n";
+}
+</script>
+<script>
+
+var boardw = 8;
+var boardh = 8;
+
+var kstartx = 1;
+var kstarty = 0;
+
+var hits = [];
+
+function setHit(x, y, hits) 
+{ 
+   var og = getHit(x, y, hits);
+   if(og === undefined) og = 0;
+   hits[x + y * boardw] = og + 1;
+}
+
+function getHit(x, y, hits) { return hits[x + y * boardw]; }
+
+function isFilled(hits) 
+{
+   for(var x = 0; x < boardw; x++)
+      for(var y = 0; y < boardh; y++)
+         if(!getHit(x, y, hits))
+            return false;
+   return true;
+}
+
+function computeAllMoves() 
+{
+   return [
+      [ 2, 1 ], [ 2, -1 ], [ -2, 1 ], [ -2, -1 ],
+      [ 1, 2 ], [ 1, -2 ], [ -1, 2 ], [ -1, -2 ]
+   ];
+}
+
+
+function displayBoard(element, hits, current)
+{
+   element.innerHTML = "";
+
+   for(var y = 0; y < boardh; y++)
+   {
+      var row = document.createElement("div");
+      row.className = "row";
+      for(var x = 0; x < boardw; x++)
+      {
+         var cell = document.createElement("span");
+         cell.className = "cell";
+         if(getHit(x, y, hits))
+         {
+            if(current && current[0] == x && current[1] == y)
+               cell.style.backgroundColor = "red";
+            else
+               cell.style.backgroundColor = "black";
+         }
+         row.appendChild(cell);
+      }
+      element.appendChild(row);
+   }
+}
+
+function chessPackage(startx, starty)
+{
+   this.moves = computeAllMoves();
+   this.hits = [];
+   this.cx = startx;
+   this.cy = starty;
+   this.iterations = 0;
+   this.timer = false;
+   setHit(this.cx, this.cy, this.hits);
+}
+
+function randomIteration(cp)
+{
+   var move = cp.moves[Math.floor(Math.random() * cp.moves.length)];
+
+   var ncx = move[0] + cp.cx;
+   var ncy = move[1] + cp.cy;
+
+   if(ncx >= 0 && ncy >= 0 && ncx < boardw && ncy < boardh)
+   {
+      cp.cx = ncx;
+      cp.cy = ncy;
+      setHit(cp.cx, cp.cy, cp.hits);
+   }
+}
+
+function repeatRun(cp, func)
+{
+   func(cp);
+   cp.iterations++;
+   displayBoard(boardelement, cp.hits, [cp.cx, cp.cy]);
+
+   if(isFilled(cp.hits))
+   {
+      addLog("Done in " + cp.iterations + " iterations");
+      if(cp.timer)
+         clearInterval(cp.timer);
+   }
+}
+
+function runRandom(interval)
+{
+   var cp = new chessPackage(kstartx, kstarty);
+   cp.timer = setInterval(x => repeatRun(cp, randomIteration), interval);
+}
+
+window.onload = function(e)
+{
+   runRandom(10);
+
+   /*var sum = 0;
+   var total = 1;
+
+   for(var i = 0; i < total; i++)
+   {
+      var result = tryRandom();
+      sum += result.iterations;
+      displayBoard(boardelement, result.hits); 
+   }
+
+   addLog("ALL DONE: " + total + " iterations averaged " + (sum / total));*/
+};
+
+</script>
+   </head>
+   <body>
+      <div id = "boardelement"></div>
+      <div id = "log"></div>
+   </body>
+</html>
