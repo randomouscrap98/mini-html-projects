@@ -406,13 +406,15 @@ StreamDrawSystemParser.prototype.DataScan = function(data, start, textfunc, line
          throw `Unrecoverable data error! Unknown character in stream! cc: ${cc} pos: ${current}, start: ${start}`;
       }
 
+      //2022 WARN: This used to be AFTER the func! I don't know why!
+      scanned++;
+
       //Just make life easier: assume the start symbol is always 1 char, report 
       //the start + length as the core data without the symbol. if, in the
       //future, you need data tracking, put it in THIS DataScan function.
       if(func && func(current + 1, clength - lengthModifier, cc, current + clength, scanned))
          return;
 
-      scanned++;
       current += clength;
    }
 };

@@ -211,6 +211,7 @@ canvas {
    height: 25px;
    padding: 0;
    background-color: #F0F0F0;
+   color: #333;
 }
 
 button[data-selected] { background-color: skyblue !important; }

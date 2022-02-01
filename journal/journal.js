@@ -1063,12 +1063,8 @@ var perfmon = 1; //Set this to like 10000 to do single page draw
 
 function frameFunction()
 {
-   //var start;
-   //var times = { }; 
    if(perfmon > 1)
-   {
       ffst = performance.now();
-   }
 
    if(globals.scheduledScrolls.length > 0)
    {
@@ -1078,38 +1074,22 @@ function frameFunction()
 
    //Only do drawing stuff on frame if there IS a drawer.
    if(globals.drawer)
-   {
-      //start = performance.now();
       drawerTick(globals.drawer, globals.pendingStroke);
-      //times.dt = performance.now() - start;
-   }
 
-   //start = performance.now();
    globals.system.ProcessMessages(constants.maxParse * perfmon, constants.maxScan * perfmon);
-   //times.pm = performance.now() - start;
    
    if(globals.system.scheduledMessages.length > 0)
    {
-      //start = performance.now();
-      //console.log("before: ", globals.system.scheduledMessages);
       var fragment = new DocumentFragment();
       var displayMessages = globals.system.scheduledMessages.splice(0, constants.maxMessageRender * perfmon);
       displayMessages.forEach(x => fragment.appendChild(createMessageElement(x)));
-      //console.log("after: ", displayMessages, globals.system.scheduledMessages);
       messages.appendChild(fragment);
       globals.scheduledScrolls.push(messagecontainer);
-      //times.rm = performance.now() - start;
    }
 
-   //var oldcnt = globals.system.scheduledLines.length;
-
    //The incoming draw data handler
-   //start = performance.now();
-   //var oldPointer = globals.system.drawPointer;
-   //var oldScheduledLength = globals.system.scheduledLines.length;
    var tracking = globals.system.ProcessLines(constants.maxParse * perfmon, 
       constants.maxScan * perfmon, getPageNumber());
-   //times.pl = performance.now() - start;
 
    var pbspeed = getPlaybackSpeed();
 
@@ -1117,8 +1097,11 @@ function frameFunction()
    //to a new page if the data received is in another place
    if(shouldAutoFollow())
    {
-      //These things are only if we're getting lines
-      if (tracking.scanCount > 0 && globals.system.drawPointer >= globals.system.rawData.length)
+      //If we found ANYTHING, we need to start doing auto stuff. This is
+      //because the drawing program optimizes away lines that aren't on the
+      //page, but WE need to follow the page, so if it scanned ANYTHING, we
+      //need to know about it and update our personal state
+      if (tracking.scanCount > 0) 
       {
          console.log("doing auto stuff", tracking, globals.system.scheduledLines.length);
          var scrollTop = -Number(scrollblock.style.top.replace("px",""));
@@ -1154,24 +1137,12 @@ function frameFunction()
          1 : constants.maxParse;
    }
 
-   //if(oldcnt == 0 && globals.system.scheduledLines.length > 0)
-   //   ffst = performance.now();
-
    //Now draw lines based on playback speed (if there are any)
-   //start = performance.now();
    if(globals.system.scheduledLines.length > 0)
-   {
       drawLines(globals.system.scheduledLines.splice(0, pbspeed * perfmon));
-   }
-   //times.dl = performance.now() - start;
 
-   //if(oldcnt > 0 && globals.system.scheduledLines.length == 0)
    if(perfmon > 1 && performance.now() - ffst > 10)
       console.log("draw chunk: ", (performance.now() - ffst));
-      //ffst = performance.now();
-
-   //if(globals.system.scheduledLines.length)
-   //   console.log(times);
 
    requestAnimationFrame(frameFunction);
 }
