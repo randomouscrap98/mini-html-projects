@@ -27,7 +27,7 @@ var constants =
    maxScan : 10000,        //per frame; should be about the max line draw per frame
    maxParse : 2000,
    autoScrollBuffer : 20,
-   autoLowLimit : 180
+   autoDrawLineChunk : 90 //Be VERY CAREFUL with this value! Harmonic series...
 };
 
 var palettes = 
@@ -1133,8 +1133,10 @@ function frameFunction()
       }
 
       //But this happens any time we're auto
-      pbspeed = (globals.system.scheduledLines.length < constants.autoLowLimit) ? 
-         1 : constants.maxParse;
+      pbspeed = Math.min(Math.ceil(globals.system.scheduledLines.length / constants.autoDrawLineChunk),
+         constants.maxParse);
+      //(globals.system.scheduledLines.length < constants.autoLowLimit) ? 
+      //   1 : constants.maxParse;
    }
 
    //Now draw lines based on playback speed (if there are any)
