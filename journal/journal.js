@@ -51,22 +51,27 @@ var palettes =
    "vinik24" : ["#000000","#6f6776","#9a9a97","#c5ccb8","#8b5580","#c38890","#a593a5","#666092","#9a4f50","#c28d75","#7ca1c0","#416aa3","#8d6268","#be955c","#68aca9","#387080","#6e6962","#93a167","#6eaa78","#557064","#9d9f7f","#7e9e99","#5d6872","#433455"]
 };
 
-window.onload = function()
+function windowOnLoad(skipPrechecks)
 {
    try
    {
+      if(!skipPrechecks)
+      {
+         if(navigator.userAgent.indexOf("Firefox") >= 0)
+         {
+            showCover({title:"Firefox bugs", text:"Unfortunately, this system doesn't run on firefox. " +
+               "There is a longstanding bug with firefox's 'getImageData' that makes it impossibly slow " +
+               "for this kind of system. 'getImageData' is used for painting, and runs at least " +
+               "30 times slower on firefox vs. chrome (couldn't benchmark because firefox just crashes). " +
+               "I apologize, but you have to use either chrome or edge (or safari).\n\n" +
+               "Alternatively, you can take your chances and close this popup!", 
+               onclose: () => windowOnLoad(true) });
+            return;
+         }
+      }
+
       var url = new URL(location.href);
       var sidebar = document.getElementById("sidebar");
-
-      if(navigator.userAgent.indexOf("Firefox") >= 0)
-      {
-         showCover({title:"Firefox bugs", text:"Unfortunately, this system doesn't run on firefox. " +
-            "There is a longstanding bug with firefox's 'getImageData' that makes it impossibly slow " +
-            "for this kind of system. 'getImageData' is used for painting, and runs at least " +
-            "30 times slower on firefox vs. chrome (couldn't benchmark because firefox just crashes). " +
-            "I apologize, but you have to use either chrome or edge (or safari)" });
-         return;
-      }
 
       computeRoomInfo(url, globals);
 
@@ -121,8 +126,6 @@ window.onload = function()
             {
                setHidden(scrollbar, autofollow.checked);
                setHidden(playbackcontrols, autofollow.checked);
-               //setHidden(playbackmodifier, autofollow.checked);
-               //setHidden(playbackslider, autofollow.checked);
             };
          }
       }
@@ -176,7 +179,9 @@ window.onload = function()
       alert("Exception during load: " + ex.message);
       throw ex;
    }
-};
+}
+
+window.onload = () => windowOnLoad(false);
 
 function safety(func) { try { func(); } catch(ex) { console.log(ex); } }
 function getSetting(name) { return StorageUtilities.ReadLocal(constants.settingPrepend + name) }
@@ -1135,8 +1140,6 @@ function frameFunction()
       //But this happens any time we're auto
       pbspeed = Math.min(Math.ceil(globals.system.scheduledLines.length / constants.autoDrawLineChunk),
          constants.maxParse);
-      //(globals.system.scheduledLines.length < constants.autoLowLimit) ? 
-      //   1 : constants.maxParse;
    }
 
    //Now draw lines based on playback speed (if there are any)
