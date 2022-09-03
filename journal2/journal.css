@@ -1,0 +1,332 @@
+/* 12-15-2020 */
+
+body {
+   display: flex;
+   width: 100%;
+   height: 100%;
+   flex-direction: row;
+   overflow: hidden;
+}
+
+body[data-flipped] {
+   flex-direction: row-reverse;
+}
+
+body[data-pagereadonly] [data-hidepagereadonly] {
+   display: none !important;
+}
+
+canvas {
+   background-color: white;
+}
+
+#selectrectangle {
+   position: fixed; /* Will this be acceptable??? */
+   cursor: crosshair;
+   border: 1px solid rgba(255,0,0,0.5);
+   background-color : rgba(255,0,0,0.1);
+}
+
+#window {
+   flex: 0 2 1000px;
+   background-color: #EEE;
+   overflow: hidden;
+   position: relative;
+}
+
+#drawing[data-drawactive] { cursor: crosshair; }
+
+#scrollblock {
+   position: absolute;
+   left: 0;
+   width: 100%;
+}
+
+/* Chat */
+#chat {
+   display: flex;
+   flex-direction: column;
+   width: 600px;
+   min-width: 300px;
+   flex: 0 1 auto;
+   border-right: 1px solid #BBB;
+}
+
+#messagecontainer {
+   flex: auto;
+   overflow-x: hidden;
+   overflow-y: auto;
+   font-size: 0.8em;
+}
+
+#messages { padding: 0.2em 0; }
+.wholemessage { padding: 0.08em 0.3em; }
+.message { white-space: pre-wrap; }
+.username { 
+   font-weight: bold;
+/*   font-size: 12px; 
+   font-family: monospace; */
+}
+.username::after { content: ":"; }
+
+/* Message form */
+#messageform {
+   flex: none;
+}
+
+#messageform > * {
+   width: 100%;
+}
+
+#messageform textarea {
+   resize: vertical;
+   height: 5rem;
+   max-height: 15rem;
+   min-height: 2rem;
+}
+
+#messageform .autousernamedatetime {
+   font-size: 0.8em;
+   padding: 0.1em;
+}
+
+/* Scrollbar */
+#scrollbar {
+   position: relative;
+   background-color: #E7E7E7;
+   width: 15px;
+   flex: none;
+   border-left: 1px solid #BBB;
+   border-right: 1px solid #BBB;
+}
+
+#scrollbarbar {
+   position: absolute;
+   left: 0;
+   background-color: #AAA; /*mediumpurple; /*#AAA;*/
+   height: 35px;
+   width: 100%;
+   touch-action: none;
+}
+
+/* Sidebar */
+#sidebar {
+   display: flex;
+   flex-direction: column;
+   flex: none;
+   width: 75px;
+   background-color: #F0F0F0;
+   overflow: hidden; /* this will break on screens that aren't tall enough */
+}
+
+/* Controls */
+.controls { flex: none; }
+.controls > * { width: 100%; }
+.controls button { cursor: pointer; }
+
+.controls .text {
+   display: block;
+   padding: 0.2em;
+}
+
+.controltext {
+   font-size: 9px; 
+   font-family: monospace;
+}
+
+#palettedialog {
+   width: 160px;
+   flex: none;
+   padding: 3px;
+   background-color: white;
+}
+#palettedialogcontrols {
+   display: flex;
+}
+#palettedialogname {
+   flex: auto;
+   text-align: center;
+   text-overflow: ellipsis;
+   overflow: hidden;
+   white-space: nowrap;
+   padding: 0 3px;
+}
+#palettedialogcontrols button {
+   flex: none;
+   border: none;
+   background: none;
+   cursor: pointer;
+}
+#palettedialogpalette {
+   margin: 3px 0;
+}
+#palettedialogpalette button {
+   width: 20px;
+   height: 20px;
+   border: 0;
+   padding: 0px;
+   cursor: pointer;
+}
+#color {
+   width: 100%;
+   height: 30px;
+}
+
+#dropper { 
+   padding-bottom: 2px;
+}
+
+.tools {
+   display: flex;
+   flex-flow: row wrap;
+}
+
+.tools.alt {
+   padding: 1px 0;
+   background-color: #AAA;
+}
+
+/* Need this to make inputs shrink properly. Probably should use some kind of
+ * flex shrink property though... but isn't that what auto does? */
+#sidebar .flexrow > * {
+   width: 25px;
+}
+
+.subtool {
+   flex: none; 
+   width: 25px;
+   padding: 0;
+}
+.smallraw {
+   flex: none;
+   width: 18px !important;
+   padding: 0;
+   border: none;
+   background: none;
+   user-select: auto;
+}
+
+.tools button {
+   width: 25px;
+   height: 25px;
+   padding: 0;
+   background-color: #F0F0F0;
+   color: #333;
+}
+
+button[data-selected] { background-color: skyblue !important; }
+
+#palette button {
+   padding: 2px;
+   position: relative;
+}
+
+.swatch {
+   width: 100%;
+   height: 100%;
+   box-sizing: border-box;
+}
+
+#palette .ignorebubble {
+   width: 9px;
+   height: 9px;
+   border: 1px solid darkred;
+   border-radius: 10px;
+   background-color: red;
+   position: absolute;
+   right: 1px;
+   bottom: 1px;
+   box-sizing: border-box;
+   display: none;
+}
+
+#palette [data-ignore] .ignorebubble {
+   display: block;
+}
+
+#webcontrols {
+   flex: auto;
+   font-size: 13px; /*0.8em;*/
+   padding: 0.2em 0;
+}
+
+#webcontrols > * {
+   display: block;
+   margin: 0.2em 0.4em;
+}
+
+input[type="checkbox"] { margin-right: 0.2em; }
+
+#systemcontrols { font-size: 0.8em; }
+
+#pagenumberdisplay {
+   font-family: monospace;
+   font-size: 1.15em;
+   background: #F7F7F7;
+   border-top: 1px solid #AAA;
+}
+
+#version { font-size: 0.75em; }
+
+#percent { 
+   background-color: #DDD; 
+   position: relative;
+   height: 24px;
+   padding: 0; /* !important;*/
+}
+#percentbar {
+   position: absolute;
+   height: 24px;
+   width: 10%;
+   /*background-color: rgba(0,0,0,0.1);*/
+   background-color: rgba(0,150,100,0.4); /*rgba(0,0,0,0.6);*/
+}
+#percenttext {
+   position: absolute;
+   transform: translate(-50%, -50%);
+   left: 50%;
+   top: 50%;
+   color: rgba(0,0,0,0.6);
+   font-size: 15px;
+}
+
+/* Screens */
+.coverscreen {
+   position: absolute;
+   width: 100vw;
+   height: 100vh;
+   background: #333;
+   font-weight: bold;
+   font-size: 1.5em;
+   color: white;
+   padding: 1em;
+   box-sizing: border-box;
+}
+
+[data-closable] .closebutton {
+   position: absolute;
+   right: 0.15em;
+   top: 0.15em;
+   color: white;
+   background: none;
+   border: none;
+   cursor: pointer;
+   font-size: 0.9em;
+}
+
+.lightconsole {
+   margin-top: 1em;
+   overflow: auto;
+   width: 100%;
+   height: 75%;
+   background: #EEE;
+   color: #444;
+   font-family: monospace;
+   box-sizing: border-box;
+   padding: 1em;
+}
+
+#exportstaticcontainer .text {
+   margin-bottom: 1em;
+}
+

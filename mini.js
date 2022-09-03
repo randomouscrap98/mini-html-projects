@@ -497,6 +497,177 @@ var MiniDraw =
    }
 };
 
+//This is technically less features than original MiniDraw, but you should
+//prefer this one over the other for the simplicity, and some of the functions
+//may work better
+var MiniDraw2 = 
+{
+   //An object to store a single line
+   LineData : function (width, color, x1, y1, x2, y2, rect)
+   {
+      this.width = width;
+      this.color = color;
+      this.x1 = x1;
+      this.y1 = y1;
+      this.x2 = x2;
+      this.y2 = y2;
+      this.rect = rect;
+   },
+   ParseHexColor : function(c)
+   {
+      return [
+         parseInt(c.substr(1,2), 16), 
+         parseInt(c.substr(3,2), 16), 
+         parseInt(c.substr(5,2), 16),
+         c.length == 9 ? parseInt(c.substr(7,2),16) : 255
+      ];
+   },
+   SimpleRect : function(ctx, x, y, w, h, clear)
+   {
+      x = Math.round(x); y = Math.round(y);
+      if(!w || !h) { return; }
+      else if(clear) { ctx.clearRect(x, y, w, h); }
+      else { ctx.rect(x, y, w, h); }
+   },
+   SimpleLine : function (ctx, ld)
+   {
+      var xdiff = ld.x2 - ld.x1;
+      var ydiff = ld.y2 - ld.y1;
+      var dist = Math.sqrt(xdiff*xdiff+ydiff*ydiff);
+      var ang = Math.atan(ydiff/(xdiff===0?0.0001:xdiff))+(xdiff<0?Math.PI:0); 
+      var ofs = (ld.width - 1) / 2;
+
+      if(dist === 0) dist=0.001;
+
+      if(ld.color)
+         ctx.fillStyle = ld.color;
+
+      //A nice optimization for flood fill (and perhaps other things?)
+      if(Math.abs(ydiff) < 0.1) //A 0.1 diff shouldn't change anything...
+      {
+         ctx.beginPath();
+         //Remember that there is no 'height' because it's all LINE width, so
+         //the ld.width used for height makes sense
+         MiniDraw.SimpleRect(ctx, Math.min(ld.x1, ld.x2) - ofs, ld.y1 - ofs, 
+            Math.abs(xdiff) + ld.width, ld.width, !ld.color);
+         ctx.fill();
+      }
+      else
+      {
+         var x, y;
+         var setx = [], sety = [];
+         ctx.beginPath();
+         for(var i=0;i<dist;i+=0.5) //0.5) 
+         {
+            x = Math.round(ld.x1+Math.cos(ang)*i-ofs); 
+            y = Math.round(ld.y1+Math.sin(ang)*i-ofs);
+            if(setx[x] && sety[y]) continue;
+            MiniDraw.SimpleRect(ctx, x, y, ld.width, ld.width, !ld.color);
+            setx[x] = 1; sety[y] = 1;
+         }
+         ctx.fill();
+      }
+   },
+   SimpleRectLine : function(ctx, ld)
+   {
+      if(ld.rect)
+      {
+         if(ld.color)
+            ctx.fillStyle = ld.color;
+         ctx.beginPath();
+         MiniDraw.SimpleRect(ctx, Math.min(ld.x1, ld.x2), Math.min(ld.y1, ld.y2),
+            Math.abs(ld.x1 - ld.x2), Math.abs(ld.y1 - ld.y2), !ld.color);
+         ctx.fill();
+      }
+      else
+      {
+         MiniDraw.SimpleLine(ctx, ld);
+      }
+   },
+   GetIndex : function(idata, x, y)
+   {
+      return 4 * (Math.round(x) + Math.round(y) * idata.width);
+   },
+   //Perform a flood on the given context at the given point, returning the
+   //MiniDraw lines that could be used to represent the flood. Currently it
+   //fails if it goes over the maxLines generated. The "sampleContexts" should
+   //be an array of contexts to search through for flood fill ability
+   Flood : function(context, sampleContexts, cx, cy, color, maxLines)
+   {
+      //Do the east/west thing, generate the lines, IGNORE future strokes
+      //Using a buffer because working with image data can (does) cause it to go
+      //into software rendering mode, which is very slow
+      var currentLines = [];
+      var width = context.canvas.width;
+      var height = context.canvas.height;
+      var iDatas = sampleContexts.map(x => x.getImageData(0, 0, width, height));
+      var ctxData = context.getImageData(0, 0, width, height);
+      var queue = [[Math.round(cx), Math.round(cy)]];
+      var rIndex = MiniDraw.GetIndex(ctxData, cx, cy);
+      var replaceColor = [ctxData.data[rIndex], ctxData.data[rIndex+1], ctxData.data[rIndex+2], ctxData.data[rIndex+3]];
+      console.log("Flood into color: ", replaceColor, cx, cy);
+      maxLines = maxLines || 999999999;
+      var west, east, i, j;
+      var shouldFill = (x, y) =>
+      {
+         if(x < 0 || y < 0 || x >= width || y >= height)
+            return false;
+         var i = MiniDraw.GetIndex(ctxData, x, y);
+
+         for(var sfi = 0; sfi < iDatas.length; sfi++)
+         {
+            if(!(iDatas.data[sfi] == replaceColor[0] && iDatas.data[sfi + 1] == replaceColor[1] &&
+               iDatas.data[sfi + 2] == replaceColor[2] && iDatas.data[sfi + 3] == replaceColor[3]))
+               return false;
+         }
+
+         return true;
+      };
+      while(queue.length)
+      {
+         var p = queue.pop();
+         if(shouldFill(p[0],p[1]))
+         {
+            //March left until not should fill, march right
+            for(west = p[0] - 1; west >= 0 && shouldFill(west, p[1]); west--);
+            for(east = p[0] + 1; west < width && shouldFill(east, p[1]); east++);
+
+            //Bring them back in range
+            west++; east--;
+
+            //NOTE: flood fill doesn't CARE about fancy additional complexity like
+            //rectangle drawing or complex line fill, WE are the complexity already
+            currentLines.push(new MiniDraw.LineData(1, color, west, p[1], east, p[1]));
+
+            //Don't allow huge fills at all, just quit
+            if(currentLines.length > maxLines)
+            {
+               //TODO: fix this to have better error handling
+               alert("Flood fill area too large!");
+               currentLines.length = 0;
+               break;
+            }
+
+            //Now travel from west to east, adding all pixels (we check later anyway)
+            for(i = west; i <= east; i++)
+            {
+               //Just has to be DIFFERENT, not the color we're filling.
+               j = MiniDraw.GetIndex(ctxData, i, p[1]);
+               ctxData.data[j + 3] = (ctxData.data[j + 3] + 10) & 255;
+               //Queue the north and south (regardless of fill requirement)
+               queue.push([i, p[1] + 1]);
+               queue.push([i, p[1] - 1]);
+            }
+         }
+      }
+
+      iData = null;
+      img = null;
+      console.log("Flood lines: ", currentLines.length);
+      return currentLines;
+   }
+};
+
 
 var StreamConvert =
 {
