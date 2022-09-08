@@ -6,7 +6,7 @@
       <script src="../randomous.js?v=1643856729"></script>
       <script src="../randomousCanvas.js?v=1643856729"></script>
       <script src="../mini.js?v=1643856729"></script>
-      <!--<script src="../streamdraw1.js?v=1643856729"></script>-->
+      <script src="../streamdraw2.js?v=1643856729"></script>
       <!--<script src="journal.js?v=1643856729"></script>-->
       <link rel="stylesheet" href="../mini.css?v=1643856729">
       <link rel="stylesheet" href="journal.css?v=1643856729">
@@ -21,9 +21,6 @@
          <div id="selectrectangle" data-rndcanvasallowtarget class="inert" style="display:none;"></div>
       </div>
       <!-- Used to have a scrollbar, now it's a panning thing -->
-      <!-- ALSO used to have a chat, will we keep that? It's nice not having to
-           worry about space or anything while typing my thoughts... and then
-           knowing the time that it was posted? -->
       <div id="chat" data-hidden>
          <div id="messagecontainer">
             <div id="messages" class="messages"></div>
@@ -61,8 +58,8 @@
                <input type="text" id="sizetext" class="controltext smallraw center" value="3" data-link="size">
             </div>
             <div id="sizemodifier" data-radio class="collapseall tools" title="Line size multiplier">
-               <button data-selected id="size1">&#215;1</button>
-               <button id="size2">&#215;2</button>
+               <button id="size1">&#215;1</button>
+               <button data-selected id="size2">&#215;2</button>
                <button id="size3">&#215;3</button>
                <button id="size4">&#215;4</button>
                <button id="size5">&#215;5</button>
@@ -80,14 +77,24 @@
          <div id="playbackcontrols" class="controls">
             <!-- These are in PLAYBACK because they are not part of DRAWING,
                the canvas size can be set even if there's no drawer program! -->
-            <div id="canvasmodifier" data-radio class="collapseall tools" title="Zoom">
-               <button id="canvas0.25">&#188;</button>
-               <button id="canvas0.5">&#189;</button>
-               <button id="canvas0.75">&#190;</button>
-               <button id="canvas1">1</button>
-               <button id="canvas1.5">1.5</button>
-               <button id="canvas2">2</button>
-            </div>
+            <label for="canvaszoom" class="flexrow" id="canvaszoomcontainer">
+               <span id="canvaszoomlabel">Zoom:</span>
+               <select id="canvaszoom" title="Zoom">
+                  <option value="0.25">&#188;</option>
+                  <option value="0.5">&#189;</option>
+                  <option value="0.75">&#190;</option>
+                  <option value="1" selected="">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                  <option value="5">5</option>
+                  <option value="6">6</option>
+                  <option value="8">8</option>
+                  <option value="10">10</option>
+               </select>
+            </label>
+            <!--<div id="canvasmodifier" data-radio class="collapseall tools" title="Zoom">
+            </div>-->
             <div id="playbackslider" class="flexrow" title="Playback speed">
                <input type="range" id="playback" min="1" max="20" value="10" data-link="playbacktext">
                <input type="text" id="playbacktext" class="controltext smallraw center" value="10" data-link="playback">
@@ -99,16 +106,16 @@
             </div>
          </div>
          <div id="webcontrols">
-            <label data-hidepagereadonly title="Canvas accepts drawing commands">
-               <input type="checkbox" id="drawtoggle" checked="true"></input>Draw</label>
+            <!--<label data-hidepagereadonly title="Canvas accepts drawing commands">
+               <input type="checkbox" id="drawtoggle" checked="true"></input>Draw</label>-->
             <label data-hidepagereadonly title="Horizontal flip canvas">
                <input type="checkbox" id="hfliptoggle"></input>HFlip</label>
             <label title="Switch sidebar sides">
                <input type="checkbox" id="pageflip"></input>Flip</label>
             <label title="Show text chat">
                <input type="checkbox" id="pagechat"></input>Text</label>
-            <label data-hidden title="Follow new drawing data automatically">
-               <input data-notusedchecked="true" type="checkbox" id="autofollow"></input>Auto</label>
+            <!--<label data-hidden title="Follow new drawing data automatically">
+               <input data-notusedchecked="true" type="checkbox" id="autofollow"></input>Auto</label>-->
             <hr>
             <em>Export:</em>
             <a href="" target="_blank" id="export" data-hidepagereadonly
@@ -119,14 +126,8 @@
          <div id="systemcontrols" class="controls">
             <div id="version" class="center muted text">v?</div>
             <div id="pagecontrols">
-               <div id="pagenumberdisplay" class="center text">
-                  <span>Pg</span>
-                  <span id="pagenumber">1</span>
-               </div>
-               <div id="pagemovement" class="evenfill">
-                  <button id="pagebackward" data-disabled>◀</button>
-                  <button id="pageforward">▶</button>
-               </div>
+               <select id="pageselect"></select>
+               <button id="newpagebutton">New Page</button>
             </div>
             <div id="percent" class="" data-hidepagereadonly title="Room data limit">
                <div id="percentbar"></div>

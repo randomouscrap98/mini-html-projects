@@ -16,9 +16,9 @@ body[data-pagereadonly] [data-hidepagereadonly] {
    display: none !important;
 }
 
-canvas {
+/*canvas {
    background-color: white;
-}
+}*/
 
 #selectrectangle {
    position: fixed; /* Will this be acceptable??? */
@@ -39,7 +39,17 @@ canvas {
 #scrollblock {
    position: absolute;
    left: 0;
-   width: 100%;
+   /*width: 100%;*/
+   width: 2000px; /* These won't be accurate on certain pixel scales... mmm */
+   height: 4000px;
+}
+
+#scrollblock canvas {
+   position: absolute;
+}
+
+#scrollblock canvas:last-of-type {
+   background-color: white;
 }
 
 /* Chat */
@@ -88,25 +98,6 @@ canvas {
 #messageform .autousernamedatetime {
    font-size: 0.8em;
    padding: 0.1em;
-}
-
-/* Scrollbar */
-#scrollbar {
-   position: relative;
-   background-color: #E7E7E7;
-   width: 15px;
-   flex: none;
-   border-left: 1px solid #BBB;
-   border-right: 1px solid #BBB;
-}
-
-#scrollbarbar {
-   position: absolute;
-   left: 0;
-   background-color: #AAA; /*mediumpurple; /*#AAA;*/
-   height: 35px;
-   width: 100%;
-   touch-action: none;
 }
 
 /* Sidebar */
@@ -257,7 +248,24 @@ button[data-selected] { background-color: skyblue !important; }
 
 input[type="checkbox"] { margin-right: 0.2em; }
 
+#canvaszoomcontainer {
+   align-items: center;
+}
+
+#canvaszoomlabel {
+   font-size: 0.6em;
+   text-align: center;
+}
+
 #systemcontrols { font-size: 0.8em; }
+
+#pageselect { 
+   width: 100%; 
+}
+#newpagebutton { 
+   width: 100%;
+   font-size: 1em;
+}
 
 #pagenumberdisplay {
    font-family: monospace;
