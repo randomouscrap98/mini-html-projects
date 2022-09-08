@@ -2,8 +2,15 @@
 // -StreamConvert (mini.js?)
 // -MiniDraw      (mini.js?)
 
+function StreamDrawPageData(name)
+{
+   this.date = (new Date()).toISOString(); //Always a string
+   this.name = name || this.date.substr(0, 10);
+}
+
 //This is the simplified version of streamdraw1, without the massive ignore
 //color system
+
 
 //The core parser for simple elements of the streamdraw system
 function StreamDrawElementParser(width, height)
@@ -13,6 +20,7 @@ function StreamDrawElementParser(width, height)
    //These are technically constants! 
    this.COLORBYTES = 4;
    this.MESSAGELENGTHBYTES = 2;
+   this.PAGELENGTHBYTES = 2;
    this.POINTBYTES = 4;
    this.SIZEBYTES = 1;
 }
@@ -39,6 +47,11 @@ StreamDrawElementParser.prototype.SetSize = function(width, height)
 StreamDrawElementParser.prototype.MessageSize = function(data, current)
 {
    return this.MESSAGELENGTHBYTES + StreamConvert.CharsToInt(data, current, this.MESSAGELENGTHBYTES);
+};
+
+StreamDrawElementParser.prototype.PageSize = function(data, current)
+{
+   return this.PAGELENGTHBYTES + StreamConvert.CharsToInt(data, current, this.PAGELENGTHBYTES);
 };
 
 // -------------------
@@ -109,6 +122,21 @@ StreamDrawElementParser.prototype.ParseMessage = function(data, start, length)
    }
 
    return result;
+};
+
+StreamDrawElementParser.prototype.CreatePage = function(page)
+{
+   var pageData = JSON.stringify(page);
+   var max = StreamConvert.MaxValue(this.PAGELENGTHBYTES);
+   if(pageData.length > max)
+      throw `Unrecoverable error: can't create page (too large! ${pageData.length} vs ${max})`;
+   return StreamConvert.IntToChars(pageData.length, this.PAGELENGTHBYTES) + pageData;
+};
+
+StreamDrawElementParser.prototype.ParsePage = function(data, start, length)
+{
+   var fullMessage = data.substr(start + this.PAGELENGTHBYTES, length - this.PAGELENGTHBYTES);
+   return JSON.parse(fullMessage);
 };
 
 StreamDrawElementParser.prototype.CreateStroke = function(lines, recurseJoiner)
@@ -286,6 +314,7 @@ StreamDrawElementParser.prototype.ParseGenericBatch = function(data, start, leng
 
 
 
+
 // The mega parser that does overall data stream parsing. Requires an element
 // parser to function. Assumes a page system
 function StreamDrawSystemParser(elementParser)
@@ -308,7 +337,7 @@ function StreamDrawSystemParser(elementParser)
 //datascan doesn't care about parsing or special circumstances or anything. All
 //it understands is a VERY generic idea of "chunks". Imagine TCP/IP stack and
 //the various levels of switches/etc.
-StreamDrawSystemParser.prototype.DataScan = function(data, start, textfunc, linefunc)
+StreamDrawSystemParser.prototype.DataScan = function(data, start, textfunc, linefunc, pagefunc)
 {
    var current = start;
    var clength = 0;
@@ -330,6 +359,12 @@ StreamDrawSystemParser.prototype.DataScan = function(data, start, textfunc, line
          clength = 1 + this.eparser.MessageSize(data, current + 1);
          lengthModifier = 1;
          func = textfunc;
+      }
+      else if(cc == this.symbols.page)
+      {
+         clength = 1 + this.eparser.PageSize(data, current + 1);
+         lengthModifier = 1;
+         func = pagefunc;
       }
       else if(cc == this.symbols.stroke || cc == this.symbols.lines || cc == this.symbols.rectangles)
       {
@@ -360,9 +395,14 @@ StreamDrawSystemParser.prototype.CreateMessage = function(username, message)
    return this.symbols.text + this.eparser.CreateMessage(username, message);
 };
 
-StreamDrawSystemParser.prototype.CreateLines = function(type, page, lines)
+StreamDrawSystemParser.prototype.CreatePage = function(page)
 {
-   var startChunk = StreamConvert.IntToVariableWidth(page);
+   return this.symbols.page + this.eparser.CreatePage(page);
+};
+
+StreamDrawSystemParser.prototype.CreateLines = function(type, layer, lines)
+{
+   var startChunk = StreamConvert.IntToVariableWidth(layer);
    var result = false;
 
    if(type == "stroke") 
@@ -415,7 +455,7 @@ StreamDrawSystem.prototype.ResetDrawTracking = function()
 {
    this.drawPointer = 0;
    this.scheduledLines = [];
-   this.maxPage = 0;
+   this.pages = [];
 };
 
 StreamDrawSystem.prototype.ResetMessageTracking = function()
@@ -450,22 +490,22 @@ StreamDrawSystem.prototype.ProcessLines = function(parseLimit, scanLimit, page)
          tracker.scanCount = scanCount;
          me.drawPointer = end;
 
-         //We ALSO only handle the draw if it's the right PAGE.
-         var pageDat = StreamConvert.VariableWidthToInt(me.rawData, start);
-         me.maxPage = Math.max(me.maxPage, pageDat.value);
-         tracker.lastPage = pageDat.value;
-
-         if(pageDat.value != page)
+         if(tracker.lastPage != page) //pageDat.value != page)
             return false;
 
+         var layerDat = StreamConvert.VariableWidthToInt(me.rawData, start);
+         //me.maxPage = Math.max(me.maxPage, pageDat.value);
+         //tracker.lastPage = pageDat.value;
+
          var newLines = me.parser.ParseLineChunk(me.rawData, 
-            start + pageDat.length, length - pageDat.length, cc);
+            start + layerDat.length, length - layerDat.length, cc);
 
          //This may tank performance. Want max/min for the LAST chunk
          tracker.lastMinY = 999999999;
          tracker.lastMaxY = 0;
-         for(const x of newLines)
+         for(let x of newLines)
          {
+            x.layer = layerDat.value;
             tracker.lastMinY = Math.min(tracker.lastMinY, x.y1, x.y2);
             tracker.lastMaxY = Math.max(tracker.lastMaxY, x.y1, x.y2);
          }
@@ -475,6 +515,13 @@ StreamDrawSystem.prototype.ProcessLines = function(parseLimit, scanLimit, page)
          tracker.realParsed++;
 
          return (scanCount >= scanLimit || tracker.realParsed > parseLimit);
+      },
+      (start, length, cc, end, scanCount) => //page func
+      {
+         var pageData = me.parser.eparser.ParsePage(me.rawData, start, length);
+         tracker.lastPage = pageData.name;
+         me.pages.push(pageData); //just assume all new page data is a new page.
+         return false;
       }
    );
 
