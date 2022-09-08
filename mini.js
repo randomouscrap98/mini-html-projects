@@ -513,15 +513,8 @@ var MiniDraw2 =
       this.y2 = y2;
       this.rect = rect;
    },
-   ParseHexColor : function(c)
-   {
-      return [
-         parseInt(c.substr(1,2), 16), 
-         parseInt(c.substr(3,2), 16), 
-         parseInt(c.substr(5,2), 16),
-         c.length == 9 ? parseInt(c.substr(7,2),16) : 255
-      ];
-   },
+   //This function is different because rectangles require more calculation,
+   //don't want to mess up the raw linedata
    SimpleRect : function(ctx, x, y, w, h, clear)
    {
       x = Math.round(x); y = Math.round(y);
@@ -568,6 +561,7 @@ var MiniDraw2 =
          ctx.fill();
       }
    },
+   //The ACTUAL "draw this line data" function
    SimpleRectLine : function(ctx, ld)
    {
       if(ld.rect)
@@ -605,6 +599,8 @@ var MiniDraw2 =
       var queue = [[Math.round(cx), Math.round(cy)]];
       var rIndex = MiniDraw.GetIndex(ctxData, cx, cy);
       var replaceColor = [ctxData.data[rIndex], ctxData.data[rIndex+1], ctxData.data[rIndex+2], ctxData.data[rIndex+3]];
+      var replaceColorString = (new Color(replaceColor[0], replaceColor[1], replaceColor[2], replaceColor[3]))
+         .ToHexString();
       console.log("Flood into color: ", replaceColor, cx, cy);
       maxLines = maxLines || 999999999;
       var west, east, i, j;
@@ -642,7 +638,13 @@ var MiniDraw2 =
             //Don't allow huge fills at all, just quit
             if(currentLines.length > maxLines)
             {
-               //TODO: fix this to have better error handling
+               //To undo the flood, simply redraw all the existing lines using
+               //the original color.
+               for(i = 0; i < currentLines.length; i++)
+               {
+                  currentLines[i].color = replaceColorString;
+                  MiniDraw2.SimpleLine(context, currentLines[i]);
+               }
                alert("Flood fill area too large!");
                currentLines.length = 0;
                break;
