@@ -443,31 +443,29 @@ StreamDrawSystemParser.prototype.ParseLineChunk = function(data, start, length, 
 
 
 
-//The "system" is a containerized version of Core which includes pagination
-//(for version 1) and further parsing abilities
+//The overall "manager" for the stream draw system. It scans the data and
+//raises events for things it finds while scanning. Then, if the scanning is
+//complete, you can request the lines for a particular page.
 function StreamDrawSystem(parser, existingData)
 {
    this.parser = parser;
    this.SetData(existingData);
 }
 
-StreamDrawSystem.prototype.ResetDrawTracking = function()
+StreamDrawSystem.prototype.ResetScanner = function()
 {
-   this.drawPointer = 0;
-   this.scheduledLines = [];
+   this.scanPointer = 0;
    this.pages = [];
 };
 
-StreamDrawSystem.prototype.ResetMessageTracking = function()
+StreamDrawSystem.prototype.ScanAtEnd = function()
 {
-   this.messagePointer = 0;
-   this.scheduledMessages = [];
+   return this.scanPointer >= this.rawData.length;
 };
 
 StreamDrawSystem.prototype.SetData = function(data)
 {
-   this.ResetDrawTracking();
-   this.ResetMessageTracking();
+   this.ResetScanner();
 
    this.rawData = data || "";
 
@@ -477,75 +475,148 @@ StreamDrawSystem.prototype.SetData = function(data)
       this.preamble = false;
 };
 
+StreamDrawSystem.prototype.FindPage = function(name)
+{
+   for(var i = 0; i < this.pages.length; i++)
+      if(this.pages[i].name === name)
+         return this.pages[i];
 
-//A critical function: scan through data in chunks to parse out lines. 
-StreamDrawSystem.prototype.ProcessLines = function(parseLimit, scanLimit, page)
+   return false;
+};
+
+
+StreamDrawSystem.prototype.Scan = function(messageEvent, pageEvent, parseLimit, scanLimit)
 {
    var me = this;
    var tracker = { realParsed : 0, scanCount : 0 };
+   var scanGeneric = function(end, scanCount)
+   {
+      me.scanPointer = end;
+      tracker.scanCount = scanCount;
+      return (tracker.scanCount >= scanLimit || tracker.realParsed > parseLimit);
+   };
 
-   me.parser.DataScan(me.rawData, Math.max(me.drawPointer, me.preamble.skip), false,
-      (start, length, cc, end, scanCount) =>
+   me.parser.DataScan(me.rawData, Math.max(me.scanPointer, me.preamble.skip), 
+      (start, length, cc, end, scanCount) => //Messages
       {
-         tracker.scanCount = scanCount;
-         me.drawPointer = end;
-
-         if(tracker.lastPage != page) //pageDat.value != page)
-            return false;
-
-         var layerDat = StreamConvert.VariableWidthToInt(me.rawData, start);
-         //me.maxPage = Math.max(me.maxPage, pageDat.value);
-         //tracker.lastPage = pageDat.value;
-
-         var newLines = me.parser.ParseLineChunk(me.rawData, 
-            start + layerDat.length, length - layerDat.length, cc);
-
-         //This may tank performance. Want max/min for the LAST chunk
-         tracker.lastMinY = 999999999;
-         tracker.lastMaxY = 0;
-         for(let x of newLines)
-         {
-            x.layer = layerDat.value;
-            tracker.lastMinY = Math.min(tracker.lastMinY, x.y1, x.y2);
-            tracker.lastMaxY = Math.max(tracker.lastMaxY, x.y1, x.y2);
-         }
-
-         me.scheduledLines.push(...newLines);
+         if(messageEvent)
+            messageEvent(me.parser.eparser.ParseMessage(me.rawData, start, length));
 
          tracker.realParsed++;
-
-         return (scanCount >= scanLimit || tracker.realParsed > parseLimit);
+         return scanGeneric(end, scanCount);
+      },
+      (start, length, cc, end, scanCount) => //Lines; we still need to track our pointer
+      {
+         return scanGeneric(end, scanCount);
       },
       (start, length, cc, end, scanCount) => //page func
       {
          var pageData = me.parser.eparser.ParsePage(me.rawData, start, length);
-         tracker.lastPage = pageData.name;
+         pageData.start = end; //end is the start of the next section, which is the first non-page data in our page
          me.pages.push(pageData); //just assume all new page data is a new page.
-         return false;
+
+         if(pageEvent)
+            pageEvent(pageData);
+
+         tracker.realParsed++;
+         return scanGeneric(end, scanCount);
       }
    );
 
    return tracker; 
 };
 
-//The message handler
-StreamDrawSystem.prototype.ProcessMessages = function(parseLimit, scanLimit)
+
+StreamDrawSystem.prototype.InitializeLineScan = function(pageName)
 {
    var me = this;
-   var realParsed = 0;
 
-   me.parser.DataScan(me.rawData, Math.max(me.messagePointer, me.preamble.skip), 
-      (start, length, cc, end, scanCount) => 
+   var pageData = me.FindPage(pageName);
+
+   if(!pageData)
+      throw "No page found with name " + pageName;
+
+   //Doesn't matter if we're at the end or not, as long as we can find the page
+   return {
+      page : pageData,
+      pointer : pageData.start
+   }
+};
+
+//A critical function: scan through data in chunks to parse out lines. 
+StreamDrawSystem.prototype.ScanLines = function(scanTracker, lineEvent, parseLimit, scanLimit)
+{
+   var me = this;
+   var tracker = { realParsed : 0, scanCount : 0 };
+   var scanGeneric = function(end, scanCount)
+   {
+      scanTracker.pointer = end;
+      tracker.scanCount = scanCount;
+      return (tracker.scanCount >= scanLimit || tracker.realParsed > parseLimit);
+   };
+
+   me.parser.DataScan(me.rawData, Math.max(scanTracker.pointer, me.preamble.skip), 
+      (start, length, cc, end, scanCount) =>
       {
-         me.messagePointer = end;
-         me.scheduledMessages.push(me.parser.eparser.ParseMessage(me.rawData, start, length));
+         return scanGeneric(end, scanCount);
+      },
+      (start, length, cc, end, scanCount) =>
+      {
+         var layerDat = StreamConvert.VariableWidthToInt(me.rawData, start);
 
-         realParsed++;
+         var newLines = me.parser.ParseLineChunk(me.rawData, 
+            start + layerDat.length, length - layerDat.length, cc);
 
-         //DON'T worry about a scanCount of 0, it's more important for us to be
-         //able to scan past big chunks! 
-         return (scanCount >= scanLimit || realParsed > parseLimit);
+         //This may tank performance. Want max/min for the LAST chunk
+         //tracker.lastMinY = 999999999;
+         //tracker.lastMaxY = 0;
+         for(let x of newLines)
+         {
+            x.layer = layerDat.value;
+            //tracker.lastMinY = Math.min(tracker.lastMinY, x.y1, x.y2);
+            //tracker.lastMaxY = Math.max(tracker.lastMaxY, x.y1, x.y2);
+         }
+
+         if(lineEvent)
+            lineEvent(newLines);
+         //me.scheduledLines.push(...newLines);
+
+         tracker.realParsed++;
+         return scanGeneric(end, scanCount); //(scanCount >= scanLimit || tracker.realParsed > parseLimit);
+      },
+      (start, length, cc, end, scanCount) => //page func
+      {
+         //ALWAYS immediately quit on new page. This should leave our pointer
+         //right on the page line, meaning no more lines are ever processed (we hope)
+         return true; 
+         //var pageData = me.parser.eparser.ParsePage(me.rawData, start, length);
+         //tracker.lastPage = pageData.name;
+         //me.pages.push(pageData); //just assume all new page data is a new page.
+         //return false;
       }
    );
+
+   return tracker; 
 };
+
+////The message handler
+//StreamDrawSystem.prototype.ProcessMessages = function(parseLimit, scanLimit)
+//{
+//   var me = this;
+//   var realParsed = 0;
+//
+//   me.parser.DataScan(me.rawData, Math.max(me.messagePointer, me.preamble.skip), 
+//      (start, length, cc, end, scanCount) => 
+//      {
+//         me.messagePointer = end;
+//         me.scheduledMessages.push(me.parser.eparser.ParseMessage(me.rawData, start, length));
+//
+//         realParsed++;
+//
+//         //DON'T worry about a scanCount of 0, it's more important for us to be
+//         //able to scan past big chunks! 
+//         return (scanCount >= scanLimit || realParsed > parseLimit);
+//      }
+//   );
+//};
 
