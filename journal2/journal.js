@@ -32,7 +32,8 @@ var constants =
    maxScan : 10000,        //per frame; should be about the max line draw per frame
    maxParse : 2000,
    autoDrawLineChunk : 90,//Be VERY CAREFUL with this value! Harmonic series...
-   nonDrawTools : [ "exportrect", "pan" ]
+   nonDrawTools : [ "exportrect", "pan" ],
+   slowToolAlpha : 0.15
 };
 
 var palettes = 
@@ -1067,13 +1068,35 @@ function trackPendingStroke(drw, pending)
    if(pending.accepting && pending.tool)
    {
       //Simple stroke
-      if(pending.tool == "eraser" || pending.tool == "pen")
+      if(pending.tool == "eraser" || pending.tool == "pen" || pending.tool == "slow")
       {
          pending.type = "stroke"; //globals.system.core.symbols.stroke;
-         currentLines.push(new MiniDraw2.LineData(pending.size, pending.color,
+
+         var ld = new MiniDraw2.LineData(pending.size, pending.color,
             Math.round(drw.lastX), Math.round(drw.lastY), 
             Math.round(drw.currentX), Math.round(drw.currentY),
-            false)); //, pending.complex));
+            false); 
+
+         if(pending.tool == "slow")
+         {
+            //Reset average
+            if(!pending.lines.length)
+            {
+               drw.avgX = drw.currentX;
+               drw.avgY = drw.currentY;
+            }
+
+            ld.x1 = Math.round(drw.avgX);
+            ld.y1 = Math.round(drw.avgY);
+
+            drw.avgX = drw.avgX*(1-constants.slowToolAlpha)+drw.currentX*constants.slowToolAlpha;
+            drw.avgY = drw.avgY*(1-constants.slowToolAlpha)+drw.currentY*constants.slowToolAlpha;
+
+            ld.x2 = Math.round(drw.avgX);
+            ld.y2 = Math.round(drw.avgY);
+         }
+
+         currentLines.push(ld);
       }
       //Complex big boy fill
       else if(pending.tool == "fill")
@@ -1326,20 +1349,12 @@ function drawerTick(drawer, pending)
       }
       else if(currentTool === "pan")
       {
-         //if(drawer.lastAction) //lastX !== null && drawer.lastY !== null && drawer.lastX >= 0 && drawer.lastY >= 0)
-         //{
          var xMove = drawer.currentAction.clientX - drawer.startAction.clientX;
          var yMove = drawer.currentAction.clientY - drawer.startAction.clientY;
-         //console.log(xMove, yMove);
          layer1.style.top = globals.layerTop + yMove + "px";
          layer1.style.left = globals.layerLeft + xMove + "px";
          layer2.style.top = globals.layerTop + yMove + "px";
          layer2.style.left = globals.layerLeft + xMove + "px";
-            //StyleUtilities.AbsoluteTranslate(layer1, "top", yMove);
-            //StyleUtilities.AbsoluteTranslate(layer1, "left", xMove);
-            //StyleUtilities.AbsoluteTranslate(layer2, "top", yMove);
-            //StyleUtilities.AbsoluteTranslate(layer2, "left", xMove);
-         //}
       }
    }
    //Not currently drawing, post lines since we're done (why is this in the frame drawer again?)
