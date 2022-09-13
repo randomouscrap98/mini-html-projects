@@ -1,5 +1,6 @@
 // randomouscrap98
 // 12-15-2020
+// (major overhaul 09-11-2022)
 
 var system = 
 {
@@ -140,7 +141,6 @@ function windowOnLoad()
          //   () => setDrawAbility(globals.drawer, drawing, false));
          hfliptoggle.oninput = (e) => globals.drawer.SetInvert(hfliptoggle.checked, false, [ layer2 ]);
          setupSpecialControls();
-         //setDrawAbility(true); //this used to be a different system
       }
 
       //Skip data retrieval if we're exported already
@@ -197,8 +197,6 @@ function setPage(v) {
    return false;
 }
 function getLayer() { return Number(layerselect.getAttribute("data-layer")); }
-//function getPageNumber() { return Number(pagenumber.textContent) - 1; }
-//function setPageNumber(v) { pagenumber.textContent = v+1; }
 function getLineSize() 
 { 
    return Number(sizetext.value) *
@@ -209,7 +207,7 @@ function setPickerColor(c) { colortext.value = c; color.value = c; }
 function setLineColor(color) { setPickerColor(color); updateCurrentSwatch(color); }
 function getToolName(tool) { return tool.id.replace("tool_", ""); }
 function getTool() { 
-   var selectedTool = tools.querySelector("[data-selected]"); //.id.replace("tool_", ""); 
+   var selectedTool = tools.querySelector("[data-selected]");
    if(selectedTool.hasAttribute("disabled"))
       return false;
    else
@@ -233,11 +231,18 @@ function updatePaletteNumber(inc) {
    palettedialog.setAttribute("data-palette", keys[num]);
    setSetting("palettechoice", keys[num]);
 }
-//Retrieve the list of STRING (ie regular color hex value) colors to ignore
-//function getIgnoredColors() {
-//   var colors = document.querySelectorAll("#palette [data-ignore]");
-//   return [...colors].map(x => x.getAttribute("data-color"));
-//}
+function setLayerOffset(x, y) {
+   layer1.style.top = y + "px"; 
+   layer1.style.left = x + "px";
+   layer2.style.top = y + "px";
+   layer2.style.left = x + "px";
+}
+function getLayerOffset() {
+   return {
+      x : Number(layer1.style.left.replace("px", "")),
+      y : Number(layer1.style.top.replace("px", ""))
+   };
+}
 
 
 function computeRoomInfo(url, storeObject)
@@ -323,24 +328,8 @@ function setupPalette(container, colors)
    for(var i = 0; i < colors.length; i++)
    {
       var button = makePaletteButton();
-      //var ignorebubble = document.createElement("div");
-      //ignorebubble.className = "ignorebubble";
-      //button.appendChild(ignorebubble);
       button.addEventListener("click", (e) => 
       {
-         //The dropper has a special action when used on colors: it overrides
-         //all other operations (except radio select) and toggles the 'ignore'
-         //feature on that color (used for drawing 'under' lines)
-         //if(isDropperActive())
-         //{
-         //   e.preventDefault();
-         //   e.stopPropagation();
-         //   if(e.currentTarget.hasAttribute("data-ignore"))
-         //      e.currentTarget.removeAttribute("data-ignore");
-         //   else
-         //      e.currentTarget.setAttribute("data-ignore", "");
-         //   setDropperActive(false);
-         //}
          //They're clicking on it AGAIN. Toggle the hidden state (a literal toggle)
          if (e.currentTarget.hasAttribute("data-selected"))
          {
@@ -424,10 +413,7 @@ function setupSpecialControls()
 
    panreset.onclick = () =>
    {
-      layer1.style.top = 0;
-      layer1.style.left = 0;
-      layer2.style.top = 0;
-      layer2.style.left = 0;
+      setLayerOffset(0, 0);
    };
 }
 
@@ -529,47 +515,25 @@ function setupPageControls()
       globals.pendingNewPage = pagename;
       changePage(pagename); //We know the page isn't ready yet, but changePage is very lenient
    };
-      //post(endpoint(globals.roomname), globals.system.parser.CreateMessage(username.value, message.value));
-   //pagebackward.onclick = () => changePage(-1);
-   //pageforward.onclick = () => changePage(1);
 }
 
 function setupPlaybackControls()
 {
-   //var cmclick = (x) =>
-   //{
-   //   var size = Number(x.id.replace("canvas", ""));
-   //   //Because of weird ios bugs UGH
-   //   x.setAttribute("data-selected", "");
-   //   CanvasUtilities.SetScaling(drawing, size);
-   //   document.getElementById("window").style.flex = `0 2 ${1000 * size / window.devicePixelRatio}px`;
-   //   scrollbar.refreshScroll();
-   //   setSetting("canvassize", size);
-   //};
-
-   //var setZoom = (x) => 
-   //{
-   //    
-   //};
    var _setZoom = () =>
    {
+      var oldZoom = getSetting("canvassize") || 1;
       var zoom = Number(canvaszoom.value);
       CanvasUtilities.SetScaling(layer1, zoom);
       CanvasUtilities.SetScaling(layer2, zoom);
       setSetting("canvassize", zoom);
       //Do something with panning here
+      var lofs = getLayerOffset();
+      setLayerOffset(lofs.x * zoom / oldZoom, lofs.y * zoom / oldZoom);
    };
 
    canvaszoom.oninput = _setZoom;
    canvaszoom.value = getSetting("canvassize") || 1;
    _setZoom();
-
-   //[...document.querySelectorAll("#canvasmodifier button")].forEach(x =>
-   //{
-   //   x.addEventListener("click", () => cmclick(x));
-   //});
-
-   //cmclick(document.getElementById("canvas" + getSetting("canvassize")) || size1);
 }
 
 function setupDrawer(canvas)
@@ -617,9 +581,8 @@ function changePage(name) //increment, exact)
    {
       CanvasUtilities.Clear(layer1);
       CanvasUtilities.Clear(layer2);
-      //setDrawAbility(globals.drawer, layer1, globals.system.IsLastPage(name));
       setDrawAbility(globals.system.IsLastPage(name));
-      location.hash = "page-" + name; //(getPageNumber() + 1);
+      location.hash = "page-" + name;
       globals.pendingSetPage = null;
       globals.scheduledLines = []; //Remove anything waiting to be drawn, this is a new page
       globals.drawTracking = globals.system.InitializeLineScan(name);
@@ -629,21 +592,13 @@ function changePage(name) //increment, exact)
       console.warn("Can't set page yet: pages aren't present!");
       globals.pendingSetPage = name;
    }
-   //globals.system.ResetDrawTracking();
-   //setPage(name);
-   //setPageNumber(MathUtilities.MinMax((exact ? 0 : getPageNumber()) + increment, 0, 1000000));
-
-   //if(getPageNumber() <= 0)
-   //   pagebackward.setAttribute("data-disabled", "");
-   //else
-   //   pagebackward.removeAttribute("data-disabled");
 }
 
 function handlePageHash(hash)
 {
    var match = hash.match(/page-(.+)/i);
    if(match)
-      changePage(match[1]); //Number(match[1]) - 1, true);
+      changePage(match[1]);
 }
 
 function setupChat()
@@ -937,7 +892,7 @@ function exportSection(ld)
       return;
    }
 
-   var expcanv = copySection(ld); //globals.pendingStroke.lines[0])
+   var expcanv = copySection(ld); 
    showCover({
       title: "Region Export",
       showContainer: true,
@@ -1359,10 +1314,7 @@ function drawerTick(drawer, pending)
       {
          var xMove = drawer.currentAction.clientX - drawer.startAction.clientX;
          var yMove = drawer.currentAction.clientY - drawer.startAction.clientY;
-         layer1.style.top = globals.layerTop + yMove + "px";
-         layer1.style.left = globals.layerLeft + xMove + "px";
-         layer2.style.top = globals.layerTop + yMove + "px";
-         layer2.style.left = globals.layerLeft + xMove + "px";
+         setLayerOffset(globals.layerLeft + xMove, globals.layerTop + yMove);
       }
    }
    //Not currently drawing, post lines since we're done (why is this in the frame drawer again?)
@@ -1370,8 +1322,9 @@ function drawerTick(drawer, pending)
    {
       //Hopefully this doesn't become a performance concern
       clearSelectRect();
-      globals.layerTop = Number(layer1.style.top.replace("px", ""));
-      globals.layerLeft = Number(layer1.style.left.replace("px", ""));
+      var layerOffset = getLayerOffset();
+      globals.layerTop = layerOffset.y; 
+      globals.layerLeft = layerOffset.x;
 
       //Stop drawing?
       drawer.currentX = null;
