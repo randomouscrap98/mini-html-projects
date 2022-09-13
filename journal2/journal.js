@@ -217,6 +217,7 @@ function getTool() {
 }
 function toolIsRect(tool) { return tool && (tool.indexOf("rect") >= 0); }
 function toolIsErase(tool) { return tool && (tool.indexOf("erase") >= 0); }
+function toolIsContinuous(tool) { return tool && (tool.indexOf("slow") >= 0); }
 function isDropperActive() { return dropper.hasAttribute("data-selected"); }
 function setDropperActive(active) 
 { 
@@ -1059,6 +1060,7 @@ function trackPendingStroke(drw, pending)
       pending.erasing = toolIsErase(pending.tool); 
       pending.color = pending.erasing ? null : getLineColor();
       pending.lines = [];
+      pending.continuous = toolIsContinuous(pending.tool);
    }
 
    var currentLines = [];
@@ -1334,8 +1336,14 @@ function drawerTick(drawer, pending)
          //important "lastX lastY" data
          drawer.lastX = drawer.currentX;
          drawer.lastY = drawer.currentY;
-         drawer.currentX = null;
-         drawer.currentY = null;
+
+         //if the current line is supposed to keep tracking even when not
+         //moving, then don't stop the tracking.
+         if(!pending.continuous)
+         {
+            drawer.currentX = null;
+            drawer.currentY = null;
+         }
       }
    }
 
@@ -1365,6 +1373,9 @@ function drawerTick(drawer, pending)
       globals.layerTop = Number(layer1.style.top.replace("px", ""));
       globals.layerLeft = Number(layer1.style.left.replace("px", ""));
 
+      //Stop drawing?
+      drawer.currentX = null;
+
       //Don't need to continuously look at the pending stroke when there is none
       if(pending.active)
       {
@@ -1381,6 +1392,7 @@ function drawerTick(drawer, pending)
                drawLines(pending.lines);
          }
          pending.active = false;
+         pending.lines = [];
       }
    }
 }
