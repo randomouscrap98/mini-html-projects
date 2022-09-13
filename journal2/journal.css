@@ -34,7 +34,7 @@ body[data-pagereadonly] [data-hidepagereadonly] {
    position: relative;
 }
 
-#drawing[data-drawactive] { cursor: crosshair; }
+#layer1[data-drawactive] { cursor: crosshair; }
 
 #scrollblock {
    position: absolute;
@@ -59,7 +59,7 @@ body[data-pagereadonly] [data-hidepagereadonly] {
    width: 600px;
    min-width: 300px;
    flex: 0 1 auto;
-   border-right: 1px solid #BBB;
+   border-left: 1px solid #BBB;
 }
 
 #messagecontainer {
@@ -74,8 +74,7 @@ body[data-pagereadonly] [data-hidepagereadonly] {
 .message { white-space: pre-wrap; }
 .username { 
    font-weight: bold;
-/*   font-size: 12px; 
-   font-family: monospace; */
+   margin-right: 0.25em;
 }
 .username::after { content: ":"; }
 
@@ -108,6 +107,7 @@ body[data-pagereadonly] [data-hidepagereadonly] {
    width: 75px;
    background-color: #F0F0F0;
    overflow: hidden; /* this will break on screens that aren't tall enough */
+   border-left: 1px solid #BBB;
 }
 
 /* Controls */
@@ -250,6 +250,7 @@ input[type="checkbox"] { margin-right: 0.2em; }
 
 #canvaszoomcontainer {
    align-items: center;
+   border-bottom: 1px solid #BBB;
 }
 
 #canvaszoomlabel {

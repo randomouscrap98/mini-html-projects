@@ -15,7 +15,8 @@ var globals =
    pendingStroke: {},
    scheduledScrolls: [],
    scheduledMessages: [],
-   scheduledPages: []
+   scheduledPages: [],
+   scheduledLines: []
 };
 
 var constants =
@@ -178,7 +179,14 @@ function getPlaybackSpeed() {
       Number(playbackmodifier.querySelector("[data-selected]").id.replace("playback",""));
 }
 function getPage() { return pageselect.value; }
-function setPage(v) { pageselect.value = v; }
+function setPage(v) { 
+   if(pageselect.querySelector(`[value="${v}"]`))
+   {
+      pageselect.value = v; 
+      return true;
+   }
+   return false;
+}
 //function getPageNumber() { return Number(pagenumber.textContent) - 1; }
 //function setPageNumber(v) { pagenumber.textContent = v+1; }
 function getLineSize() 
@@ -422,22 +430,22 @@ function setupClosable(element)
 
 function getClosable(element) { return element.querySelector(".closebutton"); }
 
-//function setDrawAbility(drawer, canvas, ability)
-//{
-//   if(ability)
-//   {
-//      drawer.Attach(canvas);
-//      canvas.setAttribute("data-drawactive", "");
-//   }
-//   else
-//   {
-//      if(drawer._canvas)
-//         drawer.Detach();
-//      else
-//         console.log("Canvas already detached");
-//      canvas.removeAttribute("data-drawactive");
-//   }
-//}
+function setDrawAbility(drawer, canvas, ability)
+{
+   if(ability)
+   {
+      drawer.Attach(canvas);
+      canvas.setAttribute("data-drawactive", "");
+   }
+   else
+   {
+      if(drawer._canvas)
+         drawer.Detach();
+      else
+         console.log("Canvas already detached");
+      canvas.removeAttribute("data-drawactive");
+   }
+}
 
 //This sets up a storage system on the checkbox given, so the state is
 //remembered. It can also run functions based on check state
@@ -464,9 +472,12 @@ function setupPageControls()
    pageselect.oninput = () => changePage(pageselect.value);
    newpagebutton.onclick = () => 
    {
-      var pagename = 
+      newpagebutton.setAttribute("data-disabled", "");
+      var pagename = globals.system.NewPageName();
       post(endpoint(globals.roomname), 
-      globals.system.parser.CreatePage(username.value, message.value));
+         globals.system.parser.CreatePage(new StreamDrawPageData(pagename)));
+      globals.pendingNewPage = pagename;
+      changePage(pagename); //We know the page isn't ready yet, but changePage is very lenient
    };
       //post(endpoint(globals.roomname), globals.system.parser.CreateMessage(username.value, message.value));
    //pagebackward.onclick = () => changePage(-1);
@@ -497,7 +508,7 @@ function setupPlaybackControls()
 function setupDrawer(canvas)
 {
    var drawer = new CanvasPerformer();
-   attachBasicDrawerAction(drawer);
+   attachBasicDrawerAction(canvas);
    CanvasUtilities.Clear(canvas);
    return drawer;
 }
@@ -534,12 +545,22 @@ function createSystem()
 //page to set rather than just the offset.
 function changePage(name) //increment, exact)
 {
-   CanvasUtilities.Clear(layer1);
-   CanvasUtilities.Clear(layer2);
-   globals.system.ResetDrawTracking();
-   setPage(name);
+   if(setPage(name) && globals.system.ScanAtEnd())
+   {
+      CanvasUtilities.Clear(layer1);
+      CanvasUtilities.Clear(layer2);
+      setDrawAbility(globals.drawer, layer1, globals.system.IsLastPage(name));
+      location.hash = "page-" + name; //(getPageNumber() + 1);
+      globals.pendingSetPage = null;
+   }
+   else
+   {
+      console.warn("Can't set page yet: pages aren't present!");
+      globals.pendingSetPage = name;
+   }
+   //globals.system.ResetDrawTracking();
+   //setPage(name);
    //setPageNumber(MathUtilities.MinMax((exact ? 0 : getPageNumber()) + increment, 0, 1000000));
-   location.hash = "page-" + name; //(getPageNumber() + 1);
 
    //if(getPageNumber() <= 0)
    //   pagebackward.setAttribute("data-disabled", "");
@@ -588,14 +609,14 @@ function setupChat()
 
 function setupExports()
 {
-   var url = new URL(location.href);
-   url.searchParams.set("export", "1");
-   document.getElementById("export").href = url.toString();
-   exportstatic.onclick = (e) =>
-   {
-      e.preventDefault();
-      performStaticExport();
-   };
+   //var url = new URL(location.href);
+   //url.searchParams.set("export", "1");
+   //document.getElementById("export").href = url.toString();
+   //exportstatic.onclick = (e) =>
+   //{
+   //   e.preventDefault();
+   //   performStaticExport();
+   //};
 }
 
 //function performStaticExport()
@@ -1089,6 +1110,27 @@ function frameFunction()
       messages.appendChild(fragment);
       globals.scheduledScrolls.push(messagecontainer);
    }
+   if(globals.scheduledPages.length > 0)
+   {
+      globals.scheduledPages.forEach(x =>
+      {
+         var option = document.createElement("option");
+         option.value = x.name;
+         option.innerHTML = `${x.number}:${x.name}`;
+         pageselect.appendChild(option);
+         //Sometimes, the page is set before any pages are available
+         if(x.name === globals.pendingSetPage)
+         {
+            changePage(x.name);
+         }
+         if(x.name === globals.pendingNewPage)
+         {
+            newpagebutton.removeAttribute("data-disabled");
+            globals.pendingNewPage = null;
+         }
+      });
+      globals.scheduledPages = [];
+   }
    //Now draw lines based on playback speed (if there are any)
    if(globals.scheduledLines.length > 0)
    {
@@ -1162,7 +1204,7 @@ function drawerTick(drawer, pending)
 {
    //Do NOTHING if the drawer is basically inactive! There's nothing to do on
    //each tick unless the drawer is trying to do things!
-   if(drawer.currentX !== null)
+   if(drawer.currentX !== null && drawer.currentX !== undefined)
    {
       //Dropper overrides other actions
       if(isDropperActive())

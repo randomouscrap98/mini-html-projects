@@ -15,8 +15,10 @@
    <body class="collapseall">
       <div id="window">
          <div id="scrollblock">
-            <canvas width="2000" height="4000" class="pixelated" id="layer1"></canvas>
+            <!-- Remember, layers are in reverse order so the "secondary" layer
+               is below. I expect layer 1 to be on top of layer 2, basically -->
             <canvas width="2000" height="4000" class="pixelated" id="layer2"></canvas>
+            <canvas width="2000" height="4000" class="pixelated" id="layer1"></canvas>
          </div>
          <div id="selectrectangle" data-rndcanvasallowtarget class="inert" style="display:none;"></div>
       </div>
@@ -118,10 +120,11 @@
                <input data-notusedchecked="true" type="checkbox" id="autofollow"></input>Auto</label>-->
             <hr>
             <em>Export:</em>
-            <a href="" target="_blank" id="export" data-hidepagereadonly
+            <!--<a href="" target="_blank" id="export" data-hidepagereadonly
                title="Export page as-is (readonly), requires javascript to view">Functional</a>
-            <a href="#" id="exportstatic" title="Export journal as images in svg or pure html">Static</a>
-            <a href="#" id="viewonly" title="Link to readonly page without any room information, useful for sharing">Readonly</a>
+            <a href="#" id="exportstatic" title="Export journal as images in svg or pure html">Static</a>-->
+            <a href="#" id="viewonly" title="Link to readonly page without any
+            room information, useful for sharing">Readonly</a>
          </div>
          <div id="systemcontrols" class="controls">
             <div id="version" class="center muted text">v?</div>

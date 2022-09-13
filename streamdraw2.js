@@ -484,6 +484,26 @@ StreamDrawSystem.prototype.FindPage = function(name)
    return false;
 };
 
+StreamDrawSystem.prototype.NewPageName = function()
+{
+   var baseName = (new Date()).toISOString().substr(0, 10);
+   var counter = 0;
+
+   for(var i = 0; i < this.pages.length; i++)
+      if(this.pages[i].name.startsWith(baseName))
+         counter++;
+
+   if(counter > 0)
+      return `${baseName}(${counter + 1})`;
+   else
+      return baseName;
+};
+
+StreamDrawSystem.prototype.IsLastPage = function(name)
+{
+   return this.pages.length > 0 && this.pages[this.pages.length - 1].name === name;
+};
+
 
 StreamDrawSystem.prototype.Scan = function(messageEvent, pageEvent, parseLimit, scanLimit)
 {
@@ -513,6 +533,7 @@ StreamDrawSystem.prototype.Scan = function(messageEvent, pageEvent, parseLimit, 
       {
          var pageData = me.parser.eparser.ParsePage(me.rawData, start, length);
          pageData.start = end; //end is the start of the next section, which is the first non-page data in our page
+         pageData.number = me.pages.length + 1;
          me.pages.push(pageData); //just assume all new page data is a new page.
 
          if(pageEvent)
