@@ -16,7 +16,9 @@ var globals =
    scheduledScrolls: [],
    scheduledMessages: [],
    scheduledPages: [],
-   scheduledLines: []
+   scheduledLines: [],
+   layerTop : 0,
+   layerLeft : 0
 };
 
 var constants =
@@ -29,7 +31,8 @@ var constants =
    maxMessageRender : 100, //per frame
    maxScan : 10000,        //per frame; should be about the max line draw per frame
    maxParse : 2000,
-   autoDrawLineChunk : 90 //Be VERY CAREFUL with this value! Harmonic series...
+   autoDrawLineChunk : 90,//Be VERY CAREFUL with this value! Harmonic series...
+   nonDrawTools : [ "exportrect", "pan" ]
 };
 
 var palettes = 
@@ -203,7 +206,16 @@ function getLineSize()
 function getLineColor() { return colortext.value; }
 function setPickerColor(c) { colortext.value = c; color.value = c; }
 function setLineColor(color) { setPickerColor(color); updateCurrentSwatch(color); }
-function getTool() { return tools.querySelector("[data-selected]").id.replace("tool_", ""); }
+function getToolName(tool) { return tool.id.replace("tool_", ""); }
+function getTool() { 
+   var selectedTool = tools.querySelector("[data-selected]"); //.id.replace("tool_", ""); 
+   if(selectedTool.hasAttribute("disabled"))
+      return false;
+   else
+      return getToolName(selectedTool);
+}
+function toolIsRect(tool) { return tool && (tool.indexOf("rect") >= 0); }
+function toolIsErase(tool) { return tool && (tool.indexOf("erase") >= 0); }
 function isDropperActive() { return dropper.hasAttribute("data-selected"); }
 function setDropperActive(active) 
 { 
@@ -407,6 +419,14 @@ function setupSpecialControls()
          layerselect.textContent = "◓";
       }
    };
+
+   panreset.onclick = () =>
+   {
+      layer1.style.top = 0;
+      layer1.style.left = 0;
+      layer2.style.top = 0;
+      layer2.style.left = 0;
+   };
 }
 
 // Refresh the entire palette display (minus the standard color input) based on
@@ -456,26 +476,22 @@ function setupClosable(element)
 
 function getClosable(element) { return element.querySelector(".closebutton"); }
 
-//function setDrawAbility(drawer, canvas, ability)
 function setDrawAbility(ability)
 {
+   var allTools = [...tools.querySelectorAll("button")];
+   var disableTools = allTools.filter(x => !constants.nonDrawTools.includes(getToolName(x)));
+
    if(ability)
    {
-      //if(!globals.drawer._canvas)
-      //   globals.drawer.Attach(layer1);
       layer1.setAttribute("data-drawactive", "");
       document.body.setAttribute("data-drawactive", "");
-      globals.canDraw = true;
+      disableTools.forEach(x => x.removeAttribute("disabled"));
    }
    else
    {
-      //if(globals.drawer._canvas)
-      //   globals.drawer.Detach();
-      //else
-      //   console.log("Canvas already detached");
       layer1.removeAttribute("data-drawactive");
       document.body.removeAttribute("data-drawactive");
-      globals.canDraw = false;
+      disableTools.forEach(x => x.setAttribute("disabled", ""));
    }
 }
 
@@ -1039,10 +1055,7 @@ function trackPendingStroke(drw, pending)
       pending.size = getLineSize();
       pending.tool = getTool();
       pending.layer = getLayer();
-      //pending.page = getPage(); //getPageNumber();
-      pending.erasing = pending.tool.indexOf("erase") >= 0;
-      //pending.ignoredColors = getIgnoredColors(); //WILL BE an empty list, NOT falsy!
-      //pending.complex = MiniDraw.GetComplexRectFromIgnore(pending.ignoredColors); //Will be falsy on no complex
+      pending.erasing = toolIsErase(pending.tool); 
       pending.color = pending.erasing ? null : getLineColor();
       pending.lines = [];
    }
@@ -1051,7 +1064,7 @@ function trackPendingStroke(drw, pending)
 
    //There are times when an active stroke will not accept new lines (because
    //it's too long or something, for instance a huge flood fill)
-   if(pending.accepting)
+   if(pending.accepting && pending.tool)
    {
       //Simple stroke
       if(pending.tool == "eraser" || pending.tool == "pen")
@@ -1077,7 +1090,7 @@ function trackPendingStroke(drw, pending)
          //currentLines.push(...MiniDraw2.Flood(context, drw.currentX, drw.currentY, 
          //   pending.color, constants.maxLines));
       }
-      else if (pending.tool.indexOf("rect") >= 0)
+      else if (toolIsRect(pending.tool))
       {
          pending.type = "rectangles"; //globals.system.core.symbols.rectangles;
          pending.displayAtEnd = true;
@@ -1116,13 +1129,6 @@ function trackPendingStroke(drw, pending)
 
    return currentLines;
 }
-
-//function copyToBackbuffer(canvas)
-//{
-//   var context = buffer1.getContext("2d");
-//   CanvasUtilities.CopyInto(context, canvas);
-//   return context;
-//}
 
 function drawLines(lines, context, overridecolor) 
 { 
@@ -1295,14 +1301,10 @@ function drawerTick(drawer, pending)
       }
       else
       {
-         //console.log("there are lines being tracked right now at ", drawer.currentX, drawer.currentY);
          //This creates pending lines from our current drawing tool/etc for
          //posting later. The generated lines are drawn NOW though, so the line
          //data must be correct/working/etc (including stuff like complex func)
-         var pendingDrawLines = trackPendingStroke(drawer, pending);
-
-         if(globals.canDraw)
-            drawLines(pendingDrawLines);
+         drawLines(trackPendingStroke(drawer, pending));
 
          //These are NOT performed every frame because the drawing events are
          //NOT synchronized to the frame, so we could be removing that very
@@ -1316,10 +1318,28 @@ function drawerTick(drawer, pending)
 
    if(drawer.currentlyDrawing)
    {
-      if(getTool().indexOf("rect") >= 0)
+      var currentTool = getTool();
+      if(toolIsRect(currentTool))
       {
          selectRect(drawer.startAction.clientX, drawer.startAction.clientY,
             drawer.currentAction.clientX, drawer.currentAction.clientY);
+      }
+      else if(currentTool === "pan")
+      {
+         //if(drawer.lastAction) //lastX !== null && drawer.lastY !== null && drawer.lastX >= 0 && drawer.lastY >= 0)
+         //{
+         var xMove = drawer.currentAction.clientX - drawer.startAction.clientX;
+         var yMove = drawer.currentAction.clientY - drawer.startAction.clientY;
+         //console.log(xMove, yMove);
+         layer1.style.top = globals.layerTop + yMove + "px";
+         layer1.style.left = globals.layerLeft + xMove + "px";
+         layer2.style.top = globals.layerTop + yMove + "px";
+         layer2.style.left = globals.layerLeft + xMove + "px";
+            //StyleUtilities.AbsoluteTranslate(layer1, "top", yMove);
+            //StyleUtilities.AbsoluteTranslate(layer1, "left", xMove);
+            //StyleUtilities.AbsoluteTranslate(layer2, "top", yMove);
+            //StyleUtilities.AbsoluteTranslate(layer2, "left", xMove);
+         //}
       }
    }
    //Not currently drawing, post lines since we're done (why is this in the frame drawer again?)
@@ -1327,6 +1347,8 @@ function drawerTick(drawer, pending)
    {
       //Hopefully this doesn't become a performance concern
       clearSelectRect();
+      globals.layerTop = Number(layer1.style.top.replace("px", ""));
+      globals.layerLeft = Number(layer1.style.left.replace("px", ""));
 
       //Don't need to continuously look at the pending stroke when there is none
       if(pending.active)
@@ -1335,7 +1357,7 @@ function drawerTick(drawer, pending)
             exportSection(pending.lines[0]);
 
          //This saves us in a few ways: some tools don't actually generate lines!
-         if(pending.lines.length > 0 && pending.postLines && globals.canDraw)
+         if(pending.lines.length > 0 && pending.postLines)
          {
             var ldata = globals.system.parser.CreateLines(pending.type,
                pending.layer, pending.lines, pending.ignoredColors);

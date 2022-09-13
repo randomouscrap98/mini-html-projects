@@ -1117,6 +1117,10 @@ var StyleUtilities =
    {
       return ["image-rendering:moz-crisp-edges","image-rendering:crisp-edges",
          "image-rendering:optimizespeed","image-rendering:pixelated"];
+   },
+   AbsoluteTranslate : function(element, key, amount)
+   {
+      element.style[key] = Number(element.style[key].replace("px", "")) + amount + "px";
    }
 };
 

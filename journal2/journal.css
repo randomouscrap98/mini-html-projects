@@ -16,6 +16,11 @@ body[data-pagereadonly] [data-hidepagereadonly] {
    display: none !important;
 }
 
+:disabled {
+   filter: grayscale(0.8);
+   opacity: 0.6;
+}
+
 /*canvas {
    background-color: white;
 }*/

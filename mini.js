@@ -268,6 +268,7 @@ function attachBasicDrawerAction(drawer)
          drawer.currentX = data.x;
          drawer.currentY = data.y;
          drawer.currentlyDrawing = true;
+         drawer.lastAction = drawer.currentAction;
          drawer.currentAction = data;
       }
 
@@ -281,6 +282,7 @@ function attachBasicDrawerAction(drawer)
       {
          drawer.ignoreStroke = false;
          drawer.currentlyDrawing = false;
+         drawer.currentAction = null;
       }
    };
 }
