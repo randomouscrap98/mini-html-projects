@@ -486,7 +486,9 @@ StreamDrawSystem.prototype.FindPage = function(name)
 
 StreamDrawSystem.prototype.NewPageName = function()
 {
-   var baseName = (new Date()).toISOString().substr(0, 10);
+   var dt = new Date();
+   var baseName = dt.getFullYear() + "-" + String(dt.getMonth() + 1).padStart(2, '0') + "-" + String(dt.getDate()).padStart(2, '0');
+   //(new Date()).toLocaleDateString("ja").replaceAll("/", "-").substr(0, 10);
    var counter = 0;
 
    for(var i = 0; i < this.pages.length; i++)

@@ -94,7 +94,10 @@ function windowOnLoad()
       setupPageControls();
       setupExports();
 
-      globals.context = layer1.getContext("2d");
+      globals.contexts = [ 
+         layer1.getContext("2d"),
+         layer2.getContext("2d")
+      ];
       globals.system = createSystem(); 
 
       handlePageHash(location.hash);
@@ -132,6 +135,7 @@ function windowOnLoad()
          //   () => setDrawAbility(globals.drawer, drawing, true),
          //   () => setDrawAbility(globals.drawer, drawing, false));
          hfliptoggle.oninput = (e) => globals.drawer.SetInvert(hfliptoggle.checked);
+         setupSpecialControls();
       }
 
       //Skip data retrieval if we're exported already
@@ -187,6 +191,7 @@ function setPage(v) {
    }
    return false;
 }
+function getLayer() { return Number(layerselect.getAttribute("data-layer")); }
 //function getPageNumber() { return Number(pagenumber.textContent) - 1; }
 //function setPageNumber(v) { pagenumber.textContent = v+1; }
 function getLineSize() 
@@ -383,6 +388,24 @@ function setupColorControls()
    refreshPaletteDialog();
 }
 
+function setupSpecialControls()
+{
+   layerselect.onclick = () =>
+   {
+      var layer = layerselect.getAttribute("data-layer");
+      if(layer === "0")
+      {
+         layerselect.setAttribute("data-layer", "1");
+         layerselect.textContent = "◒";
+      }
+      else
+      {
+         layerselect.setAttribute("data-layer", "0");
+         layerselect.textContent = "◓";
+      }
+   };
+}
+
 // Refresh the entire palette display (minus the standard color input) based on
 // the "data-palette" attribute
 function refreshPaletteDialog()
@@ -430,21 +453,24 @@ function setupClosable(element)
 
 function getClosable(element) { return element.querySelector(".closebutton"); }
 
-function setDrawAbility(drawer, canvas, ability)
+//function setDrawAbility(drawer, canvas, ability)
+function setDrawAbility(ability)
 {
    if(ability)
    {
-      if(!drawer._canvas)
-         drawer.Attach(canvas);
-      canvas.setAttribute("data-drawactive", "");
+      if(!globals.drawer._canvas)
+         globals.drawer.Attach(layer1);
+      layer1.setAttribute("data-drawactive", "");
+      document.body.setAttribute("data-drawactive", "");
    }
    else
    {
-      if(drawer._canvas)
-         drawer.Detach();
+      if(globals.drawer._canvas)
+         globals.drawer.Detach();
       else
          console.log("Canvas already detached");
-      canvas.removeAttribute("data-drawactive");
+      layer1.removeAttribute("data-drawactive");
+      document.body.removeAttribute("data-drawactive");
    }
 }
 
@@ -550,9 +576,11 @@ function changePage(name) //increment, exact)
    {
       CanvasUtilities.Clear(layer1);
       CanvasUtilities.Clear(layer2);
-      setDrawAbility(globals.drawer, layer1, globals.system.IsLastPage(name));
+      //setDrawAbility(globals.drawer, layer1, globals.system.IsLastPage(name));
+      setDrawAbility(globals.system.IsLastPage(name));
       location.hash = "page-" + name; //(getPageNumber() + 1);
       globals.pendingSetPage = null;
+      globals.scheduledLines = []; //Remove anything waiting to be drawn, this is a new page
       globals.drawTracking = globals.system.InitializeLineScan(name);
    }
    else
@@ -977,7 +1005,7 @@ function trackPendingStroke(drw, pending)
       pending.postLines = true;
       pending.size = getLineSize();
       pending.tool = getTool();
-      pending.layer = 0;
+      pending.layer = getLayer();
       //pending.page = getPage(); //getPageNumber();
       pending.erasing = pending.tool.indexOf("erase") >= 0;
       //pending.ignoredColors = getIgnoredColors(); //WILL BE an empty list, NOT falsy!
@@ -1066,12 +1094,14 @@ function trackPendingStroke(drw, pending)
 function drawLines(lines, context, overridecolor) 
 { 
    //console.log("Drawing: " + lines.length + " lines");
-   context = context || globals.context;
+   //context = context || globals.context;
    lines.forEach(x => 
    {
       if(overridecolor)
          x.color = overridecolor;
-      MiniDraw2.SimpleRectLine(context, x);
+      var layer = x.layer || getLayer(); //IS THIS SAFE??
+      var ctx = context || globals.contexts[layer];
+      MiniDraw2.SimpleRectLine(ctx, x);
    });
    return lines; 
 }
@@ -1272,7 +1302,7 @@ function drawerTick(drawer, pending)
          if(pending.lines.length > 0 && pending.postLines)
          {
             var ldata = globals.system.parser.CreateLines(pending.type,
-               pending.page, pending.lines, pending.ignoredColors);
+               pending.layer, pending.lines, pending.ignoredColors);
             post(endpoint(globals.roomname), ldata, () => setStatus("ok"), () => setStatus("error"));
             if(pending.displayAtEnd)
                drawLines(pending.lines);
