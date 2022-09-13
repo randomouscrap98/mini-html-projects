@@ -134,7 +134,7 @@ function windowOnLoad()
          //setupToggleSetting("drawtoggle", drawtoggle, 
          //   () => setDrawAbility(globals.drawer, drawing, true),
          //   () => setDrawAbility(globals.drawer, drawing, false));
-         hfliptoggle.oninput = (e) => globals.drawer.SetInvert(hfliptoggle.checked);
+         hfliptoggle.oninput = (e) => globals.drawer.SetInvert(hfliptoggle.checked, false, [ layer2 ]);
          setupSpecialControls();
          //setDrawAbility(true); //this used to be a different system
       }
@@ -396,11 +396,13 @@ function setupSpecialControls()
       var layer = layerselect.getAttribute("data-layer");
       if(layer === "0")
       {
+         layerselect.setAttribute("data-selected", "");
          layerselect.setAttribute("data-layer", "1");
          layerselect.textContent = "◒";
       }
       else
       {
+         layerselect.removeAttribute("data-selected");
          layerselect.setAttribute("data-layer", "0");
          layerselect.textContent = "◓";
       }
@@ -526,6 +528,23 @@ function setupPlaybackControls()
    //   scrollbar.refreshScroll();
    //   setSetting("canvassize", size);
    //};
+
+   //var setZoom = (x) => 
+   //{
+   //    
+   //};
+   var _setZoom = () =>
+   {
+      var zoom = Number(canvaszoom.value);
+      CanvasUtilities.SetScaling(layer1, zoom);
+      CanvasUtilities.SetScaling(layer2, zoom);
+      setSetting("canvassize", zoom);
+      //Do something with panning here
+   };
+
+   canvaszoom.oninput = _setZoom;
+   canvaszoom.value = getSetting("canvassize") || 1;
+   _setZoom();
 
    //[...document.querySelectorAll("#canvasmodifier button")].forEach(x =>
    //{
@@ -1113,7 +1132,7 @@ function drawLines(lines, context, overridecolor)
    {
       if(overridecolor)
          x.color = overridecolor;
-      var layer = x.layer || getLayer(); //IS THIS SAFE??
+      var layer = x.layer === undefined ? getLayer() : x.layer; //IS THIS SAFE??
       var ctx = context || globals.contexts[layer];
       MiniDraw2.SimpleRectLine(ctx, x);
    });
@@ -1331,17 +1350,20 @@ function drawerTick(drawer, pending)
 
 function doDropper(x, y)
 {
-   alert("No dropper right now");
    //var ctx = copyToBackbuffer(globals.drawer._canvas);
-   //var color = CanvasUtilities.GetColor(ctx, x, y);
+   var color = CanvasUtilities.GetColor(globals.contexts[0], x, y);
+
+   //If layer 1 invisible here, check bottom layer
+   if(!color.a)
+      color = CanvasUtilities.GetColor(globals.contexts[1], x, y);
    //console.log("Dropper: ", color);
 
-   ////Don't activate the dropper on non-colors
-   //if(color.a)
-   //{
-   //   setLineColor(color.ToHexString());
-   //   setDropperActive(false);
-   //}
+   //Don't activate the dropper on non-colors
+   if(color.a)
+   {
+      setLineColor(color.ToHexString());
+      setDropperActive(false);
+   }
 }
 
 function hashtag(e)

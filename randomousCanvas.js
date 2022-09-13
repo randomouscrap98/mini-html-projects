@@ -266,11 +266,16 @@ CanvasPerformer.prototype.Detach = function()
    this._canvas = false;
 };
 
-CanvasPerformer.prototype.SetInvert = function(horizontal, vertical)
+CanvasPerformer.prototype.SetInvert = function(horizontal, vertical, extraCanvases)
 {
    this.horizontalInvert = horizontal;
    this.verticalInvert = vertical;
-   this._canvas.style.transform = (horizontal ? "scalex(-1) " : "") + (vertical ? "scaley(-1) " : "");
+   extraCanvases = extraCanvases || [];
+   extraCanvases.push(this._canvas);
+
+   for(var i = 0; i < extraCanvases.length; i++)
+      extraCanvases[i].style.transform = (horizontal ? "scalex(-1) " : "") + (vertical ? "scaley(-1) " : "");
+   //this._canvas.style.transform = (horizontal ? "scalex(-1) " : "") + (vertical ? "scaley(-1) " : "");
 };
 
 CanvasPerformer.prototype.Perform = function(e, cursorData, canvas)
