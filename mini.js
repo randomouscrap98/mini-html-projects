@@ -588,7 +588,7 @@ var MiniDraw2 =
    //MiniDraw lines that could be used to represent the flood. Currently it
    //fails if it goes over the maxLines generated. The "sampleContexts" should
    //be an array of contexts to search through for flood fill ability
-   Flood : function(context, sampleContexts, cx, cy, color, maxLines)
+   Flood : function(context, extraSamples, cx, cy, color, maxLines)
    {
       //Do the east/west thing, generate the lines, IGNORE future strokes
       //Using a buffer because working with image data can (does) cause it to go
@@ -596,26 +596,27 @@ var MiniDraw2 =
       var currentLines = [];
       var width = context.canvas.width;
       var height = context.canvas.height;
-      var iDatas = sampleContexts.map(x => x.getImageData(0, 0, width, height));
       var ctxData = context.getImageData(0, 0, width, height);
+      var iDatas = [ctxData, ...extraSamples.map(x => x.getImageData(0, 0, width, height))];
       var queue = [[Math.round(cx), Math.round(cy)]];
-      var rIndex = MiniDraw.GetIndex(ctxData, cx, cy);
-      var replaceColor = [ctxData.data[rIndex], ctxData.data[rIndex+1], ctxData.data[rIndex+2], ctxData.data[rIndex+3]];
-      var replaceColorString = (new Color(replaceColor[0], replaceColor[1], replaceColor[2], replaceColor[3]))
-         .ToHexString();
-      console.log("Flood into color: ", replaceColor, cx, cy);
+      var rIndex = MiniDraw2.GetIndex(ctxData, cx, cy);
+      var replaceColors = iDatas.map(x => [x.data[rIndex], x.data[rIndex+1], x.data[rIndex+2], x.data[rIndex+3]]);
+      var replaceColorString = (new Color(
+         replaceColors[0][0], replaceColors[0][1], replaceColors[0][2], replaceColors[0][3])
+      ).ToHexString();
+      console.log("Flood into color: ", replaceColors, cx, cy);
       maxLines = maxLines || 999999999;
       var west, east, i, j;
       var shouldFill = (x, y) =>
       {
          if(x < 0 || y < 0 || x >= width || y >= height)
             return false;
-         var i = MiniDraw.GetIndex(ctxData, x, y);
+         var i = MiniDraw2.GetIndex(ctxData, x, y);
 
          for(var sfi = 0; sfi < iDatas.length; sfi++)
          {
-            if(!(iDatas[sfi].data[i] == replaceColor[0] && iDatas[sfi].data[i + 1] == replaceColor[1] &&
-               iDatas[sfi].data[i + 2] == replaceColor[2] && iDatas[sfi].data[i + 3] == replaceColor[3]))
+            if(!(iDatas[sfi].data[i] == replaceColors[sfi][0] && iDatas[sfi].data[i + 1] == replaceColors[sfi][1] &&
+               iDatas[sfi].data[i + 2] == replaceColors[sfi][2] && iDatas[sfi].data[i + 3] == replaceColors[sfi][3]))
                return false;
          }
 
@@ -635,7 +636,7 @@ var MiniDraw2 =
 
             //NOTE: flood fill doesn't CARE about fancy additional complexity like
             //rectangle drawing or complex line fill, WE are the complexity already
-            currentLines.push(new MiniDraw.LineData(1, color, west, p[1], east, p[1]));
+            currentLines.push(new MiniDraw2.LineData(1, color, west, p[1], east, p[1]));
 
             //Don't allow huge fills at all, just quit
             if(currentLines.length > maxLines)

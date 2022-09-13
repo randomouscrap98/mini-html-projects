@@ -279,21 +279,14 @@ input[type="checkbox"] { margin-right: 0.2em; }
 #pageselect { 
    width: 100%; 
    color: #333;
-   /*background: #dedada;*/
    border-radius: 0;
    background: white;
    border-style: solid;
    border-width: 5px 0px;
-   border-color: #f05050; /*red;*/
-   /*border-top: 5px solid red;
-   border-bottom: 5px solid red;*/
+   border-color: #AAA; /*#f05050; */
 }
 [data-drawactive] #pageselect {
-   /*border: 2px solid lawngreen;*/
-   border-color: #90f090; /*lawngreen;*/
-   /*background: #d9ffe6;*/
-   /*border-top: 5px solid green;
-   border-bottom: 5px solid green;*/
+   border-color: #90f090; 
 }
 #newpagebutton { 
    width: 100%;
