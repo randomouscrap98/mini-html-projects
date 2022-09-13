@@ -1182,13 +1182,13 @@ var CanvasUtilities =
       if(copyImage) CanvasUtilities.CopyInto(newCanvas.getContext("2d"), canvas, -x, -y);
       return newCanvas;
    },
-   CopyInto : function(context, canvas, x, y)
+   CopyInto : function(context, canvas, x, y, composite)
    {
       //x and y are the offset locations to place the copy into on the
       //receiving canvas
       x = x || 0; y = y || 0;
       var oldComposition = context.globalCompositeOperation;
-      context.globalCompositeOperation = "copy";
+      context.globalCompositeOperation = composite || "copy";
       CanvasUtilities.OptimizedDrawImage(context, canvas, x, y);
       context.globalCompositeOperation = oldComposition;
    },

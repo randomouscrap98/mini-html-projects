@@ -136,6 +136,7 @@ function windowOnLoad()
          //   () => setDrawAbility(globals.drawer, drawing, false));
          hfliptoggle.oninput = (e) => globals.drawer.SetInvert(hfliptoggle.checked);
          setupSpecialControls();
+         //setDrawAbility(true); //this used to be a different system
       }
 
       //Skip data retrieval if we're exported already
@@ -458,19 +459,21 @@ function setDrawAbility(ability)
 {
    if(ability)
    {
-      if(!globals.drawer._canvas)
-         globals.drawer.Attach(layer1);
+      //if(!globals.drawer._canvas)
+      //   globals.drawer.Attach(layer1);
       layer1.setAttribute("data-drawactive", "");
       document.body.setAttribute("data-drawactive", "");
+      globals.canDraw = true;
    }
    else
    {
-      if(globals.drawer._canvas)
-         globals.drawer.Detach();
-      else
-         console.log("Canvas already detached");
+      //if(globals.drawer._canvas)
+      //   globals.drawer.Detach();
+      //else
+      //   console.log("Canvas already detached");
       layer1.removeAttribute("data-drawactive");
       document.body.removeAttribute("data-drawactive");
+      globals.canDraw = false;
    }
 }
 
@@ -537,6 +540,7 @@ function setupDrawer(canvas)
    var drawer = new CanvasPerformer();
    attachBasicDrawerAction(drawer);
    CanvasUtilities.Clear(canvas);
+   drawer.Attach(canvas);
    return drawer;
 }
 
@@ -869,11 +873,21 @@ function setupExports()
 
 function copySection(ld)
 {
-   //TODO: This will need to export multiple layers into a single layer!
-   var exportCanvas = CanvasUtilities.CreateCopy(drawing, true, 
+   var copyLayer = l => CanvasUtilities.CreateCopy(l, true, 
       Math.min(ld.x1, ld.x2), Math.min(ld.y1, ld.y2), 
       Math.abs(ld.x1 - ld.x2), Math.abs(ld.y1 - ld.y2));
-   CanvasUtilities.SwapColor(exportCanvas.getContext("2d"), new Color(0,0,0,0), new Color(255,255,255,1), 0);
+   var el1 = copyLayer(layer1); 
+   var el2 = copyLayer(layer2); 
+
+   //Now, you'll need to copy layer 1 OVER layer 2
+   var exportCanvas = el2;
+   var exportContext = exportCanvas.getContext("2d");
+
+   //When copying, preserve transparency so it looks like it does normally
+   CanvasUtilities.CopyInto(exportContext, el1, 0, 0, "source-over");
+
+   //Still need a white background
+   CanvasUtilities.SwapColor(exportContext, new Color(0,0,0,0), new Color(255,255,255,1), 0);
    exportCanvas.className = "pixelated";
    return exportCanvas;
 }
@@ -1266,7 +1280,10 @@ function drawerTick(drawer, pending)
          //This creates pending lines from our current drawing tool/etc for
          //posting later. The generated lines are drawn NOW though, so the line
          //data must be correct/working/etc (including stuff like complex func)
-         drawLines(trackPendingStroke(drawer, pending));
+         var pendingDrawLines = trackPendingStroke(drawer, pending);
+
+         if(globals.canDraw)
+            drawLines(pendingDrawLines);
 
          //These are NOT performed every frame because the drawing events are
          //NOT synchronized to the frame, so we could be removing that very
@@ -1299,7 +1316,7 @@ function drawerTick(drawer, pending)
             exportSection(pending.lines[0]);
 
          //This saves us in a few ways: some tools don't actually generate lines!
-         if(pending.lines.length > 0 && pending.postLines)
+         if(pending.lines.length > 0 && pending.postLines && globals.canDraw)
          {
             var ldata = globals.system.parser.CreateLines(pending.type,
                pending.layer, pending.lines, pending.ignoredColors);
