@@ -434,7 +434,8 @@ function setDrawAbility(drawer, canvas, ability)
 {
    if(ability)
    {
-      drawer.Attach(canvas);
+      if(!drawer._canvas)
+         drawer.Attach(canvas);
       canvas.setAttribute("data-drawactive", "");
    }
    else
@@ -508,7 +509,7 @@ function setupPlaybackControls()
 function setupDrawer(canvas)
 {
    var drawer = new CanvasPerformer();
-   attachBasicDrawerAction(canvas);
+   attachBasicDrawerAction(drawer);
    CanvasUtilities.Clear(canvas);
    return drawer;
 }
@@ -552,6 +553,7 @@ function changePage(name) //increment, exact)
       setDrawAbility(globals.drawer, layer1, globals.system.IsLastPage(name));
       location.hash = "page-" + name; //(getPageNumber() + 1);
       globals.pendingSetPage = null;
+      globals.drawTracking = globals.system.InitializeLineScan(name);
    }
    else
    {
@@ -757,85 +759,85 @@ function setupExports()
 //   }, 100);
 //}
 
-function performFunctionalExport(room)
-{
-   //First, throw up the cover screen
-   showCover({ 
-      title: "Functional Export",
-      showContainer: true
-   });
-
-   appendScroll(coverscreencontainer, "Please wait, downloading + stitching data + scripts");
-
-   //Then, go download all the header stuff and jam them into their respective elements
-   var styles = document.head.querySelectorAll('link[rel="stylesheet"]');
-   var scripts = document.head.querySelectorAll('script');
-
-   var stylesLeft = styles.length, scriptsLeft = scripts.length;
-
-   var finalize = () =>
-   {
-      appendScroll(coverscreencontainer, `Remaining Scripts: ${scriptsLeft}, Styles: ${stylesLeft}`);
-      if(!(stylesLeft == 0 && scriptsLeft == 0)) return;
-
-      //document.body.setAttribute("data-export", "");
-
-      //We can't close the functional export screen (since we mangled the html)
-      //so... oops, this is a little janky
-      hide(coverscreen);
-      var htmlBlob = new Blob([document.documentElement.outerHTML], {type:"text/plain;charset=utf-8"});
-      show(coverscreen);
-      appendScroll(coverscreencontainer, "Export complete! You can close the window when you're done");
-      var activeUrl = window.URL.createObjectURL(htmlBlob);
-      var downloadLink = document.createElement("a");
-      downloadLink.textContent = "Download Functional HTML";
-      downloadLink.href = activeUrl;
-      downloadLink.download = `${room}_full.html`;
-      downloadLink.style.display = "block";
-      appendScroll(coverscreencontainer, downloadLink);
-   };
-
-   $.get(endpoint(room), data => 
-   { 
-      var preamble = parsePreamble(data);
-
-      //Scripts MUST come AFTER data (since we need to insert it INTO a script)
-      [...scripts].forEach(x =>
-      {
-         $.get(x.src, d =>
-         { 
-            if(x.src.indexOf("journal.js") >= 0)
-            {
-               console.log("MATCH: ", x.src);
-               d = 'var exportData = { roomname: ' + JSON.stringify(room) + 
-                   ', roomdata: \n' + JSON.stringify(data) + '\n};\n' + d;
-            }
-
-            x.innerHTML = d;
-            x.removeAttribute("src");
-            scriptsLeft--;
-            finalize(); 
-         });
-      });
-
-      //This won't do anything, but we should always make sure...
-      //what if there are NO scripts and NO styles?
-      finalize(); 
-   });
-
-   [...styles].forEach(x =>
-   {
-      $.get(x.href, d =>
-      { 
-         var s = document.createElement("style");
-         s.innerHTML = d;
-         document.head.appendChild(s);
-         x.parentNode.removeChild(x);
-         stylesLeft--;
-         finalize(); 
-      });
-   });
-}
+//function performFunctionalExport(room)
+//{
+//   //First, throw up the cover screen
+//   showCover({ 
+//      title: "Functional Export",
+//      showContainer: true
+//   });
+//
+//   appendScroll(coverscreencontainer, "Please wait, downloading + stitching data + scripts");
+//
+//   //Then, go download all the header stuff and jam them into their respective elements
+//   var styles = document.head.querySelectorAll('link[rel="stylesheet"]');
+//   var scripts = document.head.querySelectorAll('script');
+//
+//   var stylesLeft = styles.length, scriptsLeft = scripts.length;
+//
+//   var finalize = () =>
+//   {
+//      appendScroll(coverscreencontainer, `Remaining Scripts: ${scriptsLeft}, Styles: ${stylesLeft}`);
+//      if(!(stylesLeft == 0 && scriptsLeft == 0)) return;
+//
+//      //document.body.setAttribute("data-export", "");
+//
+//      //We can't close the functional export screen (since we mangled the html)
+//      //so... oops, this is a little janky
+//      hide(coverscreen);
+//      var htmlBlob = new Blob([document.documentElement.outerHTML], {type:"text/plain;charset=utf-8"});
+//      show(coverscreen);
+//      appendScroll(coverscreencontainer, "Export complete! You can close the window when you're done");
+//      var activeUrl = window.URL.createObjectURL(htmlBlob);
+//      var downloadLink = document.createElement("a");
+//      downloadLink.textContent = "Download Functional HTML";
+//      downloadLink.href = activeUrl;
+//      downloadLink.download = `${room}_full.html`;
+//      downloadLink.style.display = "block";
+//      appendScroll(coverscreencontainer, downloadLink);
+//   };
+//
+//   $.get(endpoint(room), data => 
+//   { 
+//      var preamble = parsePreamble(data);
+//
+//      //Scripts MUST come AFTER data (since we need to insert it INTO a script)
+//      [...scripts].forEach(x =>
+//      {
+//         $.get(x.src, d =>
+//         { 
+//            if(x.src.indexOf("journal.js") >= 0)
+//            {
+//               console.log("MATCH: ", x.src);
+//               d = 'var exportData = { roomname: ' + JSON.stringify(room) + 
+//                   ', roomdata: \n' + JSON.stringify(data) + '\n};\n' + d;
+//            }
+//
+//            x.innerHTML = d;
+//            x.removeAttribute("src");
+//            scriptsLeft--;
+//            finalize(); 
+//         });
+//      });
+//
+//      //This won't do anything, but we should always make sure...
+//      //what if there are NO scripts and NO styles?
+//      finalize(); 
+//   });
+//
+//   [...styles].forEach(x =>
+//   {
+//      $.get(x.href, d =>
+//      { 
+//         var s = document.createElement("style");
+//         s.innerHTML = d;
+//         document.head.appendChild(s);
+//         x.parentNode.removeChild(x);
+//         stylesLeft--;
+//         finalize(); 
+//      });
+//   });
+//}
 
 function copySection(ld)
 {
@@ -994,7 +996,7 @@ function trackPendingStroke(drw, pending)
       if(pending.tool == "eraser" || pending.tool == "pen")
       {
          pending.type = "stroke"; //globals.system.core.symbols.stroke;
-         currentLines.push(new MiniDraw.LineData(pending.size, pending.color,
+         currentLines.push(new MiniDraw2.LineData(pending.size, pending.color,
             Math.round(drw.lastX), Math.round(drw.lastY), 
             Math.round(drw.currentX), Math.round(drw.currentY),
             false)); //, pending.complex));
@@ -1005,9 +1007,14 @@ function trackPendingStroke(drw, pending)
          pending.type = "lines"; //globals.system.core.symbols.lines;
          pending.size = 1;
          pending.accepting = false; //DON'T do any more fills on this stroke!!
-         var context = copyToBackbuffer(drw._canvas);
-         currentLines.push(...MiniDraw.Flood(context, drw.currentX, drw.currentY, 
+         //var context = copyToBackbuffer(drw._canvas);
+         var context1 = layer1.getContext("2d");
+         var context2 = layer2.getContext("2d");
+         currentLines.push(...MiniDraw2.Flood(context1, [ context1, context2 ],
+            drw.currentX, drw.currentY, 
             pending.color, constants.maxLines));
+         //currentLines.push(...MiniDraw2.Flood(context, drw.currentX, drw.currentY, 
+         //   pending.color, constants.maxLines));
       }
       else if (pending.tool.indexOf("rect") >= 0)
       {
@@ -1022,7 +1029,7 @@ function trackPendingStroke(drw, pending)
          //is literally just one rectangle
          if(!pending.lines.length)
          {
-            pending.lines.push(new MiniDraw.LineData(pending.size, pending.color,
+            pending.lines.push(new MiniDraw2.LineData(pending.size, pending.color,
                Math.round(Math.max(drw.currentX,0)), Math.round(Math.max(drw.currentY,0)),
                Math.round(Math.max(drw.currentX,0)), Math.round(Math.max(drw.currentY,0)), 
                true)); //, pending.complex));
@@ -1064,7 +1071,7 @@ function drawLines(lines, context, overridecolor)
    {
       if(overridecolor)
          x.color = overridecolor;
-      MiniDraw.SimpleRectLine(context, x);
+      MiniDraw2.SimpleRectLine(context, x);
    });
    return lines; 
 }
@@ -1143,6 +1150,14 @@ function frameFunction()
       drawerTick(globals.drawer, globals.pendingStroke);
 
    globals.system.Scan(messageEvent, pageEvent, constants.maxParse * perfmon, constants.maxScan * perfmon);
+
+   if(globals.drawTracking)
+   {
+      globals.system.ScanLines(globals.drawTracking, lineEvent, 
+         constants.maxParse * perfmon, constants.maxScan * perfmon);
+   }
+
+//StreamDrawSystem.prototype.ScanLines = function(scanTracker, lineEvent, parseLimit, scanLimit)
    //globals.system.ProcessMessages(constants.maxParse * perfmon, constants.maxScan * perfmon);
    
    //The incoming draw data handler
@@ -1204,7 +1219,7 @@ function drawerTick(drawer, pending)
 {
    //Do NOTHING if the drawer is basically inactive! There's nothing to do on
    //each tick unless the drawer is trying to do things!
-   if(drawer.currentX !== null && drawer.currentX !== undefined)
+   if(drawer.currentX !== null) // && drawer.currentX !== undefined)
    {
       //Dropper overrides other actions
       if(isDropperActive())
@@ -1217,6 +1232,7 @@ function drawerTick(drawer, pending)
       }
       else
       {
+         //console.log("there are lines being tracked right now at ", drawer.currentX, drawer.currentY);
          //This creates pending lines from our current drawing tool/etc for
          //posting later. The generated lines are drawn NOW though, so the line
          //data must be correct/working/etc (including stuff like complex func)
@@ -1268,16 +1284,17 @@ function drawerTick(drawer, pending)
 
 function doDropper(x, y)
 {
-   var ctx = copyToBackbuffer(globals.drawer._canvas);
-   var color = CanvasUtilities.GetColor(ctx, x, y);
-   console.log("Dropper: ", color);
+   alert("No dropper right now");
+   //var ctx = copyToBackbuffer(globals.drawer._canvas);
+   //var color = CanvasUtilities.GetColor(ctx, x, y);
+   //console.log("Dropper: ", color);
 
-   //Don't activate the dropper on non-colors
-   if(color.a)
-   {
-      setLineColor(color.ToHexString());
-      setDropperActive(false);
-   }
+   ////Don't activate the dropper on non-colors
+   //if(color.a)
+   //{
+   //   setLineColor(color.ToHexString());
+   //   setDropperActive(false);
+   //}
 }
 
 function hashtag(e)

@@ -612,8 +612,8 @@ var MiniDraw2 =
 
          for(var sfi = 0; sfi < iDatas.length; sfi++)
          {
-            if(!(iDatas.data[sfi] == replaceColor[0] && iDatas.data[sfi + 1] == replaceColor[1] &&
-               iDatas.data[sfi + 2] == replaceColor[2] && iDatas.data[sfi + 3] == replaceColor[3]))
+            if(!(iDatas[sfi].data[i] == replaceColor[0] && iDatas[sfi].data[i + 1] == replaceColor[1] &&
+               iDatas[sfi].data[i + 2] == replaceColor[2] && iDatas[sfi].data[i + 3] == replaceColor[3]))
                return false;
          }
 
