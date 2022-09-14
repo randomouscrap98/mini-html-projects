@@ -601,12 +601,12 @@ var MiniDraw2 =
       var queue = [[Math.round(cx), Math.round(cy)]];
       var rIndex = MiniDraw2.GetIndex(ctxData, cx, cy);
       var replaceColors = iDatas.map(x => [x.data[rIndex], x.data[rIndex+1], x.data[rIndex+2], x.data[rIndex+3]]);
-      var replaceColorString = (new Color(
-         replaceColors[0][0], replaceColors[0][1], replaceColors[0][2], replaceColors[0][3])
-      ).ToHexString();
+      //var replaceColorString = (new Color(
+      //   replaceColors[0][0], replaceColors[0][1], replaceColors[0][2], replaceColors[0][3])
+      //).ToHexString();
       console.log("Flood into color: ", replaceColors, cx, cy);
       maxLines = maxLines || 999999999;
-      var west, east, i, j;
+      var west, east, i, j, k;
       var shouldFill = (x, y) =>
       {
          if(x < 0 || y < 0 || x >= width || y >= height)
@@ -641,12 +641,14 @@ var MiniDraw2 =
             //Don't allow huge fills at all, just quit
             if(currentLines.length > maxLines)
             {
-               //To undo the flood, simply redraw all the existing lines using
-               //the original color.
+               //Undo the flood
                for(i = 0; i < currentLines.length; i++)
                {
-                  currentLines[i].color = replaceColorString;
-                  MiniDraw2.SimpleLine(context, currentLines[i]);
+                  for(j = currentLines[i].x1; j <= currentLines[i].x2; j++)
+                  {
+                     k = MiniDraw.GetIndex(ctxData, j, currentLines[i].y1);
+                     ctxData.data[k + 3] = replaceColors[0][3];
+                  }
                }
                alert("Flood fill area too large!");
                currentLines.length = 0;

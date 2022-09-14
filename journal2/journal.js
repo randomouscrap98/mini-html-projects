@@ -590,21 +590,18 @@ function exportSinglePage(page, system, redrawPage) //forgetPage)//, system)
    //range and not ALL lines
    system.ScanLines(drawTracking, l => allLines.push(...l), Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER);
 
-   //console.log(allLines.map(x => x.layer));
-
    //Don't bother sending a context, we're drawing DIRECTLY onto the original pages
-   //drawLines(allLines.filter(x => x.layer === 1), globals.context[1]);
-   drawLines(allLines);//.filter(x => x.layer === 0), globals.context[0]);
+   drawLines(allLines);
 
    //Copy the top layer OVER the bottom layer
    CanvasUtilities.CopyInto(globals.contexts[1], layer1, 0, 0, "source-over");
-   //CanvasUtilities.CopyInto(exportContext, el1, 0, 0, "source-over");
+
+   var result = false;
 
    //Need this so images are saved with backgrounds. Can only do it AFTER all
    //drawings, because often times an eraser is used!
    CanvasUtilities.SwapColor(globals.contexts[1], new Color(0,0,0,0), new Color(255,255,255,1), 0);
-
-   var result = layer2.toDataURL();
+   result = layer2.toDataURL("image/png", "-moz-parse-options:png-zlib-level=9;transparency=none");
 
    //This should reset layer2 for us. We already have the data URL
    if(redrawPage)
@@ -705,6 +702,7 @@ function performStaticExport()
          }
       }
    });
+   appendScroll(coverscreencontainer, "** NOTE: export size is heavily optimized on Firefox only! **");
    appendScroll(coverscreencontainer, "Loading, please wait...");
 
    var makeDownload = (data, name, filename) =>
@@ -1120,14 +1118,11 @@ function trackPendingStroke(drw, pending)
          pending.type = "lines"; //globals.system.core.symbols.lines;
          pending.size = 1;
          pending.accepting = false; //DON'T do any more fills on this stroke!!
-         //var context = copyToBackbuffer(drw._canvas);
          var context1 = layer1.getContext("2d");
          var context2 = layer2.getContext("2d");
-         currentLines.push(...MiniDraw2.Flood(context1, [ context1, context2 ],
+         currentLines.push(...MiniDraw2.Flood(context1, [ context2 ],
             drw.currentX, drw.currentY, 
             pending.color, constants.maxLines));
-         //currentLines.push(...MiniDraw2.Flood(context, drw.currentX, drw.currentY, 
-         //   pending.color, constants.maxLines));
       }
       else if (toolIsRect(pending.tool))
       {
