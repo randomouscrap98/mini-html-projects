@@ -500,17 +500,36 @@ function setupToggleSetting(name, checkbox, checktrue, checkfalse)
    change();
 }
 
+
 function setupPageControls()
 {
+   var confirmTimer = false;
+   var resetnpb = () =>
+   {
+      newpagebutton.removeAttribute("data-selected");
+      newpagebutton.textContent = "New Page";
+   };
    pageselect.oninput = () => changePage(pageselect.value);
    newpagebutton.onclick = () => 
    {
-      newpagebutton.setAttribute("data-disabled", "");
-      var pagename = globals.system.NewPageName();
-      post(endpoint(globals.roomname), 
-         globals.system.parser.CreatePage(new StreamDrawPageData(pagename)));
-      globals.pendingNewPage = pagename;
-      changePage(pagename); //We know the page isn't ready yet, but changePage is very lenient
+      if(newpagebutton.hasAttribute("data-selected"))
+      {
+         if(confirmTimer) 
+            clearTimeout(confirmTimer);
+         resetnpb();
+         newpagebutton.setAttribute("data-disabled", "");
+         var pagename = globals.system.NewPageName();
+         post(endpoint(globals.roomname), 
+            globals.system.parser.CreatePage(new StreamDrawPageData(pagename)));
+         globals.pendingNewPage = pagename;
+         changePage(pagename); //We know the page isn't ready yet, but changePage is very lenient
+      }
+      else
+      {
+         newpagebutton.setAttribute("data-selected", "");
+         newpagebutton.textContent = "Confirm?";
+         confirmTimer = setTimeout(resetnpb, 2000);
+      }
    };
 }
 
@@ -1214,17 +1233,21 @@ function frameFunction()
          option.value = x.name;
          option.innerHTML = `${x.number}:${x.name}`;
          pageselect.appendChild(option);
-         //Sometimes, the page is set before any pages are available
-         if(x.name === globals.pendingSetPage)
-         {
-            changePage(x.name);
-         }
+         ////Sometimes, the page is set before any pages are available
+         //if(x.name === globals.pendingSetPage)
+         //{
+         //   changePage(x.name);
+         //}
          if(x.name === globals.pendingNewPage)
          {
             newpagebutton.removeAttribute("data-disabled");
             globals.pendingNewPage = null;
          }
       });
+      //This  may cause the page to flash but for now, it's safer. we'll come
+      //up with something better later... this also fixes
+      //globals.pendingSetPage (if our page was added)
+      changePage(globals.pendingSetPage || getPage());
       globals.scheduledPages = [];
    }
    //Now draw lines based on playback speed (if there are any)
