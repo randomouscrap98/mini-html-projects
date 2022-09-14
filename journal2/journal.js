@@ -107,21 +107,24 @@ function windowOnLoad()
 
       handlePageHash(location.hash);
 
+      globals.drawer = setupDrawer(layer1);
+      hfliptoggle.oninput = (e) => globals.drawer.SetInvert(hfliptoggle.checked, false, [ layer2 ]);
+      setupSpecialControls();
+
       if(globals.readonly)
       {
          document.body.setAttribute("data-pagereadonly", "");
-         hide(viewonly);
 
          //Only show auto on very specifically readonly but reading 
-         if(!globals.exported)
-         {
-            show(autofollow.parentNode);
-            autofollow.oninput = (e) =>
-            {
-               //setHidden(scrollbar, autofollow.checked);
-               setHidden(playbackcontrols, autofollow.checked);
-            };
-         }
+         //if(!globals.exported)
+         //{
+         //   show(autofollow.parentNode);
+         //   autofollow.oninput = (e) =>
+         //   {
+         //      //setHidden(scrollbar, autofollow.checked);
+         //      setHidden(playbackcontrols, autofollow.checked);
+         //   };
+         //}
       }
       else
       {
@@ -135,12 +138,6 @@ function windowOnLoad()
             "#4E7A27","#76BB40","#CDE8B5" ]);
          setupColorControls();
          setupChat();
-         globals.drawer = setupDrawer(layer1);
-         //setupToggleSetting("drawtoggle", drawtoggle, 
-         //   () => setDrawAbility(globals.drawer, drawing, true),
-         //   () => setDrawAbility(globals.drawer, drawing, false));
-         hfliptoggle.oninput = (e) => globals.drawer.SetInvert(hfliptoggle.checked, false, [ layer2 ]);
-         setupSpecialControls();
       }
 
       //Skip data retrieval if we're exported already
@@ -581,7 +578,7 @@ function changePage(name) //increment, exact)
    {
       CanvasUtilities.Clear(layer1);
       CanvasUtilities.Clear(layer2);
-      setDrawAbility(globals.system.IsLastPage(name));
+      setDrawAbility(globals.system.IsLastPage(name) && !globals.readonly);
       location.hash = "page-" + name;
       globals.pendingSetPage = null;
       globals.scheduledLines = []; //Remove anything waiting to be drawn, this is a new page
@@ -597,8 +594,12 @@ function changePage(name) //increment, exact)
 function handlePageHash(hash)
 {
    var match = hash.match(/page-(.+)/i);
+
+   //With the new system, if we're not ON a page, then no drawing should happen
    if(match)
       changePage(match[1]);
+   else
+      setDrawAbility(false);
 }
 
 function setupChat()
