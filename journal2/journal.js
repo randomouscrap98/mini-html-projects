@@ -556,18 +556,43 @@ function createSystem()
    );
 }
 
-//function exportSinglePage(page, system)
-//{
-//   var context = buffer1.getContext("2d");
-//   CanvasUtilities.Clear(buffer1);
-//   system.ResetDrawTracking();
-//   system.ProcessLines(Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER, page);
-//   drawLines(system.scheduledLines, context);
-//   //Need this so images are saved with backgrounds. Can only do it AFTER all
-//   //drawings, because often times an eraser is used!
-//   CanvasUtilities.SwapColor(context, new Color(0,0,0,0), new Color(255,255,255,1), 0);
-//   return buffer1.toDataURL();
-//}
+function exportSinglePage(page, system, redrawPage) //forgetPage)//, system)
+{
+   //We have to use both layers because of erasing (can't just draw bottom to top)
+   CanvasUtilities.Clear(layer1);
+   CanvasUtilities.Clear(layer2);
+
+   //We're only going to go through this once.
+   var drawTracking = system.InitializeLineScan(page);
+   var allLines = [];
+
+   //This scans ALL THE LINES for the given page. Luckily, with our
+   //optimizations to the draw system, it only looks at lines within the page
+   //range and not ALL lines
+   system.ScanLines(drawTracking, l => allLines.push(...l), Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER);
+
+   //console.log(allLines.map(x => x.layer));
+
+   //Don't bother sending a context, we're drawing DIRECTLY onto the original pages
+   //drawLines(allLines.filter(x => x.layer === 1), globals.context[1]);
+   drawLines(allLines);//.filter(x => x.layer === 0), globals.context[0]);
+
+   //Copy the top layer OVER the bottom layer
+   CanvasUtilities.CopyInto(globals.contexts[1], layer1, 0, 0, "source-over");
+   //CanvasUtilities.CopyInto(exportContext, el1, 0, 0, "source-over");
+
+   //Need this so images are saved with backgrounds. Can only do it AFTER all
+   //drawings, because often times an eraser is used!
+   CanvasUtilities.SwapColor(globals.contexts[1], new Color(0,0,0,0), new Color(255,255,255,1), 0);
+
+   var result = layer2.toDataURL();
+
+   //This should reset layer2 for us. We already have the data URL
+   if(redrawPage)
+      changePage(getPage());
+
+   return result;
+}
 
 //This might be a dumb function idk. Increment is by default the amount to
 //change the page, but if 'exact' is set to true, increment will be EXACTLY the
@@ -639,150 +664,164 @@ function setupExports()
    //var url = new URL(location.href);
    //url.searchParams.set("export", "1");
    //document.getElementById("export").href = url.toString();
-   //exportstatic.onclick = (e) =>
-   //{
-   //   e.preventDefault();
-   //   performStaticExport();
-   //};
+   exportstatic.onclick = (e) =>
+   {
+      e.preventDefault();
+      performStaticExport();
+   };
 }
 
-//function performStaticExport()
-//{
-//   var activeUrls = [];
-//   showCover({
-//      title: "Static Export",
-//      showContainer: true,
-//      onclose : () => 
-//      {
-//         while(activeUrls.length)
-//         {
-//            console.log(`Releasing download blob ${activeUrls.length}`);
-//            window.URL.revokeObjectURL(activeUrls.pop());
-//         }
-//      }
-//   });
-//   appendScroll(coverscreencontainer, "Loading, please wait...");
-//
-//   var makeDownload = (data, name, filename) =>
-//   {
-//      var blob = new Blob([data], {type:"text/plain;charset=utf-8"});
-//      activeUrls.push(window.URL.createObjectURL(blob));
-//      var downloadLink = document.createElement("a");
-//      downloadLink.textContent = `Download ${name}`;
-//      downloadLink.href = activeUrls[activeUrls.length - 1];
-//      downloadLink.download = filename;
-//      downloadLink.style.display = "block";
-//      appendScroll(coverscreencontainer, downloadLink);
-//   };
-//
-//   var sys = createSystem();
-//   sys.SetData(globals.system.rawData);
-//
-//   //A fun hack so there's no ending script tag in the html
-//   var scriptTag = "script";
-//
-//   //It will never be higher than 8000 (I think). We do both html AND svg export!
-//   var svg = HTMLUtilities.CreateSvg(constants.pwidth,constants.pheight); 
-//   var htmlexport = document.implementation.createHTMLDocument();
-//   htmlexport.body.innerHTML = `
-//<meta charset="UTF-8">
-//<style>
-//body { width: 1700px; font-family: sans-serif; margin: 8px; padding: 0; }
-//.pane { display: inline-block; margin: 0 10px; padding: 0; vertical-align: top;}
-//#textbox { width: 600px; background-color: #FCFCFC; } 
-//#imagebox > * { display: block; }
-//#infobox { background: #F7F7F7; padding: 10px; margin-bottom: 15px; }
-//#infobox h3 { margin-top: 0; }
-//#imagebox img { image-rendering: moz-crisp-edges; image-rendering: crisp-edges;
-//   image-rendering: optimizespeed; image-rendering: pixelated; }
-//.pageid { background: #F3F3F3; padding: 5px; border-radius: 5px; 
-//   padding-left: 10px; }
-//.username { font-weight: bold; }
-//.keyword { color: deeppink; }
-//.username::after { content: ":"; }
-//.wholemessage { padding: 1px 3px; }
-//.striped:nth-child(even) { background-color: #F7F7F7; }
-//.exported { color: #777; font-size: 0.8em; display: block; margin: 7px 0 3px 0;
-//   font-style: italic; }
-//</style>
-//<${scriptTag}>
-//function hashtag(e) { e.preventDefault(); }
-//</${scriptTag}>
-//<div id="leftpane" class="pane">
-//   <div id="imagebox"></div>
-//</div>
-//<div id="rightpane" class="pane">
-//   <div id="infobox">
-//      <h3>${globals.roomname}</h3>
-//      <time>${sys.preamble.date}</time>
-//      <time class="exported">Exported: ${(new Date()).toISOString()}</time>
-//   </div>
-//   <div id="textbox"></div>
-//</div>`;
-//
-//   var textbox = htmlexport.getElementById("textbox");
-//   var imagebox = htmlexport.getElementById("imagebox");
-//
-//   //Have to do this repeat parsing in order to reduce memory usage.
-//   var page = 0;
-//   var ready = true;
-//
-//   var wait = setInterval(() =>
-//   {
-//      if(ready)
-//      {
-//         ready = false;
-//
-//         var pageURI = exportSinglePage(page++, sys);
-//
-//         //The html element
-//         var pageID = document.createElement("a");
-//         pageID.id = "page_" + page;
-//         pageID.className = "pageid";
-//         pageID.innerHTML = "Page " + page;
-//         pageID.href = "#" + pageID.id;
-//         imagebox.appendChild(pageID);
-//         var image = document.createElement("img");
-//         image.setAttribute('src', pageURI);
-//         imagebox.appendChild(image);
-//
-//         //The svg element
-//         var simage = HTMLUtilities.CreateSvgElement("image");
-//         simage.setAttribute("x", (page-1) * constants.pwidth);
-//         simage.setAttribute("y", 0);
-//         simage.setAttribute("width", constants.pwidth);
-//         simage.setAttribute("height", constants.pheight);
-//         simage.setAttributeNS('http://www.w3.org/1999/xlink','href', pageURI);
-//         svg.appendChild(simage);
-//         svg.setAttribute("width", constants.pwidth * page);
-//
-//         appendScroll(coverscreencontainer, `Page ${page}`);
-//         ready = true;
-//      }
-//
-//      if(page > sys.maxPage)
-//      {
-//         clearInterval(wait);
-//
-//         sys.ResetMessageTracking();
-//         sys.ProcessMessages(Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER);
-//         sys.scheduledMessages.forEach(x => textbox.appendChild(createMessageElement(x)));
-//
-//         //Finalize SVG. Set viewbox just in case (it's not necessary but it
-//         //helps with scaling if you need it later)
-//         HTMLUtilities.FillSvgBackground(svg, "white");
-//         svg.setAttribute("viewBox", `0 0 ${svg.getAttribute("width")} ${svg.getAttribute("height")}`);
-//         makeDownload(svg.outerHTML, "SVG (Images only)", `${globals.roomname}.svg`);
-//
-//         //Modify svg to produce a "quarter" svg (useful for zoomed out stuff)
-//         svg.setAttribute("width", Number(svg.getAttribute("width")) / 4);
-//         svg.setAttribute("height", Number(svg.getAttribute("height")) / 4);
-//         makeDownload(svg.outerHTML, "SVG (Quarter size)", `${globals.roomname}_quarter.svg`);
-//
-//         makeDownload(htmlexport.documentElement.outerHTML, "HTML", `${globals.roomname}_static.html`);
-//      }
-//   }, 100);
-//}
+function performStaticExport()
+{
+   var activeUrls = [];
+   showCover({
+      title: "Static Export",
+      showContainer: true,
+      onclose : () => 
+      {
+         while(activeUrls.length)
+         {
+            console.log(`Releasing download blob ${activeUrls.length}`);
+            window.URL.revokeObjectURL(activeUrls.pop());
+         }
+      }
+   });
+   appendScroll(coverscreencontainer, "Loading, please wait...");
+
+   var makeDownload = (data, name, filename) =>
+   {
+      var blob = new Blob([data], {type:"text/plain;charset=utf-8"});
+      activeUrls.push(window.URL.createObjectURL(blob));
+      var downloadLink = document.createElement("a");
+      downloadLink.textContent = `Download ${name}`;
+      downloadLink.href = activeUrls[activeUrls.length - 1];
+      downloadLink.download = filename;
+      downloadLink.style.display = "block";
+      appendScroll(coverscreencontainer, downloadLink);
+   };
+
+   var sys = createSystem();
+   sys.SetData(globals.system.rawData);
+
+   //A fun hack so there's no ending script tag in the html
+   var scriptTag = "script";
+
+   //It will never be higher than 8000 (I think). We do both html AND svg export!
+   var svg = HTMLUtilities.CreateSvg(constants.pwidth,constants.pheight); 
+   var htmlexport = document.implementation.createHTMLDocument();
+   htmlexport.body.innerHTML = `
+<meta charset="UTF-8">
+<style>
+body { width: 2700px; font-family: sans-serif; margin: 8px; padding: 0; }
+.pane { display: inline-block; margin: 0 10px; padding: 0; vertical-align: top;}
+#textbox { width: 600px; background-color: #FCFCFC; } 
+#imagebox > * { display: block; }
+#infobox { background: #F7F7F7; padding: 10px; margin-bottom: 15px; }
+#infobox h3 { margin-top: 0; }
+#imagebox img { image-rendering: moz-crisp-edges; image-rendering: crisp-edges;
+   image-rendering: optimizespeed; image-rendering: pixelated;
+   border: 1px solid #EEE; }
+.pageid { background: #EEE; padding: 5px; padding-left: 10px; }
+.username { font-weight: bold; margin-right: 0.25em; }
+.keyword { color: deeppink; }
+.username::after { content: ":"; }
+.wholemessage { padding: 1px 3px; }
+.striped:nth-child(even) { background-color: #F7F7F7; }
+.exported { color: #777; font-size: 0.8em; display: block; margin: 7px 0 3px 0;
+   font-style: italic; }
+</style>
+<${scriptTag}>
+function hashtag(e) { e.preventDefault(); }
+</${scriptTag}>
+<div id="leftpane" class="pane">
+   <div id="imagebox"></div>
+</div>
+<div id="rightpane" class="pane">
+   <div id="infobox">
+      <h3>${globals.roomname}</h3>
+      <time>${sys.preamble.date}</time>
+      <time class="exported">Exported: ${(new Date()).toISOString()}</time>
+   </div>
+   <div id="textbox"></div>
+</div>`;
+
+   var textbox = htmlexport.getElementById("textbox");
+   var imagebox = htmlexport.getElementById("imagebox");
+
+   //OK so first, we have to perform a standard scan to get all the relevant
+   //data. We can ignore page events, because we only care about the page data
+   //that the system will track for us after all scanning is complete.
+   var allMessages = [];
+
+   appendScroll(coverscreencontainer, "Parsing initial data...");
+   sys.Scan(m => allMessages.push(m), false, Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER);
+
+   //Have to do this repeat parsing in order to reduce memory usage.
+   var pageIndex = 0;
+   var ready = true;
+   var svgWidthMod = Math.ceil(constants.pheight / constants.pwidth);
+   var svgSquareN = Math.ceil(Math.sqrt(sys.pages.length / svgWidthMod));
+
+   //Yes, they're both supposed to be height. Pages are taller than they are wide
+   svg.setAttribute("width", svgSquareN * constants.pheight);
+   svg.setAttribute("height", svgSquareN * constants.pheight);
+
+   var wait = setInterval(() =>
+   {
+      if(ready)
+      {
+         ready = false;
+
+         var page = sys.pages[pageIndex++];
+         var pageURI = exportSinglePage(page.name, sys);
+
+         //The html element
+         var pageID = document.createElement("a");
+         pageID.id = "page_" + pageIndex;
+         pageID.className = "pageid";
+         pageID.innerHTML = `Page ${pageIndex} (${page.name})`;
+         pageID.href = "#" + pageID.id;
+         imagebox.appendChild(pageID);
+         var image = document.createElement("img");
+         image.setAttribute('src', pageURI);
+         imagebox.appendChild(image);
+
+         //The svg element
+         var simage = HTMLUtilities.CreateSvgElement("image");
+         simage.setAttribute("x", ((pageIndex-1) % (svgSquareN * svgWidthMod)) * constants.pwidth);
+         simage.setAttribute("y", Math.floor((pageIndex-1) / (svgSquareN * svgWidthMod)) * constants.pheight);
+         simage.setAttribute("width", constants.pwidth);
+         simage.setAttribute("height", constants.pheight);
+         simage.setAttributeNS('http://www.w3.org/1999/xlink','href', pageURI);
+         svg.appendChild(simage);
+
+         appendScroll(coverscreencontainer, `Page ${pageIndex}`);
+         ready = true;
+      }
+
+      if(pageIndex >= sys.pages.length)
+      {
+         appendScroll(coverscreencontainer, "Finalizing...");
+         changePage(getPage());
+         clearInterval(wait);
+
+         allMessages.forEach(x => textbox.appendChild(createMessageElement(x)));
+
+         //Finalize SVG. Set viewbox just in case (it's not necessary but it
+         //helps with scaling if you need it later)
+         HTMLUtilities.FillSvgBackground(svg, "white");
+         svg.setAttribute("viewBox", `0 0 ${svg.getAttribute("width")} ${svg.getAttribute("height")}`);
+         makeDownload(svg.outerHTML, "SVG (Images only)", `${globals.roomname}.svg`);
+
+         //Modify svg to produce a "quarter" svg (useful for zoomed out stuff)
+         svg.setAttribute("width", Number(svg.getAttribute("width")) / 4);
+         svg.setAttribute("height", Number(svg.getAttribute("height")) / 4);
+         makeDownload(svg.outerHTML, "SVG (Quarter size)", `${globals.roomname}_quarter.svg`);
+
+         makeDownload(htmlexport.documentElement.outerHTML, "HTML", `${globals.roomname}_static.html`);
+      }
+   }, 100);
+}
 
 //function performFunctionalExport(room)
 //{
