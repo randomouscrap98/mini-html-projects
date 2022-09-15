@@ -714,7 +714,7 @@ function performStaticExport()
       }
    });
    appendScroll(coverscreencontainer, "** NOTE: export size is heavily optimized on Firefox only! **");
-   appendScroll(coverscreencontainer, "Loading, please wait...");
+   //appendScroll(coverscreencontainer, "Loading, please wait...");
 
    var makeDownload = (data, name, filename) =>
    {
@@ -816,12 +816,31 @@ function hashtag(e) { e.preventDefault(); }
 
          //The svg element
          var simage = HTMLUtilities.CreateSvgElement("image");
-         simage.setAttribute("x", ((pageIndex-1) % (svgSquareN * svgWidthMod)) * constants.pwidth);
-         simage.setAttribute("y", Math.floor((pageIndex-1) / (svgSquareN * svgWidthMod)) * constants.pheight);
+         var svgx = ((pageIndex-1) % (svgSquareN * svgWidthMod)) * constants.pwidth;
+         var svgy =  Math.floor((pageIndex-1) / (svgSquareN * svgWidthMod)) * constants.pheight;
+         simage.setAttribute("x", svgx);
+         simage.setAttribute("y", svgy);
          simage.setAttribute("width", constants.pwidth);
          simage.setAttribute("height", constants.pheight);
          simage.setAttributeNS('http://www.w3.org/1999/xlink','href', pageURI);
          svg.appendChild(simage);
+
+         //The page text for svg
+         var stext = HTMLUtilities.CreateSvgElement("text");
+         stext.setAttribute("x", svgx + constants.pwidth - 225);
+         stext.setAttribute("y", svgy + constants.pheight - 25);
+         stext.setAttribute("style", "fill: #444444; stroke: #888888; font-size: 24px;");
+         stext.appendChild(document.createTextNode(`${pageIndex} : ${page.name}`));
+         svg.appendChild(stext);
+
+         //an outline for images
+         var srect = HTMLUtilities.CreateSvgElement("rect");
+         srect.setAttribute("x", svgx);
+         srect.setAttribute("y", svgy);
+         srect.setAttribute("width", constants.pwidth);
+         srect.setAttribute("height", constants.pheight);
+         srect.setAttribute("style", "stroke-width:1px;stroke:#DDDDDD;fill:none;");
+         svg.appendChild(srect);
 
          appendScroll(coverscreencontainer, `Page ${pageIndex}`);
          ready = true;
