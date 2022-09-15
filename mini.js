@@ -314,6 +314,7 @@ var MiniDraw =
    },
    SimpleRect : function(ctx, x, y, w, h, clear, complex)
    {
+      //console.log("SIMPLERECT1", x, y, w, h);
       x = Math.round(x); y = Math.round(y);
       if(!w || !h) return;
       //LOTS of if statements, but hopefully those are supremely outshadowed by
@@ -505,7 +506,7 @@ var MiniDraw =
 var MiniDraw2 = 
 {
    //An object to store a single line
-   LineData : function (width, color, x1, y1, x2, y2, rect)
+   LineData : function (width, color, x1, y1, x2, y2, rect, filterId)
    {
       this.width = width;
       this.color = color;
@@ -514,16 +515,91 @@ var MiniDraw2 =
       this.x2 = x2;
       this.y2 = y2;
       this.rect = rect;
+      this.filterId = filterId || 0;
+      this.filter = MiniDraw2.SimpleRect;
+
+      if(this.filterId !== 0)
+      {
+         var cv = document.createElement("canvas");
+         cv.width = 2;
+         cv.height = 2;
+         var ctx = cv.getContext("2d");
+         var func = (x, y) => ctx.clearRect(x, y, 1, 1);
+
+         if(color)
+         {
+            ctx.fillStyle = color;
+            func = (x, y) => ctx.fillRect(x, y, 1, 1);
+         }
+
+         func(0, 0);
+
+         if(this.filterId === 1)
+            func(1,1);
+
+         this.pattern = cv;
+         console.log("Created pattern for filter ", this.filterId);
+      }
+      //this.pattern = MiniDraw2_Filters[this.filterId];
+      //MiniDraw2_Filters[this.filterId]; //filter needs to be a number!
    },
    //This function is different because rectangles require more calculation,
    //don't want to mess up the raw linedata
    SimpleRect : function(ctx, x, y, w, h, clear)
    {
+      //console.log("SIMPLERECT2", x, y, w, h);
+      w = Math.round(w); h = Math.round(h);
       x = Math.round(x); y = Math.round(y);
       if(!w || !h) { return; }
       else if(clear) { ctx.clearRect(x, y, w, h); }
       else { ctx.rect(x, y, w, h); }
    },
+   //SimpleDither1 : function(ctx, x, y, w, h, clear)
+   //{
+   //   w = Math.round(w); h = Math.round(h);
+   //   x = Math.round(x); y = Math.round(y);
+   //   var i, j;
+   //   //console.log("Dithering");
+
+   //   //awful duplication, maybe a little more optimized idk
+   //   if(!clear)
+   //   {
+   //      //Unfortunately, can't use pathing (rect), it's broken
+   //      for(i = x + w - 1; i >= x; i--)
+   //         for(j = y + h - 1; j >= y; j--)
+   //            if((i & 1) === (j & 1))
+   //               ctx.fillRect(i, j, 1, 1);
+   //   }
+   //   else
+   //   {
+   //      for(i = x + w - 1; i >= x; i--)
+   //         for(j = y + h - 1; j >= y; j--)
+   //            if((i & 1) === (j & 1))
+   //               ctx.clearRect(i, j, 1, 1);
+   //   }
+   //},
+   //SimpleDither2 : function(ctx, x, y, w, h, clear)
+   //{
+   //   w = Math.round(w); h = Math.round(h);
+   //   x = Math.round(x); y = Math.round(y);
+   //   var i, j;
+
+   //   //awful duplication, maybe a little more optimized idk
+   //   if(!clear)
+   //   {
+   //      for(i = x + w - 1; i >= x; i--)
+   //         for(j = y + h - 1; j >= y; j--)
+   //            if(!(i & 1) && !(j & 1))
+   //               ctx.fillRect(i, j, 1, 1);
+   //   }
+   //   else
+   //   {
+   //      for(i = x + w - 1; i >= x; i--)
+   //         for(j = y + h - 1; j >= y; j--)
+   //            if(!(i & 1) && !(j & 1))
+   //               ctx.clearRect(i, j, 1, 1);
+   //   }
+   //},
    SimpleLine : function (ctx, ld)
    {
       var xdiff = ld.x2 - ld.x1;
@@ -536,6 +612,11 @@ var MiniDraw2 =
 
       if(ld.color)
          ctx.fillStyle = ld.color;
+      if(ld.pattern)
+      {
+         const pattern = ctx.createPattern(ld.pattern, "repeat");
+         ctx.fillStyle = pattern;
+      }
 
       //A nice optimization for flood fill (and perhaps other things?)
       if(Math.abs(ydiff) < 0.1) //A 0.1 diff shouldn't change anything...
@@ -543,7 +624,7 @@ var MiniDraw2 =
          ctx.beginPath();
          //Remember that there is no 'height' because it's all LINE width, so
          //the ld.width used for height makes sense
-         MiniDraw.SimpleRect(ctx, Math.min(ld.x1, ld.x2) - ofs, ld.y1 - ofs, 
+         ld.filter(ctx, Math.min(ld.x1, ld.x2) - ofs, ld.y1 - ofs, 
             Math.abs(xdiff) + ld.width, ld.width, !ld.color);
          ctx.fill();
       }
@@ -554,10 +635,12 @@ var MiniDraw2 =
          ctx.beginPath();
          for(var i=0;i<dist;i+=0.5) //0.5) 
          {
+            //The filter function SHOULD round for us, but we need it rounded
+            //for the setx/sety
             x = Math.round(ld.x1+Math.cos(ang)*i-ofs); 
             y = Math.round(ld.y1+Math.sin(ang)*i-ofs);
             if(setx[x] && sety[y]) continue;
-            MiniDraw.SimpleRect(ctx, x, y, ld.width, ld.width, !ld.color);
+            ld.filter(ctx, x, y, ld.width, ld.width, !ld.color);
             setx[x] = 1; sety[y] = 1;
          }
          ctx.fill();
@@ -571,13 +654,13 @@ var MiniDraw2 =
          if(ld.color)
             ctx.fillStyle = ld.color;
          ctx.beginPath();
-         MiniDraw.SimpleRect(ctx, Math.min(ld.x1, ld.x2), Math.min(ld.y1, ld.y2),
+         ld.filter(ctx, Math.min(ld.x1, ld.x2), Math.min(ld.y1, ld.y2),
             Math.abs(ld.x1 - ld.x2), Math.abs(ld.y1 - ld.y2), !ld.color);
          ctx.fill();
       }
       else
       {
-         MiniDraw.SimpleLine(ctx, ld);
+         MiniDraw2.SimpleLine(ctx, ld);
       }
    },
    GetIndex : function(idata, x, y)
@@ -588,7 +671,7 @@ var MiniDraw2 =
    //MiniDraw lines that could be used to represent the flood. Currently it
    //fails if it goes over the maxLines generated. The "sampleContexts" should
    //be an array of contexts to search through for flood fill ability
-   Flood : function(context, extraSamples, cx, cy, color, maxLines)
+   Flood : function(context, extraSamples, cx, cy, color, maxLines, filterId)
    {
       //Do the east/west thing, generate the lines, IGNORE future strokes
       //Using a buffer because working with image data can (does) cause it to go
@@ -636,7 +719,8 @@ var MiniDraw2 =
 
             //NOTE: flood fill doesn't CARE about fancy additional complexity like
             //rectangle drawing or complex line fill, WE are the complexity already
-            currentLines.push(new MiniDraw2.LineData(1, color, west, p[1], east, p[1]));
+            currentLines.push(new MiniDraw2.LineData(1, color, west, p[1], east, p[1],
+               false, filterId));
 
             //Don't allow huge fills at all, just quit
             if(currentLines.length > maxLines)
@@ -646,7 +730,7 @@ var MiniDraw2 =
                {
                   for(j = currentLines[i].x1; j <= currentLines[i].x2; j++)
                   {
-                     k = MiniDraw.GetIndex(ctxData, j, currentLines[i].y1);
+                     k = MiniDraw2.GetIndex(ctxData, j, currentLines[i].y1);
                      ctxData.data[k + 3] = replaceColors[0][3];
                   }
                }
@@ -659,7 +743,7 @@ var MiniDraw2 =
             for(i = west; i <= east; i++)
             {
                //Just has to be DIFFERENT, not the color we're filling.
-               j = MiniDraw.GetIndex(ctxData, i, p[1]);
+               j = MiniDraw2.GetIndex(ctxData, i, p[1]);
                ctxData.data[j + 3] = (ctxData.data[j + 3] + 10) & 255;
                //Queue the north and south (regardless of fill requirement)
                queue.push([i, p[1] + 1]);
@@ -672,8 +756,14 @@ var MiniDraw2 =
       img = null;
       console.log("Flood lines: ", currentLines.length);
       return currentLines;
-   }
+   },
 };
+
+//var MiniDraw2_Filters = [
+//   MiniDraw2.SimpleRect,
+//   MiniDraw2.SimpleDither1,
+//   MiniDraw2.SimpleDither2,
+//];
 
 
 var StreamConvert =

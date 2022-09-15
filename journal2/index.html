@@ -2,14 +2,14 @@
    <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-      <script src="../jquery-3.4.1.min.js?v=1663170415"></script>
-      <script src="../randomous.js?v=1663170415"></script>
-      <script src="../randomousCanvas.js?v=1663170415"></script>
-      <script src="../mini.js?v=1663170415"></script>
-      <script src="../streamdraw2.js?v=1663170415"></script>
-      <script src="journal.js?v=1663170415"></script>
-      <link rel="stylesheet" href="../mini.css?v=1663170415">
-      <link rel="stylesheet" href="journal.css?v=1663170415">
+      <script src="../jquery-3.4.1.min.js?v=1663204254"></script>
+      <script src="../randomous.js?v=1663204254"></script>
+      <script src="../randomousCanvas.js?v=1663204254"></script>
+      <script src="../mini.js?v=1663204254"></script>
+      <script src="../streamdraw2.js?v=1663204254"></script>
+      <script src="journal.js?v=1663204254"></script>
+      <link rel="stylesheet" href="../mini.css?v=1663204254">
+      <link rel="stylesheet" href="journal.css?v=1663204254">
       <title>Journal 2</title>
    </head>
    <body class="collapseall">
@@ -59,7 +59,7 @@
                <input type="range" id="size" min="1" max="10" value="3" data-link="sizetext" >
                <input type="text" id="sizetext" class="controltext smallraw center" value="3" data-link="size">
             </div>
-            <div id="sizemodifier" data-radio class="collapseall tools" title="Line size multiplier"
+            <div id="sizemodifier" data-radio class="collapseall tools alt" title="Line size multiplier"
                data-hidepagereadonly>
                <button id="size1">&#215;1</button>
                <button data-selected id="size2">&#215;2</button>
@@ -77,6 +77,11 @@
                <button id="tool_recterase" title="Rectangle erase">RE</button>
                <button id="tool_exportrect" title="Export area">Ex</button>
                <button id="tool_pan" title="Pan canvas">Pn</button>
+            </div>
+            <div id="brushes" data-radio class="collapseall tools alt">
+               <button data-selected id="brush_normal" title="Normal">■</button>
+               <button id="brush_dither1" title="Dither1">▒</button>
+               <button id="brush_dither2" title="Dither2">░</button>
             </div>
          </div>
          <div id="playbackcontrols" class="controls">

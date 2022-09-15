@@ -188,7 +188,7 @@ body[data-pagereadonly] [data-hidepagereadonly] {
 }
 
 .tools.alt {
-   padding: 1px 0;
+   padding-bottom: 1px;
    background-color: #AAA;
 }
 

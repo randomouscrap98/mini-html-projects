@@ -210,6 +210,15 @@ function getTool() {
    else
       return getToolName(selectedTool);
 }
+function getBrush() { return brushes.querySelector("[data-selected]").id.replace("brush_", ""); }
+function brushToFilter(brush) { 
+   if(brush === "dither1")
+      return 1; //MiniDraw2.SimpleDither1;
+   else if(brush === "dither2")
+      return 2; //MiniDraw2.SimpleDither2;
+   else
+      return null; //the default brush is null
+}
 function toolIsRect(tool) { return tool && (tool.indexOf("rect") >= 0); }
 function toolIsErase(tool) { return tool && (tool.indexOf("erase") >= 0); }
 function toolIsContinuous(tool) { return tool && (tool.indexOf("slow") >= 0); }
@@ -615,15 +624,25 @@ function exportSinglePage(page, system, redrawPage) //forgetPage)//, system)
 //page to set rather than just the offset.
 function changePage(name) //increment, exact)
 {
+
    if(setPage(name) && globals.system.ScanAtEnd())
    {
       CanvasUtilities.Clear(layer1);
       CanvasUtilities.Clear(layer2);
       setDrawAbility(globals.system.IsLastPage(name) && !globals.readonly);
-      location.hash = "page-" + name;
       globals.pendingSetPage = null;
       globals.scheduledLines = []; //Remove anything waiting to be drawn, this is a new page
-      globals.drawTracking = globals.system.InitializeLineScan(name);
+      if(!name)
+      {
+         console.warn("Tried to change to null page, not setting up drawing");
+         location.hash = "";
+         globals.drawTracking = false;
+      }
+      else
+      {
+         location.hash = "page-" + name;
+         globals.drawTracking = globals.system.InitializeLineScan(name);
+      }
    }
    else
    {
@@ -1068,6 +1087,7 @@ function trackPendingStroke(drw, pending)
       pending.postLines = true;
       pending.size = getLineSize();
       pending.tool = getTool();
+      pending.filterId = brushToFilter(getBrush());
       pending.layer = getLayer();
       pending.erasing = toolIsErase(pending.tool); 
       pending.color = pending.erasing ? null : getLineColor();
@@ -1084,12 +1104,12 @@ function trackPendingStroke(drw, pending)
       //Simple stroke
       if(pending.tool == "eraser" || pending.tool == "pen" || pending.tool == "slow")
       {
-         pending.type = "stroke"; //globals.system.core.symbols.stroke;
+         pending.type = "stroke"; 
 
          var ld = new MiniDraw2.LineData(pending.size, pending.color,
             Math.round(drw.lastX), Math.round(drw.lastY), 
             Math.round(drw.currentX), Math.round(drw.currentY),
-            false); 
+            false, pending.filterId); 
 
          if(pending.tool == "slow")
          {
@@ -1120,9 +1140,11 @@ function trackPendingStroke(drw, pending)
          pending.accepting = false; //DON'T do any more fills on this stroke!!
          var context1 = layer1.getContext("2d");
          var context2 = layer2.getContext("2d");
-         currentLines.push(...MiniDraw2.Flood(context1, [ context2 ],
-            drw.currentX, drw.currentY, 
-            pending.color, constants.maxLines));
+         var floodLines = MiniDraw2.Flood(context1, [ context2 ],
+            drw.currentX, drw.currentY, pending.color, constants.maxLines,
+            pending.filterId);
+         //floodLines.map(x => x.filter = pending.filter);
+         currentLines.push(...floodLines);
       }
       else if (toolIsRect(pending.tool))
       {
@@ -1140,7 +1162,7 @@ function trackPendingStroke(drw, pending)
             pending.lines.push(new MiniDraw2.LineData(pending.size, pending.color,
                Math.round(Math.max(drw.currentX,0)), Math.round(Math.max(drw.currentY,0)),
                Math.round(Math.max(drw.currentX,0)), Math.round(Math.max(drw.currentY,0)), 
-               true)); //, pending.complex));
+               true, pending.filterId));
          }
          else
          {
@@ -1167,7 +1189,6 @@ function trackPendingStroke(drw, pending)
 function drawLines(lines, context, overridecolor) 
 { 
    //console.log("Drawing: " + lines.length + " lines");
-   //context = context || globals.context;
    lines.forEach(x => 
    {
       if(overridecolor)
