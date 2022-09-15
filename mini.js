@@ -535,6 +535,17 @@ var MiniDraw2 =
          this.pattern = cv;
       }
    },
+   SetupLineStyle(ctx, ld)
+   {
+      if(ld.color)
+         ctx.fillStyle = ld.color;
+
+      if(ld.pattern)
+      {
+         const pattern = ctx.createPattern(ld.pattern, "repeat");
+         ctx.fillStyle = pattern;
+      }
+   },
    //This function is different because rectangles require more calculation,
    //don't want to mess up the raw linedata
    SimpleRect : function(ctx, x, y, w, h, clear)
@@ -555,14 +566,7 @@ var MiniDraw2 =
 
       if(dist === 0) dist=0.001;
 
-      if(ld.color)
-         ctx.fillStyle = ld.color;
-
-      if(ld.pattern)
-      {
-         const pattern = ctx.createPattern(ld.pattern, "repeat");
-         ctx.fillStyle = pattern;
-      }
+      MiniDraw2.SetupLineStyle(ctx, ld);
 
       //A nice optimization for flood fill (and perhaps other things?)
       if(Math.abs(ydiff) < 0.1) //A 0.1 diff shouldn't change anything...
@@ -597,8 +601,7 @@ var MiniDraw2 =
    {
       if(ld.rect)
       {
-         if(ld.color)
-            ctx.fillStyle = ld.color;
+         MiniDraw2.SetupLineStyle(ctx, ld);
          ctx.beginPath();
          MiniDraw2.SimpleRect(ctx, Math.min(ld.x1, ld.x2), Math.min(ld.y1, ld.y2),
             Math.abs(ld.x1 - ld.x2), Math.abs(ld.y1 - ld.y2), !ld.color);
