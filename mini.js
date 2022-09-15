@@ -522,15 +522,16 @@ var MiniDraw2 =
          if(!color) return;
 
          var cv = document.createElement("canvas");
-         cv.width = 2;
-         cv.height = 2;
+         cv.width = 4;
+         cv.height = 4;
          var ctx = cv.getContext("2d");
          ctx.fillStyle = color;
 
-         ctx.fillRect(0, 0, 1, 1);
+         for(var i = 0; i < 16; i++)
+            if(this.patternId & (1 << i))
+               ctx.fillRect(i % 4, Math.floor(i / 4), 1, 1);
 
-         if(this.patternId === 1)
-            ctx.fillRect(1,1,1,1);
+         //console.log("Got pattern: ", this.patternId);
 
          this.pattern = cv;
       }

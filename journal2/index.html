@@ -78,12 +78,21 @@
                <button id="tool_exportrect" title="Export area">Ex</button>
                <button id="tool_pan" title="Pan canvas">Pn</button>
             </div>
-            <div id="brushes" data-radio class="collapseall tools alt"
-               data-hidepagereadonly>
-               <button data-selected id="brush_normal" title="Normal">■</button>
-               <button id="brush_dither1" title="Dither1">▒</button>
-               <button id="brush_dither2" title="Dither2">░</button>
-            </div>
+            <select id="patternselect" title="Pattern" data-hidepagereadonly>
+               <option value="0" selected="">Fill</option>
+               <option value="1">Ultra-light</option>
+               <option value="1025">Light</option>
+               <option value="1285">Medium</option>
+               <option value="42405">Checkerboard</option>
+               <option value="51">Big-Checker</option>
+               <option value="33825">Hatch-left</option>
+               <option value="4680">Hatch-right</option>
+               <option value="42145">Cross-Hatch</option>
+               <option value="4369">V-Blinds</option>
+               <option value="21845">Double-V-Blinds</option>
+               <option value="15">H-Blinds</option>
+               <option value="3855">Double-H-Blinds</option>
+            </select>
          </div>
          <div id="playbackcontrols" class="controls">
             <div class="tools">

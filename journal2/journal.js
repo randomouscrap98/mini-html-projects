@@ -210,15 +210,7 @@ function getTool() {
    else
       return getToolName(selectedTool);
 }
-function getBrush() { return brushes.querySelector("[data-selected]").id.replace("brush_", ""); }
-function brushToPattern(brush) {  //Patterns are indicated by numbers
-   if(brush === "dither1")
-      return 1; 
-   else if(brush === "dither2")
-      return 2; 
-   else
-      return 0;
-}
+function getPattern() { return Number(patternselect.value); }
 function toolIsRect(tool) { return tool && (tool.indexOf("rect") >= 0); }
 function toolIsErase(tool) { return tool && (tool.indexOf("erase") >= 0); }
 function toolIsContinuous(tool) { return tool && (tool.indexOf("slow") >= 0); }
@@ -1087,7 +1079,7 @@ function trackPendingStroke(drw, pending)
       pending.postLines = true;
       pending.size = getLineSize();
       pending.tool = getTool();
-      pending.pattern = brushToPattern(getBrush());
+      pending.pattern = getPattern(); //brushToPattern(getBrush());
       pending.layer = getLayer();
       pending.erasing = toolIsErase(pending.tool); 
       pending.color = pending.erasing ? null : getLineColor();

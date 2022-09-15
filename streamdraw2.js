@@ -24,7 +24,8 @@ function StreamDrawElementParser(width, height)
    this.POINTBYTES = 4;
    this.SIZEBYTES = 1;
 
-   this.FILTERSYMBOL = "!";
+   this.PATTERNSYMBOL = "!";
+   this.PATTERNBYTES = 3;
 }
 
 StreamDrawElementParser.prototype.SetSize = function(width, height)
@@ -153,11 +154,8 @@ StreamDrawElementParser.prototype.CreateStroke = function(lines, recurseJoiner)
    result += this.CreateStandardPoint(lines[0].x1, lines[0].y1, lines[0].color);
    result += StreamConvert.IntToChars(lines[0].width, this.SIZEBYTES);
 
-   if(lines[0].patternId) //pattern needs to be a number
-   {
-      result += this.FILTERSYMBOL + StreamConvert.IntToVariableWidth(lines[0].patternId);
-      //console.log("Filter: ", lines[0].patternId, result);
-   } 
+   if(lines[0].patternId) //pattern needs to be a 16 bit number
+      result += this.PATTERNSYMBOL + StreamConvert.IntToChars(lines[0].patternId, this.PATTERNBYTES);
 
    //Color is ONLY added if we're not erasing. It's a sort of space optimization,
    //saves 4 whole bytes on erasing
@@ -210,11 +208,10 @@ StreamDrawElementParser.prototype.ParseStroke = function(data, start, length)
    var color = false;
    var pattern = false;
 
-   if(data[start + l] === this.FILTERSYMBOL)
+   if(data[start + l] === this.PATTERNSYMBOL)
    {
-      var patternResult = StreamConvert.VariableWidthToInt(data, start + l + 1);
-      l += (1 + patternResult.length);
-      pattern = patternResult.value;
+      pattern = StreamConvert.CharsToInt(data, start + l + 1, this.PATTERNBYTES);
+      l += (1 + this.PATTERNBYTES)
    }
 
    if(point.extra)
@@ -293,7 +290,7 @@ StreamDrawElementParser.prototype.CreateGenericBatch = function(lines)
    result += (lines[0].rect ? "" : StreamConvert.IntToChars(lines[0].width, this.SIZEBYTES));
 
    if(lines[0].patternId) //pattern needs to be a number
-      result += this.FILTERSYMBOL + StreamConvert.IntToVariableWidth(lines[0].patternId);
+      result += this.PATTERNSYMBOL + StreamConvert.IntToChars(lines[0].patternId, this.PATTERNBYTES);
 
    //And now, just all the line data as-is (literally);
    lines.forEach(x => result += 
@@ -320,11 +317,10 @@ StreamDrawElementParser.prototype.ParseGenericBatch = function(data, start, leng
       l += this.SIZEBYTES;
    }
 
-   if(data[start + l] === this.FILTERSYMBOL)
+   if(data[start + l] === this.PATTERNSYMBOL)
    {
-      var patternResult = StreamConvert.VariableWidthToInt(data, start + l + 1);
-      l += 1 + patternResult.length;
-      pattern = patternResult.value;
+      pattern = StreamConvert.CharsToInt(data, start + l + 1, this.PATTERNBYTES);
+      l += (1 + this.PATTERNBYTES)
    }
 
    //This one is actually simpler, it's just blobs of lines (or rectangles)
