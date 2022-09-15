@@ -505,6 +505,7 @@ var MiniDraw =
 //may work better
 var MiniDraw2 = 
 {
+   _MemoizedPatterns : {},
    //An object to store a single line
    LineData : function (width, color, x1, y1, x2, y2, rect, patternId)
    {
@@ -517,23 +518,33 @@ var MiniDraw2 =
       this.rect = rect;
       this.patternId = patternId || 0;
 
-      if(this.patternId !== 0)
+      //Setup the pattern if there's a pattern AND a color (can't do erase
+      //patterns, sorry)
+      if(this.patternId && color)
       {
-         if(!color) return;
+         var pkey = `${patternId}_${color}`;
 
-         var cv = document.createElement("canvas");
-         cv.width = 4;
-         cv.height = 4;
-         var ctx = cv.getContext("2d");
-         ctx.fillStyle = color;
+         //WARN! This memoizes ALL patterns! I figure we'll have at most
+         //maybe 100, which times 16 pixels is only 1600, which... might be ok?
+         //In any case, we could limit the memoizing to maybe 32 and always get
+         //rid of the one with the least accesses
+         if(!MiniDraw2._MemoizedPatterns[pkey])
+         {
+            var cv = document.createElement("canvas");
+            cv.width = 4;
+            cv.height = 4;
+            var ctx = cv.getContext("2d");
+            ctx.fillStyle = color;
 
-         for(var i = 0; i < 16; i++)
-            if(this.patternId & (1 << i))
-               ctx.fillRect(i % 4, Math.floor(i / 4), 1, 1);
+            for(var i = 0; i < 16; i++)
+               if(this.patternId & (1 << i))
+                  ctx.fillRect(i % 4, Math.floor(i / 4), 1, 1);
 
-         //console.log("Got pattern: ", this.patternId);
+            MiniDraw2._MemoizedPatterns[pkey] = cv;
+            console.log(`Cached pattern ${pkey}`);
+         }
 
-         this.pattern = cv;
+         this.pattern = MiniDraw2._MemoizedPatterns[pkey];
       }
    },
    SetupLineStyle(ctx, ld)
