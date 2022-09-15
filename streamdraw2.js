@@ -153,10 +153,10 @@ StreamDrawElementParser.prototype.CreateStroke = function(lines, recurseJoiner)
    result += this.CreateStandardPoint(lines[0].x1, lines[0].y1, lines[0].color);
    result += StreamConvert.IntToChars(lines[0].width, this.SIZEBYTES);
 
-   if(lines[0].filterId) //filter needs to be a number
+   if(lines[0].patternId) //pattern needs to be a number
    {
-      result += this.FILTERSYMBOL + StreamConvert.IntToVariableWidth(lines[0].filterId);
-      console.log("Filter: ", lines[0].filterId, result);
+      result += this.FILTERSYMBOL + StreamConvert.IntToVariableWidth(lines[0].patternId);
+      //console.log("Filter: ", lines[0].patternId, result);
    } 
 
    //Color is ONLY added if we're not erasing. It's a sort of space optimization,
@@ -208,13 +208,13 @@ StreamDrawElementParser.prototype.ParseStroke = function(data, start, length)
    var size = StreamConvert.CharsToInt(data, start + point.skip, this.SIZEBYTES);
    var l = point.skip + this.SIZEBYTES;
    var color = false;
-   var filter = false;
+   var pattern = false;
 
    if(data[start + l] === this.FILTERSYMBOL)
    {
-      var filterResult = StreamConvert.VariableWidthToInt(data, start + l + 1);
-      l += (1 + filterResult.length);
-      filter = filterResult.value;
+      var patternResult = StreamConvert.VariableWidthToInt(data, start + l + 1);
+      l += (1 + patternResult.length);
+      pattern = patternResult.value;
    }
 
    if(point.extra)
@@ -265,8 +265,7 @@ StreamDrawElementParser.prototype.ParseStroke = function(data, start, length)
    for(i = 0; i < si - 2; i += 2)
    {
       result[(i >> 1)] = new MiniDraw2.LineData(size, color, 
-         segment[i], segment[i + 1], segment[i + 2], segment[i + 3], false,
-         filter);
+         segment[i], segment[i + 1], segment[i + 2], segment[i + 3], false, pattern);
    }
 
    return result;
@@ -293,8 +292,8 @@ StreamDrawElementParser.prototype.CreateGenericBatch = function(lines)
    result += this.CreateColorData(lines[0].color);
    result += (lines[0].rect ? "" : StreamConvert.IntToChars(lines[0].width, this.SIZEBYTES));
 
-   if(lines[0].filter) //filter needs to be a number
-      result += this.FILTERSYMBOL + StreamConvert.IntToVariableWidth(lines[0].filter);
+   if(lines[0].patternId) //pattern needs to be a number
+      result += this.FILTERSYMBOL + StreamConvert.IntToVariableWidth(lines[0].patternId);
 
    //And now, just all the line data as-is (literally);
    lines.forEach(x => result += 
@@ -313,7 +312,7 @@ StreamDrawElementParser.prototype.ParseGenericBatch = function(data, start, leng
    var color = t.color;
    var l = t.skip;
    var size = 1;
-   var filter = false;
+   var pattern = false;
    
    if(!isRect)
    {
@@ -323,9 +322,9 @@ StreamDrawElementParser.prototype.ParseGenericBatch = function(data, start, leng
 
    if(data[start + l] === this.FILTERSYMBOL)
    {
-      var filterResult = StreamConvert.VariableWidthToInt(data, start + l + 1);
-      l += 1 + filterResult.length;
-      filter = filterResult.value;
+      var patternResult = StreamConvert.VariableWidthToInt(data, start + l + 1);
+      l += 1 + patternResult.length;
+      pattern = patternResult.value;
    }
 
    //This one is actually simpler, it's just blobs of lines (or rectangles)
@@ -334,7 +333,7 @@ StreamDrawElementParser.prototype.ParseGenericBatch = function(data, start, leng
       t = this.ParseStandardPoint(data, i);
       t2 = this.ParseStandardPoint(data, i + this.POINTBYTES);
       result.push(new MiniDraw2.LineData(size, t.extra ? color : null, 
-         t.x, t.y, t2.x, t2.y, isRect, filter));
+         t.x, t.y, t2.x, t2.y, isRect, pattern));
    }
 
    return result;

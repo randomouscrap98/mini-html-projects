@@ -211,13 +211,13 @@ function getTool() {
       return getToolName(selectedTool);
 }
 function getBrush() { return brushes.querySelector("[data-selected]").id.replace("brush_", ""); }
-function brushToFilter(brush) { 
+function brushToPattern(brush) {  //Patterns are indicated by numbers
    if(brush === "dither1")
-      return 1; //MiniDraw2.SimpleDither1;
+      return 1; 
    else if(brush === "dither2")
-      return 2; //MiniDraw2.SimpleDither2;
+      return 2; 
    else
-      return null; //the default brush is null
+      return 0;
 }
 function toolIsRect(tool) { return tool && (tool.indexOf("rect") >= 0); }
 function toolIsErase(tool) { return tool && (tool.indexOf("erase") >= 0); }
@@ -1087,7 +1087,7 @@ function trackPendingStroke(drw, pending)
       pending.postLines = true;
       pending.size = getLineSize();
       pending.tool = getTool();
-      pending.filterId = brushToFilter(getBrush());
+      pending.pattern = brushToPattern(getBrush());
       pending.layer = getLayer();
       pending.erasing = toolIsErase(pending.tool); 
       pending.color = pending.erasing ? null : getLineColor();
@@ -1109,7 +1109,7 @@ function trackPendingStroke(drw, pending)
          var ld = new MiniDraw2.LineData(pending.size, pending.color,
             Math.round(drw.lastX), Math.round(drw.lastY), 
             Math.round(drw.currentX), Math.round(drw.currentY),
-            false, pending.filterId); 
+            false, pending.pattern); 
 
          if(pending.tool == "slow")
          {
@@ -1142,8 +1142,7 @@ function trackPendingStroke(drw, pending)
          var context2 = layer2.getContext("2d");
          var floodLines = MiniDraw2.Flood(context1, [ context2 ],
             drw.currentX, drw.currentY, pending.color, constants.maxLines,
-            pending.filterId);
-         //floodLines.map(x => x.filter = pending.filter);
+            pending.pattern);
          currentLines.push(...floodLines);
       }
       else if (toolIsRect(pending.tool))
@@ -1162,7 +1161,7 @@ function trackPendingStroke(drw, pending)
             pending.lines.push(new MiniDraw2.LineData(pending.size, pending.color,
                Math.round(Math.max(drw.currentX,0)), Math.round(Math.max(drw.currentY,0)),
                Math.round(Math.max(drw.currentX,0)), Math.round(Math.max(drw.currentY,0)), 
-               true, pending.filterId));
+               true, pending.pattern));
          }
          else
          {

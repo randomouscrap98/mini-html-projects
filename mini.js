@@ -506,7 +506,7 @@ var MiniDraw =
 var MiniDraw2 = 
 {
    //An object to store a single line
-   LineData : function (width, color, x1, y1, x2, y2, rect, filterId)
+   LineData : function (width, color, x1, y1, x2, y2, rect, patternId)
    {
       this.width = width;
       this.color = color;
@@ -515,91 +515,36 @@ var MiniDraw2 =
       this.x2 = x2;
       this.y2 = y2;
       this.rect = rect;
-      this.filterId = filterId || 0;
-      this.filter = MiniDraw2.SimpleRect;
+      this.patternId = patternId || 0;
 
-      if(this.filterId !== 0)
+      if(this.patternId !== 0)
       {
+         if(!color) return;
+
          var cv = document.createElement("canvas");
          cv.width = 2;
          cv.height = 2;
          var ctx = cv.getContext("2d");
-         var func = (x, y) => ctx.clearRect(x, y, 1, 1);
+         ctx.fillStyle = color;
 
-         if(color)
-         {
-            ctx.fillStyle = color;
-            func = (x, y) => ctx.fillRect(x, y, 1, 1);
-         }
+         ctx.fillRect(0, 0, 1, 1);
 
-         func(0, 0);
-
-         if(this.filterId === 1)
-            func(1,1);
+         if(this.patternId === 1)
+            ctx.fillRect(1,1,1,1);
 
          this.pattern = cv;
-         console.log("Created pattern for filter ", this.filterId);
       }
-      //this.pattern = MiniDraw2_Filters[this.filterId];
-      //MiniDraw2_Filters[this.filterId]; //filter needs to be a number!
    },
    //This function is different because rectangles require more calculation,
    //don't want to mess up the raw linedata
    SimpleRect : function(ctx, x, y, w, h, clear)
    {
-      //console.log("SIMPLERECT2", x, y, w, h);
       w = Math.round(w); h = Math.round(h);
       x = Math.round(x); y = Math.round(y);
       if(!w || !h) { return; }
       else if(clear) { ctx.clearRect(x, y, w, h); }
       else { ctx.rect(x, y, w, h); }
    },
-   //SimpleDither1 : function(ctx, x, y, w, h, clear)
-   //{
-   //   w = Math.round(w); h = Math.round(h);
-   //   x = Math.round(x); y = Math.round(y);
-   //   var i, j;
-   //   //console.log("Dithering");
-
-   //   //awful duplication, maybe a little more optimized idk
-   //   if(!clear)
-   //   {
-   //      //Unfortunately, can't use pathing (rect), it's broken
-   //      for(i = x + w - 1; i >= x; i--)
-   //         for(j = y + h - 1; j >= y; j--)
-   //            if((i & 1) === (j & 1))
-   //               ctx.fillRect(i, j, 1, 1);
-   //   }
-   //   else
-   //   {
-   //      for(i = x + w - 1; i >= x; i--)
-   //         for(j = y + h - 1; j >= y; j--)
-   //            if((i & 1) === (j & 1))
-   //               ctx.clearRect(i, j, 1, 1);
-   //   }
-   //},
-   //SimpleDither2 : function(ctx, x, y, w, h, clear)
-   //{
-   //   w = Math.round(w); h = Math.round(h);
-   //   x = Math.round(x); y = Math.round(y);
-   //   var i, j;
-
-   //   //awful duplication, maybe a little more optimized idk
-   //   if(!clear)
-   //   {
-   //      for(i = x + w - 1; i >= x; i--)
-   //         for(j = y + h - 1; j >= y; j--)
-   //            if(!(i & 1) && !(j & 1))
-   //               ctx.fillRect(i, j, 1, 1);
-   //   }
-   //   else
-   //   {
-   //      for(i = x + w - 1; i >= x; i--)
-   //         for(j = y + h - 1; j >= y; j--)
-   //            if(!(i & 1) && !(j & 1))
-   //               ctx.clearRect(i, j, 1, 1);
-   //   }
-   //},
    SimpleLine : function (ctx, ld)
    {
       var xdiff = ld.x2 - ld.x1;
@@ -612,6 +557,7 @@ var MiniDraw2 =
 
       if(ld.color)
          ctx.fillStyle = ld.color;
+
       if(ld.pattern)
       {
          const pattern = ctx.createPattern(ld.pattern, "repeat");
@@ -624,7 +570,7 @@ var MiniDraw2 =
          ctx.beginPath();
          //Remember that there is no 'height' because it's all LINE width, so
          //the ld.width used for height makes sense
-         ld.filter(ctx, Math.min(ld.x1, ld.x2) - ofs, ld.y1 - ofs, 
+         MiniDraw2.SimpleRect(ctx, Math.min(ld.x1, ld.x2) - ofs, ld.y1 - ofs, 
             Math.abs(xdiff) + ld.width, ld.width, !ld.color);
          ctx.fill();
       }
@@ -640,7 +586,7 @@ var MiniDraw2 =
             x = Math.round(ld.x1+Math.cos(ang)*i-ofs); 
             y = Math.round(ld.y1+Math.sin(ang)*i-ofs);
             if(setx[x] && sety[y]) continue;
-            ld.filter(ctx, x, y, ld.width, ld.width, !ld.color);
+            MiniDraw2.SimpleRect(ctx, x, y, ld.width, ld.width, !ld.color);
             setx[x] = 1; sety[y] = 1;
          }
          ctx.fill();
@@ -654,7 +600,7 @@ var MiniDraw2 =
          if(ld.color)
             ctx.fillStyle = ld.color;
          ctx.beginPath();
-         ld.filter(ctx, Math.min(ld.x1, ld.x2), Math.min(ld.y1, ld.y2),
+         MiniDraw2.SimpleRect(ctx, Math.min(ld.x1, ld.x2), Math.min(ld.y1, ld.y2),
             Math.abs(ld.x1 - ld.x2), Math.abs(ld.y1 - ld.y2), !ld.color);
          ctx.fill();
       }
@@ -671,7 +617,7 @@ var MiniDraw2 =
    //MiniDraw lines that could be used to represent the flood. Currently it
    //fails if it goes over the maxLines generated. The "sampleContexts" should
    //be an array of contexts to search through for flood fill ability
-   Flood : function(context, extraSamples, cx, cy, color, maxLines, filterId)
+   Flood : function(context, extraSamples, cx, cy, color, maxLines, patternId)
    {
       //Do the east/west thing, generate the lines, IGNORE future strokes
       //Using a buffer because working with image data can (does) cause it to go
@@ -684,9 +630,6 @@ var MiniDraw2 =
       var queue = [[Math.round(cx), Math.round(cy)]];
       var rIndex = MiniDraw2.GetIndex(ctxData, cx, cy);
       var replaceColors = iDatas.map(x => [x.data[rIndex], x.data[rIndex+1], x.data[rIndex+2], x.data[rIndex+3]]);
-      //var replaceColorString = (new Color(
-      //   replaceColors[0][0], replaceColors[0][1], replaceColors[0][2], replaceColors[0][3])
-      //).ToHexString();
       console.log("Flood into color: ", replaceColors, cx, cy);
       maxLines = maxLines || 999999999;
       var west, east, i, j, k;
@@ -720,7 +663,7 @@ var MiniDraw2 =
             //NOTE: flood fill doesn't CARE about fancy additional complexity like
             //rectangle drawing or complex line fill, WE are the complexity already
             currentLines.push(new MiniDraw2.LineData(1, color, west, p[1], east, p[1],
-               false, filterId));
+               false, patternId));
 
             //Don't allow huge fills at all, just quit
             if(currentLines.length > maxLines)
@@ -758,12 +701,6 @@ var MiniDraw2 =
       return currentLines;
    },
 };
-
-//var MiniDraw2_Filters = [
-//   MiniDraw2.SimpleRect,
-//   MiniDraw2.SimpleDither1,
-//   MiniDraw2.SimpleDither2,
-//];
 
 
 var StreamConvert =
