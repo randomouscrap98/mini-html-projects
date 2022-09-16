@@ -1151,7 +1151,7 @@ function trackPendingStroke(drw, pending)
          pending.accepting = false; //DON'T do any more fills on this stroke!!
          var context1 = layer1.getContext("2d");
          var context2 = layer2.getContext("2d");
-         var floodLines = MiniDraw2.Flood(context1, [ context2 ],
+         var floodLines = MiniDraw2.Flood([ context1, context2 ],
             drw.currentX, drw.currentY, pending.color, constants.maxLines,
             pending.pattern);
          currentLines.push(...floodLines);

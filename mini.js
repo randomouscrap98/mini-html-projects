@@ -624,42 +624,55 @@ var MiniDraw2 =
          MiniDraw2.SimpleLine(ctx, ld);
       }
    },
-   GetIndex : function(idata, x, y)
-   {
-      return 4 * (Math.round(x) + Math.round(y) * idata.width);
-   },
+   //GetIndex : function(idata, x, y)
+   //{
+   //   return 4 * (Math.round(x) + Math.round(y) * idata.width);
+   //},
+   //GetIndex4 : function(idata, x, y)
+   //{
+   //   return (Math.round(x) + Math.round(y) * idata.width);
+   //},
    //Perform a flood on the given context at the given point, returning the
    //MiniDraw lines that could be used to represent the flood. Currently it
    //fails if it goes over the maxLines generated. The "sampleContexts" should
    //be an array of contexts to search through for flood fill ability
-   Flood : function(context, extraSamples, cx, cy, color, maxLines, patternId)
+   Flood : function(contexts, cx, cy, color, maxLines, patternId)
    {
       //Do the east/west thing, generate the lines, IGNORE future strokes
       //Using a buffer because working with image data can (does) cause it to go
       //into software rendering mode, which is very slow
       var currentLines = [];
-      var width = context.canvas.width;
-      var height = context.canvas.height;
-      var ctxData = context.getImageData(0, 0, width, height);
-      var iDatas = [ctxData, ...extraSamples.map(x => x.getImageData(0, 0, width, height))];
+      var width = contexts[0].canvas.width;
+      var height = contexts[0].canvas.height;
+      var getIndex = (ix, iy) => (Math.round(ix) + Math.round(iy) * width);
+      var rIndex = getIndex(cx, cy);
+      var iDatas = contexts.map(x => new Uint32Array(x.getImageData(0, 0, width, height).data.buffer));
+      var replaceColors = iDatas.map(x => x[rIndex]);
       var queue = [[Math.round(cx), Math.round(cy)]];
-      var rIndex = MiniDraw2.GetIndex(ctxData, cx, cy);
-      var replaceColors = iDatas.map(x => [x.data[rIndex], x.data[rIndex+1], x.data[rIndex+2], x.data[rIndex+3]]);
       console.log("Flood into color: ", replaceColors, cx, cy);
       maxLines = maxLines || 999999999;
       var west, east, i, j, k;
+      var resetAll = () => {
+         //Undo the flood
+         for(i = 0; i < currentLines.length; i++)
+         {
+            for(j = currentLines[i].x1; j <= currentLines[i].x2; j++)
+            {
+               k = getIndex(j, currentLines[i].y1);
+               iDatas[0][k] = replaceColors[0];
+            }
+         }
+      };
       var shouldFill = (x, y) =>
       {
          if(x < 0 || y < 0 || x >= width || y >= height)
             return false;
-         var i = MiniDraw2.GetIndex(ctxData, x, y);
+
+         var i = getIndex(x, y);
 
          for(var sfi = 0; sfi < iDatas.length; sfi++)
-         {
-            if(!(iDatas[sfi].data[i] == replaceColors[sfi][0] && iDatas[sfi].data[i + 1] == replaceColors[sfi][1] &&
-               iDatas[sfi].data[i + 2] == replaceColors[sfi][2] && iDatas[sfi].data[i + 3] == replaceColors[sfi][3]))
+            if(iDatas[sfi][i] !== replaceColors[sfi])
                return false;
-         }
 
          return true;
       };
@@ -683,15 +696,7 @@ var MiniDraw2 =
             //Don't allow huge fills at all, just quit
             if(currentLines.length > maxLines)
             {
-               //Undo the flood
-               for(i = 0; i < currentLines.length; i++)
-               {
-                  for(j = currentLines[i].x1; j <= currentLines[i].x2; j++)
-                  {
-                     k = MiniDraw2.GetIndex(ctxData, j, currentLines[i].y1);
-                     ctxData.data[k + 3] = replaceColors[0][3];
-                  }
-               }
+               resetAll();
                alert("Flood fill area too large!");
                currentLines.length = 0;
                break;
@@ -701,8 +706,9 @@ var MiniDraw2 =
             for(i = west; i <= east; i++)
             {
                //Just has to be DIFFERENT, not the color we're filling.
-               j = MiniDraw2.GetIndex(ctxData, i, p[1]);
-               ctxData.data[j + 3] = (ctxData.data[j + 3] + 10) & 255;
+               j = getIndex(i, p[1]);
+               iDatas[0][j] += 10;
+               //ctxData.data[j + 3] = (ctxData.data[j + 3] + 10) & 255;
                //Queue the north and south (regardless of fill requirement)
                queue.push([i, p[1] + 1]);
                queue.push([i, p[1] - 1]);
@@ -710,6 +716,7 @@ var MiniDraw2 =
          }
       }
 
+      resetAll(); //Clear all the messed up data we did
       iData = null;
       img = null;
       console.log("Flood lines: ", currentLines.length);
