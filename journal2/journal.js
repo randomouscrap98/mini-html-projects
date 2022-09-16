@@ -27,7 +27,7 @@ var constants =
 {
    pwidth : 2000,
    pheight : 4000,
-   roomPrepend : "journal2_test_",
+   roomPrepend : "journal2_",
    settingPrepend : "mini_journal2_",
    maxLines : 5000,        //A single stroke (or fill) can't have more than this
    maxMessageRender : 100, //per frame
