@@ -692,9 +692,9 @@ function setupChat()
 
 function setupExports()
 {
-   //var url = new URL(location.href);
-   //url.searchParams.set("export", "1");
-   //document.getElementById("export").href = url.toString();
+   var url = new URL(location.href);
+   url.searchParams.set("export", "1");
+   document.getElementById("export").href = url.toString();
    exportstatic.onclick = (e) =>
    {
       e.preventDefault();
@@ -718,7 +718,6 @@ function performStaticExport()
       }
    });
    appendScroll(coverscreencontainer, "** NOTE: export size is heavily optimized on Firefox only! **");
-   //appendScroll(coverscreencontainer, "Loading, please wait...");
 
    var makeDownload = (data, name, filename) =>
    {
@@ -874,85 +873,85 @@ function hashtag(e) { e.preventDefault(); }
    }, 100);
 }
 
-//function performFunctionalExport(room)
-//{
-//   //First, throw up the cover screen
-//   showCover({ 
-//      title: "Functional Export",
-//      showContainer: true
-//   });
-//
-//   appendScroll(coverscreencontainer, "Please wait, downloading + stitching data + scripts");
-//
-//   //Then, go download all the header stuff and jam them into their respective elements
-//   var styles = document.head.querySelectorAll('link[rel="stylesheet"]');
-//   var scripts = document.head.querySelectorAll('script');
-//
-//   var stylesLeft = styles.length, scriptsLeft = scripts.length;
-//
-//   var finalize = () =>
-//   {
-//      appendScroll(coverscreencontainer, `Remaining Scripts: ${scriptsLeft}, Styles: ${stylesLeft}`);
-//      if(!(stylesLeft == 0 && scriptsLeft == 0)) return;
-//
-//      //document.body.setAttribute("data-export", "");
-//
-//      //We can't close the functional export screen (since we mangled the html)
-//      //so... oops, this is a little janky
-//      hide(coverscreen);
-//      var htmlBlob = new Blob([document.documentElement.outerHTML], {type:"text/plain;charset=utf-8"});
-//      show(coverscreen);
-//      appendScroll(coverscreencontainer, "Export complete! You can close the window when you're done");
-//      var activeUrl = window.URL.createObjectURL(htmlBlob);
-//      var downloadLink = document.createElement("a");
-//      downloadLink.textContent = "Download Functional HTML";
-//      downloadLink.href = activeUrl;
-//      downloadLink.download = `${room}_full.html`;
-//      downloadLink.style.display = "block";
-//      appendScroll(coverscreencontainer, downloadLink);
-//   };
-//
-//   $.get(endpoint(room), data => 
-//   { 
-//      var preamble = parsePreamble(data);
-//
-//      //Scripts MUST come AFTER data (since we need to insert it INTO a script)
-//      [...scripts].forEach(x =>
-//      {
-//         $.get(x.src, d =>
-//         { 
-//            if(x.src.indexOf("journal.js") >= 0)
-//            {
-//               console.log("MATCH: ", x.src);
-//               d = 'var exportData = { roomname: ' + JSON.stringify(room) + 
-//                   ', roomdata: \n' + JSON.stringify(data) + '\n};\n' + d;
-//            }
-//
-//            x.innerHTML = d;
-//            x.removeAttribute("src");
-//            scriptsLeft--;
-//            finalize(); 
-//         });
-//      });
-//
-//      //This won't do anything, but we should always make sure...
-//      //what if there are NO scripts and NO styles?
-//      finalize(); 
-//   });
-//
-//   [...styles].forEach(x =>
-//   {
-//      $.get(x.href, d =>
-//      { 
-//         var s = document.createElement("style");
-//         s.innerHTML = d;
-//         document.head.appendChild(s);
-//         x.parentNode.removeChild(x);
-//         stylesLeft--;
-//         finalize(); 
-//      });
-//   });
-//}
+function performFunctionalExport(room)
+{
+   //First, throw up the cover screen
+   showCover({ 
+      title: "Functional Export",
+      showContainer: true
+   });
+
+   appendScroll(coverscreencontainer, "Please wait, downloading + stitching data + scripts");
+
+   //Then, go download all the header stuff and jam them into their respective elements
+   var styles = document.head.querySelectorAll('link[rel="stylesheet"]');
+   var scripts = document.head.querySelectorAll('script');
+
+   var stylesLeft = styles.length, scriptsLeft = scripts.length;
+
+   var finalize = () =>
+   {
+      appendScroll(coverscreencontainer, `Remaining Scripts: ${scriptsLeft}, Styles: ${stylesLeft}`);
+      if(!(stylesLeft == 0 && scriptsLeft == 0)) return;
+
+      //document.body.setAttribute("data-export", "");
+
+      //We can't close the functional export screen (since we mangled the html)
+      //so... oops, this is a little janky
+      hide(coverscreen);
+      var htmlBlob = new Blob([document.documentElement.outerHTML], {type:"text/plain;charset=utf-8"});
+      show(coverscreen);
+      appendScroll(coverscreencontainer, "Export complete! You can close the window when you're done");
+      var activeUrl = window.URL.createObjectURL(htmlBlob);
+      var downloadLink = document.createElement("a");
+      downloadLink.textContent = "Download Functional HTML";
+      downloadLink.href = activeUrl;
+      downloadLink.download = `${room}_full.html`;
+      downloadLink.style.display = "block";
+      appendScroll(coverscreencontainer, downloadLink);
+   };
+
+   $.get(endpoint(room), data => 
+   { 
+      var preamble = parsePreamble(data);
+
+      //Scripts MUST come AFTER data (since we need to insert it INTO a script)
+      [...scripts].forEach(x =>
+      {
+         $.get(x.src, d =>
+         { 
+            if(x.src.indexOf("journal.js") >= 0)
+            {
+               console.log("MATCH: ", x.src);
+               d = 'var exportData = { roomname: ' + JSON.stringify(room) + 
+                   ', roomdata: \n' + JSON.stringify(data) + '\n};\n' + d;
+            }
+
+            x.innerHTML = d;
+            x.removeAttribute("src");
+            scriptsLeft--;
+            finalize(); 
+         });
+      });
+
+      //This won't do anything, but we should always make sure...
+      //what if there are NO scripts and NO styles?
+      finalize(); 
+   });
+
+   [...styles].forEach(x =>
+   {
+      $.get(x.href, d =>
+      { 
+         var s = document.createElement("style");
+         s.innerHTML = d;
+         document.head.appendChild(s);
+         x.parentNode.removeChild(x);
+         stylesLeft--;
+         finalize(); 
+      });
+   });
+}
 
 function copySection(ld)
 {
