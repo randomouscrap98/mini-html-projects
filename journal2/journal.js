@@ -18,6 +18,7 @@ var globals =
    scheduledMessages: [],
    scheduledPages: [],
    scheduledLines: [],
+   pbspeedAccumulator: 0, //ONLY for smoothing autofollow!
    layerTop : 0,
    layerLeft : 0
 };
@@ -79,11 +80,6 @@ function windowOnLoad()
          return;
       }
 
-      //if(url.searchParams.get("auto") == 1)
-      //{
-      //   autofollow.checked = true;
-      //}
-
       setupToggleSetting("pageflip", pageflip, 
          () => document.body.setAttribute("data-flipped", ""),
          () => document.body.removeAttribute("data-flipped"));
@@ -116,15 +112,20 @@ function windowOnLoad()
          document.body.setAttribute("data-pagereadonly", "");
 
          //Only show auto on very specifically readonly but reading 
-         //if(!globals.exported)
-         //{
-         //   show(autofollow.parentNode);
-         //   autofollow.oninput = (e) =>
-         //   {
-         //      //setHidden(scrollbar, autofollow.checked);
-         //      setHidden(playbackcontrols, autofollow.checked);
-         //   };
-         //}
+         if(!globals.exported)
+         {
+            show(autofollow.parentNode);
+            autofollow.oninput = (e) =>
+            {
+               setHidden(playbackmodifier, autofollow.checked);
+               setHidden(playbackslider, autofollow.checked);
+               setHidden(pagecontrols, autofollow.checked);
+            };
+
+            //Use click to enable the oninput
+            if(url.searchParams.get("auto") == 1)
+               autofollow.click();
+         }
       }
       else
       {
@@ -179,7 +180,7 @@ function safety(func) { try { func(); } catch(ex) { console.log(ex); } }
 function getSetting(name) { return StorageUtilities.ReadLocal(constants.settingPrepend + name) }
 function setSetting(name, value) { StorageUtilities.WriteLocal(constants.settingPrepend + name, value); }
 function setStatus(status) { percent.setAttribute("data-status", status); }
-//function shouldAutoFollow() { return globals.readonly && !globals.exported && autofollow.checked; }
+function shouldAutoFollow() { return globals.readonly && !globals.exported && autofollow.checked; }
 function getPlaybackSpeed() { 
    return Number(playbacktext.value) * 
       Number(playbackmodifier.querySelector("[data-selected]").id.replace("playback",""));
@@ -518,7 +519,7 @@ function setupPageControls()
          if(confirmTimer) 
             clearTimeout(confirmTimer);
          resetnpb();
-         newpagebutton.setAttribute("data-disabled", "");
+         newpagebutton.setAttribute("disabled", "");
          var pagename = globals.system.NewPageName();
          post(endpoint(globals.roomname), 
             globals.system.parser.CreatePage(new StreamDrawPageData(pagename)));
@@ -616,7 +617,10 @@ function exportSinglePage(page, system, redrawPage) //forgetPage)//, system)
 //page to set rather than just the offset.
 function changePage(name) //increment, exact)
 {
-
+   //Even though there's the potential for that glitch where a pending page
+   //change never gets found, you HAVE to only allow page changes when the
+   //scanner is complete! We'll handle dangling pending pages with the scanner
+   //tracking!
    if(setPage(name) && globals.system.ScanAtEnd())
    {
       CanvasUtilities.Clear(layer1);
@@ -1251,43 +1255,88 @@ function frameFunction()
       messages.appendChild(fragment);
       globals.scheduledScrolls.push(messagecontainer);
    }
-   if(globals.scheduledPages.length > 0)
-   {
-      globals.scheduledPages.forEach(x =>
-      {
-         var option = document.createElement("option");
-         option.value = x.name;
-         option.innerHTML = `${x.number}:${x.name}`;
-         pageselect.appendChild(option);
-         ////Sometimes, the page is set before any pages are available
-         //if(x.name === globals.pendingSetPage)
-         //{
-         //   changePage(x.name);
-         //}
-         if(x.name === globals.pendingNewPage)
-         {
-            newpagebutton.removeAttribute("data-disabled");
-            globals.pendingNewPage = null;
-         }
-      });
-      //This  may cause the page to flash but for now, it's safer. we'll come
-      //up with something better later... this also fixes
-      //globals.pendingSetPage (if our page was added)
-      changePage(globals.pendingSetPage || getPage());
-      globals.scheduledPages = [];
-   }
    //Now draw lines based on playback speed (if there are any)
    if(globals.scheduledLines.length > 0)
    {
-      var pbspeed = getPlaybackSpeed();
-      drawLines(globals.scheduledLines.splice(0, pbspeed * perfmon));
+      var pbspeed = 0;
+
+      if(shouldAutoFollow())
+      {
+         //This was taken from the original draw system. It's a method for
+         //drawing smoother lines when the data is disconnected. it just looks
+         //more natural... kind of. It slows down the end of the line so the
+         //other lines have time to catch up, but speeds up if there's too much
+         //going on, in an attempt to even out the drawing at 1:1
+         globals.pbspeedAccumulator += Math.max(0.5, 
+            Math.pow(globals.scheduledLines.length, 1.0) / 30);
+         console.log(globals.pbspeedAccumulator, globals.scheduledLines.length);
+         pbspeed = Math.floor(globals.pbspeedAccumulator);
+         globals.pbspeedAccumulator -= pbspeed;
+         //Math.min(Math.ceil(globals.scheduledLines.length / constants.autoDrawLineChunk), constants.maxParse);
+      }
+      else
+      {
+         //Will it matter that we're setting this junk every frame? IDK
+         globals.pbspeedAccumulator = 0;
+         pbspeed = getPlaybackSpeed();
+      }
+
+      // no point trying to splice something that's 0 items pulled out
+      if(pbspeed > 0)
+         drawLines(globals.scheduledLines.splice(0, pbspeed * perfmon));
    }
 
    //Only do drawing stuff on frame if there IS a drawer.
    if(globals.drawer)
       drawerTick(globals.drawer, globals.pendingStroke);
 
-   globals.system.Scan(messageEvent, pageEvent, constants.maxParse * perfmon, constants.maxScan * perfmon);
+   var tracker = globals.system.Scan(messageEvent, pageEvent, constants.maxParse * perfmon, constants.maxScan * perfmon);
+
+   //There are some things we do when we get to the end that can ONLY happen
+   //here! For instance, we only complete a pending changePage at the END of
+   //scanning so we know if we're truly the last page. 
+   if(tracker.atEnd)
+   {
+      //We ONLY handle pages at the end of scanning so we can be sure of all
+      //the properties (such as last page). This also reduces flashing on
+      //initial load, as the initial load will only complete the page events
+      //once at the very end. This ALSO prevents the bug where a pending page
+      //change may not complete, because changePage only works if we're at the
+      //end.
+      if(globals.scheduledPages.length > 0)
+      {
+         globals.scheduledPages.forEach(x =>
+         {
+            var option = document.createElement("option");
+            option.value = x.name;
+            option.innerHTML = `${x.number}:${x.name}`;
+            pageselect.appendChild(option);
+            if(x.name === globals.pendingNewPage)
+            {
+               newpagebutton.removeAttribute("disabled");
+               globals.pendingNewPage = null;
+            }
+         });
+
+         //We want the page to be the last page all the time. I don't want to add
+         //an "am I at the end of scanning" check, because it's possible for the
+         //last page event to happen long before the actual end of the scan
+         if(shouldAutoFollow())
+         {
+            globals.pendingSetPage = globals.system.GetLastPageName();
+            console.log("Auto follow changing to page " + globals.pendingSetPage);
+         }
+
+         //This  may cause the page to flash but for now, it's safer. we'll come
+         //up with something better later... The reason the flashing
+         //is ok is that, the journal isn't made for multiple users at once.
+         //flashing pages will almost never happen. Also, if there's a pending
+         //set page (could be from anything), NOW is the time to change to it
+         //anyway.
+         changePage(globals.pendingSetPage || getPage());
+         globals.scheduledPages = [];
+      }
+   }
 
    if(globals.drawTracking)
    {

@@ -510,8 +510,8 @@ StreamDrawSystem.prototype.FindPage = function(name)
 StreamDrawSystem.prototype.NewPageName = function()
 {
    var dt = new Date();
-   var baseName = dt.getFullYear() + "-" + String(dt.getMonth() + 1).padStart(2, '0') + "-" + String(dt.getDate()).padStart(2, '0');
-   //(new Date()).toLocaleDateString("ja").replaceAll("/", "-").substr(0, 10);
+   var baseName = dt.getFullYear() + "-" + String(dt.getMonth() + 1).padStart(2, '0') + 
+      "-" + String(dt.getDate()).padStart(2, '0');
    var counter = 0;
 
    for(var i = 0; i < this.pages.length; i++)
@@ -522,6 +522,22 @@ StreamDrawSystem.prototype.NewPageName = function()
       return `${baseName}(${counter + 1})`;
    else
       return baseName;
+};
+
+StreamDrawSystem.prototype.GetLastPage = function()
+{
+   if(this.pages.length)
+      return this.pages[this.pages.length - 1];
+   else
+      return false;
+};
+
+StreamDrawSystem.prototype.GetLastPageName = function()
+{
+   var lastPage = this.GetLastPage();
+   if(lastPage)
+      return lastPage.name;
+   return false;
 };
 
 StreamDrawSystem.prototype.IsLastPage = function(name)
@@ -569,6 +585,7 @@ StreamDrawSystem.prototype.Scan = function(messageEvent, pageEvent, parseLimit, 
       }
    );
 
+   tracker.atEnd = me.ScanAtEnd();
    return tracker; 
 };
 

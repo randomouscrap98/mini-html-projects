@@ -595,7 +595,7 @@ var MiniDraw2 =
          var x, y;
          var setx = [], sety = [];
          ctx.beginPath();
-         for(var i=0;i<dist;i+=0.5) //0.5) 
+         for(var i=0;i<dist;i+=0.5)
          {
             //The filter function SHOULD round for us, but we need it rounded
             //for the setx/sety
@@ -624,14 +624,6 @@ var MiniDraw2 =
          MiniDraw2.SimpleLine(ctx, ld);
       }
    },
-   //GetIndex : function(idata, x, y)
-   //{
-   //   return 4 * (Math.round(x) + Math.round(y) * idata.width);
-   //},
-   //GetIndex4 : function(idata, x, y)
-   //{
-   //   return (Math.round(x) + Math.round(y) * idata.width);
-   //},
    //Perform a flood on the given context at the given point, returning the
    //MiniDraw lines that could be used to represent the flood. Currently it
    //fails if it goes over the maxLines generated. The "sampleContexts" should
@@ -645,37 +637,35 @@ var MiniDraw2 =
       var width = contexts[0].canvas.width;
       var height = contexts[0].canvas.height;
       var getIndex = (ix, iy) => (Math.round(ix) + Math.round(iy) * width);
-      var rIndex = getIndex(cx, cy);
       var iDatas = contexts.map(x => new Uint32Array(x.getImageData(0, 0, width, height).data.buffer));
-      var replaceColors = iDatas.map(x => x[rIndex]);
+      var replaceColors = iDatas.map(x => x[getIndex(cx, cy)]);
       var queue = [[Math.round(cx), Math.round(cy)]];
-      console.log("Flood into color: ", replaceColors, cx, cy);
-      maxLines = maxLines || 999999999;
       var west, east, i, j, k;
-      var resetAll = () => {
-         //Undo the flood
-         for(i = 0; i < currentLines.length; i++)
-         {
-            for(j = currentLines[i].x1; j <= currentLines[i].x2; j++)
-            {
-               k = getIndex(j, currentLines[i].y1);
-               iDatas[0][k] = replaceColors[0];
-            }
-         }
+      maxLines = maxLines || 999999999;
+
+      console.log("Flood into color: ", replaceColors, cx, cy);
+
+      var cleanup = () => { //Undo the flood
+         for(var i = 0; i < currentLines.length; i++)
+            for(var j = currentLines[i].x1; j <= currentLines[i].x2; j++)
+               iDatas[0][getIndex(j, currentLines[i].y1)] = replaceColors[0];
       };
+
       var shouldFill = (x, y) =>
       {
          if(x < 0 || y < 0 || x >= width || y >= height)
             return false;
 
-         var i = getIndex(x, y);
+         //Idk, don't create a new variable each time.
+         k = getIndex(x, y);
 
          for(var sfi = 0; sfi < iDatas.length; sfi++)
-            if(iDatas[sfi][i] !== replaceColors[sfi])
+            if(iDatas[sfi][k] !== replaceColors[sfi])
                return false;
 
          return true;
       };
+
       while(queue.length)
       {
          var p = queue.pop();
@@ -696,7 +686,7 @@ var MiniDraw2 =
             //Don't allow huge fills at all, just quit
             if(currentLines.length > maxLines)
             {
-               resetAll();
+               cleanup();
                alert("Flood fill area too large!");
                currentLines.length = 0;
                break;
@@ -708,7 +698,6 @@ var MiniDraw2 =
                //Just has to be DIFFERENT, not the color we're filling.
                j = getIndex(i, p[1]);
                iDatas[0][j] += 10;
-               //ctxData.data[j + 3] = (ctxData.data[j + 3] + 10) & 255;
                //Queue the north and south (regardless of fill requirement)
                queue.push([i, p[1] + 1]);
                queue.push([i, p[1] - 1]);
@@ -716,12 +705,10 @@ var MiniDraw2 =
          }
       }
 
-      resetAll(); //Clear all the messed up data we did
-      iData = null;
-      img = null;
+      cleanup(); //Clear all the messed up data we did
       console.log("Flood lines: ", currentLines.length);
       return currentLines;
-   },
+   }
 };
 
 
