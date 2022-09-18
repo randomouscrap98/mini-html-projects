@@ -92,6 +92,12 @@ function doValueLink(target)
 function endpoint(room, readonly) { return "https://oboy.smilebasicsource.com/stream/" + room + 
    (readonly ? "?readonlykey=true" : ""); }
 
+//var MiniConfig = {
+//   offline : false,
+//   offlineRoomData : {}
+//};
+
+
 function queryEnd(room, start, handle, error, readonly)
 {
    var requery = function() { queryEnd(room, start, handle, error, readonly); };
@@ -114,6 +120,16 @@ function queryEnd(room, start, handle, error, readonly)
 
 function post(url, data, then, error)
 {
+   //if(MiniConfig.offline)
+   //{
+   //   //Offline always posts to the object. we can't store it in localstorage 
+   //   //because dumb browsers and their restrictions
+   //   if(!MiniConfig.offlineRoomData[
+   //}
+   //else
+   //{
+   //   postRetry(url, data, then, error, 100, 1000);
+   //}
    postRetry(url, data, then, error, 100, 1000);
 }
 

@@ -621,8 +621,13 @@ function changePage(name) //increment, exact)
    //change never gets found, you HAVE to only allow page changes when the
    //scanner is complete! We'll handle dangling pending pages with the scanner
    //tracking!
-   if(setPage(name) && globals.system.ScanAtEnd())
+   if(globals.system.ScanAtEnd())
    {
+      if(!setPage(name))
+      {
+         console.warn("Tried to set page to non-existent name! Resetting page to none instead");
+         name = null;
+      }
       CanvasUtilities.Clear(layer1);
       CanvasUtilities.Clear(layer2);
       setDrawAbility(globals.system.IsLastPage(name) && !globals.readonly);
@@ -630,14 +635,17 @@ function changePage(name) //increment, exact)
       globals.scheduledLines = []; //Remove anything waiting to be drawn, this is a new page
       if(!name)
       {
-         console.warn("Tried to change to null page, not setting up drawing");
          location.hash = "";
          globals.drawTracking = false;
+         hide(layer1);
+         hide(layer2);
       }
       else
       {
          location.hash = "page-" + name;
          globals.drawTracking = globals.system.InitializeLineScan(name);
+         show(layer1);
+         show(layer2);
       }
    }
    else
