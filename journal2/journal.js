@@ -524,7 +524,8 @@ function setupPageControls()
          post(endpoint(globals.roomname), 
             globals.system.parser.CreatePage(new StreamDrawPageData(pagename)));
          globals.pendingNewPage = pagename;
-         changePage(pagename); //We know the page isn't ready yet, but changePage is very lenient
+         globals.pendingSetPage = pagename;
+         //changePage(pagename); //We know the page isn't ready yet, but changePage is very lenient
       }
       else
       {
@@ -637,15 +638,15 @@ function changePage(name) //increment, exact)
       {
          location.hash = "";
          globals.drawTracking = false;
-         hide(layer1);
-         hide(layer2);
+         //hide(layer1);
+         //hide(layer2);
       }
       else
       {
          location.hash = "page-" + name;
          globals.drawTracking = globals.system.InitializeLineScan(name);
-         show(layer1);
-         show(layer2);
+         //show(layer1);
+         //show(layer2);
       }
    }
    else
