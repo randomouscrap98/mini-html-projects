@@ -549,14 +549,13 @@ var MiniDraw2 =
             if(!MiniDraw2._MemoizedPatterns[pkey])
             {
                var cv = document.createElement("canvas");
-               cv.width = 4;
-               cv.height = 4;
-               var ctx = cv.getContext("2d");
-               ctx.fillStyle = ld.color;
+               cv.width = 4; cv.height = 4;
+               var cvx = cv.getContext("2d");
+               cvx.fillStyle = ld.color;
 
                for(var i = 0; i < 16; i++)
                   if(ld.patternId & (1 << i))
-                     ctx.fillRect(i % 4, Math.floor(i / 4), 1, 1);
+                     cvx.fillRect(i % 4, Math.floor(i / 4), 1, 1);
 
                MiniDraw2._MemoizedPatterns[pkey] = ctx.createPattern(cv, "repeat");
                console.log(`Cached pattern ${pkey}`);

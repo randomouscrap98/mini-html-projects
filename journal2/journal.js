@@ -662,7 +662,7 @@ function handlePageHash(hash)
 
    //With the new system, if we're not ON a page, then no drawing should happen
    if(match)
-      changePage(match[1]);
+      globals.pendingSetPage = match[1];
    else
       setDrawAbility(false);
 }
