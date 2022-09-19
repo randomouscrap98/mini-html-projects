@@ -533,45 +533,41 @@ var MiniDraw2 =
       this.y2 = y2;
       this.rect = rect;
       this.patternId = patternId || 0;
-
-      //Setup the pattern if there's a pattern AND a color (can't do erase
-      //patterns, sorry)
-      if(this.patternId && color)
-      {
-         var pkey = `${patternId}_${color}`;
-
-         //WARN! This memoizes ALL patterns! I figure we'll have at most
-         //maybe 100, which times 16 pixels is only 1600, which... might be ok?
-         //In any case, we could limit the memoizing to maybe 32 and always get
-         //rid of the one with the least accesses
-         if(!MiniDraw2._MemoizedPatterns[pkey])
-         {
-            var cv = document.createElement("canvas");
-            cv.width = 4;
-            cv.height = 4;
-            var ctx = cv.getContext("2d");
-            ctx.fillStyle = color;
-
-            for(var i = 0; i < 16; i++)
-               if(this.patternId & (1 << i))
-                  ctx.fillRect(i % 4, Math.floor(i / 4), 1, 1);
-
-            MiniDraw2._MemoizedPatterns[pkey] = cv;
-            console.log(`Cached pattern ${pkey}`);
-         }
-
-         this.pattern = MiniDraw2._MemoizedPatterns[pkey];
-      }
    },
    SetupLineStyle(ctx, ld)
    {
       if(ld.color)
-         ctx.fillStyle = ld.color;
-
-      if(ld.pattern)
       {
-         const pattern = ctx.createPattern(ld.pattern, "repeat");
-         ctx.fillStyle = pattern;
+         if(ld.patternId)
+         {
+            var pkey = `${ld.patternId}_${ld.color}`;
+
+            //WARN! This memoizes ALL patterns! I figure we'll have at most
+            //maybe 100, which times 16 pixels is only 1600, which... might be ok?
+            //In any case, we could limit the memoizing to maybe 32 and always get
+            //rid of the one with the least accesses
+            if(!MiniDraw2._MemoizedPatterns[pkey])
+            {
+               var cv = document.createElement("canvas");
+               cv.width = 4;
+               cv.height = 4;
+               var ctx = cv.getContext("2d");
+               ctx.fillStyle = ld.color;
+
+               for(var i = 0; i < 16; i++)
+                  if(ld.patternId & (1 << i))
+                     ctx.fillRect(i % 4, Math.floor(i / 4), 1, 1);
+
+               MiniDraw2._MemoizedPatterns[pkey] = ctx.createPattern(cv, "repeat");
+               console.log(`Cached pattern ${pkey}`);
+            }
+
+            ctx.fillStyle = MiniDraw2._MemoizedPatterns[pkey];
+         }
+         else
+         {
+            ctx.fillStyle = ld.color;
+         }
       }
    },
    //This function is different because rectangles require more calculation,

@@ -51,7 +51,7 @@ input:focus, textarea:focus {
 }
 
 .pixelated {
-   image-rendering: moz-crisp-edges;
+   image-rendering: -moz-crisp-edges;
    image-rendering: crisp-edges;
    image-rendering: optimizespeed;
    image-rendering: pixelated;
