@@ -636,50 +636,22 @@ StreamDrawSystem.prototype.ScanLines = function(scanTracker, lineEvent, parseLim
          for(let x of newLines)
          {
             x.layer = layerDat.value;
-            //tracker.lastMinY = Math.min(tracker.lastMinY, x.y1, x.y2);
-            //tracker.lastMaxY = Math.max(tracker.lastMaxY, x.y1, x.y2);
          }
 
          if(lineEvent)
             lineEvent(newLines);
-         //me.scheduledLines.push(...newLines);
 
          tracker.realParsed++;
-         return scanGeneric(end, scanCount); //(scanCount >= scanLimit || tracker.realParsed > parseLimit);
+         return scanGeneric(end, scanCount); 
       },
       (start, length, cc, end, scanCount) => //page func
       {
          //ALWAYS immediately quit on new page. This should leave our pointer
          //right on the page line, meaning no more lines are ever processed (we hope)
          return true; 
-         //var pageData = me.parser.eparser.ParsePage(me.rawData, start, length);
-         //tracker.lastPage = pageData.name;
-         //me.pages.push(pageData); //just assume all new page data is a new page.
-         //return false;
       }
    );
 
    return tracker; 
 };
-
-////The message handler
-//StreamDrawSystem.prototype.ProcessMessages = function(parseLimit, scanLimit)
-//{
-//   var me = this;
-//   var realParsed = 0;
-//
-//   me.parser.DataScan(me.rawData, Math.max(me.messagePointer, me.preamble.skip), 
-//      (start, length, cc, end, scanCount) => 
-//      {
-//         me.messagePointer = end;
-//         me.scheduledMessages.push(me.parser.eparser.ParseMessage(me.rawData, start, length));
-//
-//         realParsed++;
-//
-//         //DON'T worry about a scanCount of 0, it's more important for us to be
-//         //able to scan past big chunks! 
-//         return (scanCount >= scanLimit || realParsed > parseLimit);
-//      }
-//   );
-//};
 

@@ -27,6 +27,8 @@ var constants =
 {
    pwidth : 2000,
    pheight : 4000,
+   mwidth : 200,
+   mheight : 100,
    roomPrepend : "journal2_",
    settingPrepend : "mini_journal2_",
    maxLines : 5000,        //A single stroke (or fill) can't have more than this
@@ -35,7 +37,8 @@ var constants =
    maxParse : 2000,
    autoDrawLineChunk : 90,//Be VERY CAREFUL with this value! Harmonic series...
    nonDrawTools : [ "exportrect", "pan" ],
-   slowToolAlpha : 0.15
+   slowToolAlpha : 0.15,
+   newPageUndos : 15
 };
 
 var palettes = 
@@ -510,6 +513,7 @@ function setupPageControls()
    {
       newpagebutton.removeAttribute("data-selected");
       newpagebutton.textContent = "New Page";
+      hide(micropagedropdown);
    };
    pageselect.oninput = () => changePage(pageselect.value);
    newpagebutton.onclick = () => 
@@ -521,16 +525,21 @@ function setupPageControls()
          resetnpb();
          newpagebutton.setAttribute("disabled", "");
          var pagename = globals.system.NewPageName();
-         post(endpoint(globals.roomname), 
-            globals.system.parser.CreatePage(new StreamDrawPageData(pagename)));
+         var newPage = globals.system.parser.CreatePage(new StreamDrawPageData(pagename));
+         if(micropagetoggle.checked)
+         {
+            newPage.micro = true;
+            newPage.undos = constants.newPageUndos;
+         }
+         post(endpoint(globals.roomname), newPage);
          globals.pendingNewPage = pagename;
          globals.pendingSetPage = pagename;
-         //changePage(pagename); //We know the page isn't ready yet, but changePage is very lenient
       }
       else
       {
          newpagebutton.setAttribute("data-selected", "");
          newpagebutton.textContent = "Confirm?";
+         show(micropagedropdown);
          confirmTimer = setTimeout(resetnpb, 2000);
       }
    };
@@ -624,10 +633,31 @@ function changePage(name) //increment, exact)
    //tracking!
    if(globals.system.ScanAtEnd())
    {
+      var newPageData = globals.system.FindPage(name) || {};
+      var lastPageData = globals.system.FindPage(getPage()) || {};
+
       if(!setPage(name))
       {
          console.warn("Tried to set page to non-existent name! Resetting page to none instead");
          name = null;
+      }
+      if(newPageData.micro)
+      {
+         if(lastPageData.micro !== newPageData.micro)
+         {
+            canvaszoom.selectedIndex = math.Min(canvaszoom.selectedIndex + 5, canvaszoom.length - 1);
+            setLayerOffset(0, 0);
+         }
+         globals.system.parser.eparser.SetSize(constants.mwidth, constants.mheight);
+      }
+      else
+      {
+         if(lastPageData.micro !== newPageData.micro)
+         {
+            canvaszoom.selectedIndex = math.Max(canvaszoom.selectedIndex - 5, 0);
+            setLayerOffset(0, 0);
+         }
+         globals.system.parser.eparser.SetSize(constants.pwidth, constants.pheight);
       }
       CanvasUtilities.Clear(layer1);
       CanvasUtilities.Clear(layer2);
@@ -638,15 +668,11 @@ function changePage(name) //increment, exact)
       {
          location.hash = "";
          globals.drawTracking = false;
-         //hide(layer1);
-         //hide(layer2);
       }
       else
       {
          location.hash = "page-" + name;
          globals.drawTracking = globals.system.InitializeLineScan(name);
-         //show(layer1);
-         //show(layer2);
       }
    }
    else
@@ -772,6 +798,10 @@ body { width: 2700px; font-family: sans-serif; margin: 8px; padding: 0; }
 </style>
 <${scriptTag}>
 function hashtag(e) { e.preventDefault(); }
+window.onload = function() {
+   [...document.querySelectorAll("img")].forEach(
+      x => x.width = ${constants.pwidth} / window.devicePixelRatio);
+};
 </${scriptTag}>
 <div id="leftpane" class="pane">
    <div id="imagebox"></div>
