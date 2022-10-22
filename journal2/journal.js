@@ -525,13 +525,13 @@ function setupPageControls()
          resetnpb();
          newpagebutton.setAttribute("disabled", "");
          var pagename = globals.system.NewPageName();
-         var newPage = globals.system.parser.CreatePage(new StreamDrawPageData(pagename));
+         var newPage = new StreamDrawPageData(pagename);
          if(micropagetoggle.checked)
          {
             newPage.micro = true;
             newPage.undos = constants.newPageUndos;
          }
-         post(endpoint(globals.roomname), newPage);
+         post(endpoint(globals.roomname), globals.system.parser.CreatePage(newPage));
          globals.pendingNewPage = pagename;
          globals.pendingSetPage = pagename;
       }
@@ -540,7 +540,7 @@ function setupPageControls()
          newpagebutton.setAttribute("data-selected", "");
          newpagebutton.textContent = "Confirm?";
          show(micropagedropdown);
-         confirmTimer = setTimeout(resetnpb, 2000);
+         confirmTimer = setTimeout(resetnpb, 5000);
       }
    };
 }
@@ -622,6 +622,32 @@ function exportSinglePage(page, system, redrawPage) //forgetPage)//, system)
    return result;
 }
 
+//Assume we're using the basic layers
+function setDrawSize(system, width, height)
+{
+   system.parser.eparser.SetSize(width, height);
+   layer1.width = width;
+   layer1.height = height;
+   layer2.width = width;
+   layer2.height = height;
+   canvaszoom.oninput(); //this resets the scaling... we hope
+}
+
+function prepPage(pageData, system)
+{
+   if(pageData.micro)
+   {
+      setDrawSize(system, constants.mwidth, constants.mheight);
+   }
+   else
+   {
+      setDrawSize(system, constants.pwidth, constants.pheight);
+   }
+
+   CanvasUtilities.Clear(layer1);
+   CanvasUtilities.Clear(layer2);
+}
+
 //This might be a dumb function idk. Increment is by default the amount to
 //change the page, but if 'exact' is set to true, increment will be EXACTLY the
 //page to set rather than just the offset.
@@ -633,37 +659,30 @@ function changePage(name) //increment, exact)
    //tracking!
    if(globals.system.ScanAtEnd())
    {
-      var newPageData = globals.system.FindPage(name) || {};
-      var lastPageData = globals.system.FindPage(getPage()) || {};
-
       if(!setPage(name))
       {
          console.warn("Tried to set page to non-existent name! Resetting page to none instead");
          name = null;
       }
-      if(newPageData.micro)
+
+      var newPageData = globals.system.FindPage(name) || {};
+      var lastPageData = globals.system.FindPage(globals.lastPageName) || {};
+
+      prepPage(newPageData, globals.system);
+
+      if(lastPageData.micro !== newPageData.micro && globals.lastPageName)
       {
-         if(lastPageData.micro !== newPageData.micro)
-         {
-            canvaszoom.selectedIndex = math.Min(canvaszoom.selectedIndex + 5, canvaszoom.length - 1);
-            setLayerOffset(0, 0);
-         }
-         globals.system.parser.eparser.SetSize(constants.mwidth, constants.mheight);
+         var zoomDiff = newPageData.micro ? 5 : -5;
+         canvaszoom.selectedIndex = MathUtilities.MinMax(canvaszoom.selectedIndex + zoomDiff, 0, canvaszoom.length - 1);
+         canvaszoom.oninput();
+         setLayerOffset(0, 0);
       }
-      else
-      {
-         if(lastPageData.micro !== newPageData.micro)
-         {
-            canvaszoom.selectedIndex = math.Max(canvaszoom.selectedIndex - 5, 0);
-            setLayerOffset(0, 0);
-         }
-         globals.system.parser.eparser.SetSize(constants.pwidth, constants.pheight);
-      }
-      CanvasUtilities.Clear(layer1);
-      CanvasUtilities.Clear(layer2);
+
       setDrawAbility(globals.system.IsLastPage(name) && !globals.readonly);
       globals.pendingSetPage = null;
       globals.scheduledLines = []; //Remove anything waiting to be drawn, this is a new page
+      globals.lastPageName = name;
+
       if(!name)
       {
          location.hash = "";
