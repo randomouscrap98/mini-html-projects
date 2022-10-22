@@ -755,6 +755,11 @@ function setupExports()
       e.preventDefault();
       performStaticExport();
    };
+   exportsingle.onclick = (e) =>
+   {
+      e.preventDefault();
+      exportSection(new MiniDraw2.LineData(false, false, 0, 0, layer1.width, layer1.height));
+   };
 }
 
 function performStaticExport()
