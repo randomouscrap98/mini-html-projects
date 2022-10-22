@@ -38,7 +38,9 @@ var constants =
    autoDrawLineChunk : 90,//Be VERY CAREFUL with this value! Harmonic series...
    nonDrawTools : [ "exportrect", "pan" ],
    slowToolAlpha : 0.15,
-   newPageUndos : 15
+   newPageUndos : 15,
+   confirmPageTimeout : 5000,
+   microScale : 5
 };
 
 var palettes = 
@@ -540,7 +542,7 @@ function setupPageControls()
          newpagebutton.setAttribute("data-selected", "");
          newpagebutton.textContent = "Confirm?";
          show(micropagedropdown);
-         confirmTimer = setTimeout(resetnpb, 5000);
+         confirmTimer = setTimeout(resetnpb, constants.confirmPageTimeout);
       }
    };
 }
@@ -589,9 +591,8 @@ function createSystem()
 
 function exportSinglePage(page, system, redrawPage) //forgetPage)//, system)
 {
-   //We have to use both layers because of erasing (can't just draw bottom to top)
-   CanvasUtilities.Clear(layer1);
-   CanvasUtilities.Clear(layer2);
+   var pageData = system.FindPage(page);
+   prepPage(pageData, system);
 
    //We're only going to go through this once.
    var drawTracking = system.InitializeLineScan(page);
@@ -672,7 +673,7 @@ function changePage(name) //increment, exact)
 
       if(lastPageData.micro !== newPageData.micro && globals.lastPageName)
       {
-         var zoomDiff = newPageData.micro ? 5 : -5;
+         var zoomDiff = newPageData.micro ? constants.microScale : -constants.microScale;
          canvaszoom.selectedIndex = MathUtilities.MinMax(canvaszoom.selectedIndex + zoomDiff, 0, canvaszoom.length - 1);
          canvaszoom.oninput();
          setLayerOffset(0, 0);
@@ -819,7 +820,7 @@ body { width: 2700px; font-family: sans-serif; margin: 8px; padding: 0; }
 function hashtag(e) { e.preventDefault(); }
 window.onload = function() {
    [...document.querySelectorAll("img")].forEach(
-      x => x.width = ${constants.pwidth} / window.devicePixelRatio);
+      x => x.width = (x.hasAttribute("data-micro") ? (${constants.mwidth} * ${constants.microScale}) : ${constants.pwidth}) / window.devicePixelRatio);
 };
 </${scriptTag}>
 <div id="leftpane" class="pane">
@@ -847,13 +848,26 @@ window.onload = function() {
 
    //Have to do this repeat parsing in order to reduce memory usage.
    var pageIndex = 0;
+   var normalIndex = 0;
+   var microIndex = 0;
    var ready = true;
+   var microPageCount = 0;
+   var normalPageCount = 0;
+   sys.pages.forEach(x => { if(x.micro) microPageCount++; else normalPageCount++; });
    var svgWidthMod = Math.ceil(constants.pheight / constants.pwidth);
-   var svgSquareN = Math.ceil(Math.sqrt(sys.pages.length / svgWidthMod));
+   var svgSquareN = Math.ceil(Math.sqrt(normalPageCount / svgWidthMod));
+   var microSvgWidth = constants.mwidth; //(constants.mwidth * constants.microScale);
+   var microSvgHeight = constants.mheight; //(constants.mheight * constants.microScale);
+   var microSvgTotalHeight = microSvgHeight * 1.25;
+   var svgHeight = svgSquareN * constants.pheight;
+   var microPerColumn = Math.floor(svgHeight / microSvgTotalHeight);
+   var microColumns = Math.ceil(microPageCount / microPerColumn);
+   var svgMicroStartX = svgSquareN * constants.pheight;
+   //Yes, both dimensions are supposed to be height. Pages are taller than they are wide
+   var svgWidth = svgMicroStartX + microSvgWidth * microColumns;
 
-   //Yes, they're both supposed to be height. Pages are taller than they are wide
-   svg.setAttribute("width", svgSquareN * constants.pheight);
-   svg.setAttribute("height", svgSquareN * constants.pheight);
+   svg.setAttribute("width", svgWidth);
+   svg.setAttribute("height", svgHeight);
 
    var wait = setInterval(() =>
    {
@@ -873,35 +887,62 @@ window.onload = function() {
          imagebox.appendChild(pageID);
          var image = document.createElement("img");
          image.setAttribute('src', pageURI);
+         if(page.micro) image.setAttribute("data-micro", "");
          imagebox.appendChild(image);
 
          //The svg element
          var simage = HTMLUtilities.CreateSvgElement("image");
-         var svgx = ((pageIndex-1) % (svgSquareN * svgWidthMod)) * constants.pwidth;
-         var svgy =  Math.floor((pageIndex-1) / (svgSquareN * svgWidthMod)) * constants.pheight;
+         var svgx = (normalIndex % (svgSquareN * svgWidthMod)) * constants.pwidth;
+         var svgy =  Math.floor(normalIndex / (svgSquareN * svgWidthMod)) * constants.pheight;
+         var svgImageWidth = constants.pwidth;
+         var svgImageHeight = constants.pheight;
+
+         if(page.micro)
+         {
+            svgx = svgMicroStartX + Math.floor(microIndex / microPerColumn) * microSvgWidth;
+            svgy = (microIndex % microPerColumn) * microSvgTotalHeight;
+            svgImageWidth = microSvgWidth;
+            svgImageHeight = microSvgHeight;
+            simage.setAttribute("style", "image-rendering:crisp-edges; image-rendering:optimizespeed; image-rendering: pixelated;");
+         }
+         
          simage.setAttribute("x", svgx);
          simage.setAttribute("y", svgy);
-         simage.setAttribute("width", constants.pwidth);
-         simage.setAttribute("height", constants.pheight);
+         simage.setAttribute("width", svgImageWidth);
+         simage.setAttribute("height", svgImageHeight);
          simage.setAttributeNS('http://www.w3.org/1999/xlink','href', pageURI);
          svg.appendChild(simage);
 
          //The page text for svg
          var stext = HTMLUtilities.CreateSvgElement("text");
-         stext.setAttribute("x", svgx + constants.pwidth - 225);
-         stext.setAttribute("y", svgy + constants.pheight - 25);
-         stext.setAttribute("style", "fill: #444444; stroke: #888888; font-size: 24px;");
          stext.appendChild(document.createTextNode(`${pageIndex} : ${page.name}`));
+         if(page.micro)
+         {
+            stext.setAttribute("x", svgx + 5);
+            stext.setAttribute("y", svgy + svgImageHeight + 12); //12 is the font size... idk
+            stext.setAttribute("style", "fill: #444444; font-size: 12px;");
+         }
+         else
+         {
+            stext.setAttribute("x", svgx + svgImageWidth - 225);
+            stext.setAttribute("y", svgy + svgImageHeight - 25);
+            stext.setAttribute("style", "fill: #444444; stroke: #888888; font-size: 24px;");
+         }
          svg.appendChild(stext);
 
          //an outline for images
          var srect = HTMLUtilities.CreateSvgElement("rect");
          srect.setAttribute("x", svgx);
          srect.setAttribute("y", svgy);
-         srect.setAttribute("width", constants.pwidth);
-         srect.setAttribute("height", constants.pheight);
+         srect.setAttribute("width", svgImageWidth);
+         srect.setAttribute("height", svgImageHeight);
          srect.setAttribute("style", "stroke-width:1px;stroke:#DDDDDD;fill:none;");
          svg.appendChild(srect);
+
+         if(page.micro)
+            microIndex++;
+         else
+            normalIndex++;
 
          appendScroll(coverscreencontainer, `Page ${pageIndex}`);
          ready = true;
@@ -951,8 +992,6 @@ function performFunctionalExport(room)
    {
       appendScroll(coverscreencontainer, `Remaining Scripts: ${scriptsLeft}, Styles: ${stylesLeft}`);
       if(!(stylesLeft == 0 && scriptsLeft == 0)) return;
-
-      //document.body.setAttribute("data-export", "");
 
       //We can't close the functional export screen (since we mangled the html)
       //so... oops, this is a little janky
