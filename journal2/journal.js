@@ -1121,8 +1121,53 @@ function exportSection(ld)
    explink.className = "block text";
    explink.textContent = "Download " + explink.download;
 
-   appendScroll(coverscreencontainer, expcanv);
-   appendScroll(coverscreencontainer, explink);
+   var klandBucket = document.createElement("input");
+   klandBucket.setAttribute("type", "text");
+   klandBucket.setAttribute("placeholder", "Kland bucket");
+   klandBucket.value = getSetting("lastKlandBucket") || "";
+
+   var klandUpload = document.createElement("button");
+   klandUpload.textContent = "Upload to kland";
+   klandUpload.onclick = () =>
+   {
+      expcanv.toBlob(blob =>
+      {
+         var data = new FormData();
+         var bucket = klandBucket.value;
+         data.append("image", blob, explink.download);
+         if(bucket) data.append("bucket", bucket);
+         setSetting("lastKlandBucket", bucket); //always set it, in case you want to clear it
+         fetch("https://kland.smilebasicsource.com/uploadimage" , { method: "POST", body: data })
+            .then(r => r.text())
+            .then(t => 
+            {
+               var klandLink = document.createElement("a");
+               klandLink.textContent = t;
+               klandLink.href = t;
+               klandLink.setAttribute("target", "_blank");
+               appendScroll(coverscreencontainer, klandLink);
+            })
+            .catch(err =>
+            {
+               var klandError = document.createElement("div");
+               klandError.textContent = "Upload error";
+               klandError.className = "error";
+               appendScroll(coverscreencontainer, klandError);
+            });
+      });
+   };
+
+   var klandContainer = document.createElement("div");
+   klandContainer.className = "flexrow";
+   klandContainer.appendChild(klandBucket);
+   klandContainer.appendChild(klandUpload);
+
+   var totalContainer = document.createElement("div");
+   totalContainer.className = "paddedrows";
+   totalContainer.appendChild(expcanv);
+   totalContainer.appendChild(explink);
+   totalContainer.appendChild(klandContainer);
+   appendScroll(coverscreencontainer, totalContainer);
 }
 
 function refreshInfo(data)

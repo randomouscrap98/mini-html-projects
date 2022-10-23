@@ -31,6 +31,7 @@ body {
    -webkit-user-select: none;
    user-select: none;
 }
+.paddedrows > * { margin-bottom: 0.5em; }
 .striped:nth-child(even) { background-color: rgba(0,0,0,0.02); }
 .evenfill { display: flex; }
 .evenfill > * { flex: auto; }
