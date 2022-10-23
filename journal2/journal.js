@@ -19,6 +19,7 @@ var globals =
    scheduledPages: [],
    scheduledLines: [],
    pbspeedAccumulator: 0, //ONLY for smoothing autofollow!
+   undoBuffer : false,
    layerTop : 0,
    layerLeft : 0
 };
@@ -38,7 +39,7 @@ var constants =
    autoDrawLineChunk : 90,//Be VERY CAREFUL with this value! Harmonic series...
    nonDrawTools : [ "exportrect", "pan" ],
    slowToolAlpha : 0.15,
-   newPageUndos : 15,
+   newPageUndos : 30,
    confirmPageTimeout : 5000,
    microScale : 5
 };
@@ -485,6 +486,17 @@ function setDrawAbility(ability)
       document.body.removeAttribute("data-drawactive");
       disableTools.forEach(x => x.setAttribute("disabled", ""));
    }
+
+   if(ability && globals.undoBuffer)
+   {
+      show(undobutton);
+      show(redobutton);
+   }
+   else
+   {
+      hide(undobutton);
+      hide(redobutton);
+   }
 }
 
 //This sets up a storage system on the checkbox given, so the state is
@@ -679,7 +691,19 @@ function changePage(name) //increment, exact)
          setLayerOffset(0, 0);
       }
 
-      setDrawAbility(globals.system.IsLastPage(name) && !globals.readonly);
+      var drawAbility = globals.system.IsLastPage(name) && !globals.readonly;
+
+      if(newPageData.micro)
+      {
+         globals.undoBuffer = new UndoBuffer(newPageData.undos);
+      }
+      else
+      {
+         globals.undoBuffer = false;
+      }
+
+      setDrawAbility(drawAbility);
+
       globals.pendingSetPage = null;
       globals.scheduledLines = []; //Remove anything waiting to be drawn, this is a new page
       globals.lastPageName = name;
