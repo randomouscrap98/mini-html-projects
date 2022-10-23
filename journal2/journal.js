@@ -559,23 +559,23 @@ function setupPageControls()
    };
 }
 
+function refreshZoom()
+{
+   var oldZoom = getSetting("canvassize") || 1;
+   var zoom = Number(canvaszoom.value);
+   CanvasUtilities.SetScaling(layer1, zoom);
+   CanvasUtilities.SetScaling(layer2, zoom);
+   setSetting("canvassize", zoom);
+   //Do something with panning here
+   var lofs = getLayerOffset();
+   setLayerOffset(lofs.x * zoom / oldZoom, lofs.y * zoom / oldZoom);
+}
+
 function setupPlaybackControls()
 {
-   var _setZoom = () =>
-   {
-      var oldZoom = getSetting("canvassize") || 1;
-      var zoom = Number(canvaszoom.value);
-      CanvasUtilities.SetScaling(layer1, zoom);
-      CanvasUtilities.SetScaling(layer2, zoom);
-      setSetting("canvassize", zoom);
-      //Do something with panning here
-      var lofs = getLayerOffset();
-      setLayerOffset(lofs.x * zoom / oldZoom, lofs.y * zoom / oldZoom);
-   };
-
-   canvaszoom.oninput = _setZoom;
+   canvaszoom.oninput = refreshZoom;
    canvaszoom.value = getSetting("canvassize") || 1;
-   _setZoom();
+   refreshZoom();
 }
 
 function setupDrawer(canvas)
@@ -643,7 +643,7 @@ function setDrawSize(system, width, height)
    layer1.height = height;
    layer2.width = width;
    layer2.height = height;
-   canvaszoom.oninput(); //this resets the scaling... we hope
+   refreshZoom();
 }
 
 function prepPage(pageData, system)
