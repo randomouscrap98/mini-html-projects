@@ -47,6 +47,7 @@ var constants =
    maxParse : 2000,
    autoDrawLineChunk : 90,//Be VERY CAREFUL with this value! Harmonic series...
    nonDrawTools : [ "exportrect", "pan" ],
+   easymodeDefaultTool : "tool_pen",
    slowToolAlpha : 0.15,
    newPageUndos : 30,
    confirmPageTimeout : 5000,
@@ -377,6 +378,13 @@ function setupPalette(container, colors)
          else //Something NEW was clicked, hide the dialog no matter what
          {
             hide(palettedialog);
+            //If in easy mode and specifically on an eraser tool, just go ahead and switch 
+            //to the pen whenever a color is picked.
+            if(isEasyMode() && toolIsErase(getTool()))
+            {
+               console.debug("Auto swapping to default drawing tool because color selected while erasing");
+               document.getElementById(constants.easymodeDefaultTool).click();
+            }
          }
 
          // On ANY palette button click, always update the picker color (this
