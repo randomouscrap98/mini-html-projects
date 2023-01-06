@@ -5,7 +5,7 @@
 var system = 
 {
    name: "journal",
-   version: "2.0.1_f3"
+   version: "2.0.2_f3"
 };
 
 var globals = 
@@ -232,6 +232,7 @@ function getTool() {
 function getPattern() { return Number(patternselect.value); }
 function toolIsRect(tool) { return tool && (tool.indexOf("rect") >= 0); }
 function toolIsErase(tool) { return tool && (tool.indexOf("erase") >= 0); }
+function toolIsNonDraw(tool) { return tool && (tool.indexOf("pan") >= 0 || tool.indexOf("export")); }
 function toolIsContinuous(tool) { return tool && (tool.indexOf("slow") >= 0); }
 function isDropperActive() { return dropper.hasAttribute("data-selected"); }
 function setDropperActive(active) 
@@ -380,7 +381,8 @@ function setupPalette(container, colors)
             hide(palettedialog);
             //If in easy mode and specifically on an eraser tool, just go ahead and switch 
             //to the pen whenever a color is picked.
-            if(isEasyMode() && toolIsErase(getTool()))
+            var ctool = getTool();
+            if(isEasyMode() && (toolIsErase(ctool) || toolIsNonDraw(ctool)))
             {
                console.debug("Auto swapping to default drawing tool because color selected while erasing");
                document.getElementById(constants.easymodeDefaultTool).click();
