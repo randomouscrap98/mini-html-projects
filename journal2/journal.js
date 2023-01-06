@@ -5,7 +5,7 @@
 var system = 
 {
    name: "journal",
-   version: "2.0.2_f3"
+   version: "2.0.3_f3"
 };
 
 var globals = 
@@ -232,7 +232,7 @@ function getTool() {
 function getPattern() { return Number(patternselect.value); }
 function toolIsRect(tool) { return tool && (tool.indexOf("rect") >= 0); }
 function toolIsErase(tool) { return tool && (tool.indexOf("erase") >= 0); }
-function toolIsNonDraw(tool) { return tool && (tool.indexOf("pan") >= 0 || tool.indexOf("export")); }
+function toolIsNonDraw(tool) { return tool && (tool.indexOf("pan") >= 0 || tool.indexOf("export") >= 0); }
 function toolIsContinuous(tool) { return tool && (tool.indexOf("slow") >= 0); }
 function isDropperActive() { return dropper.hasAttribute("data-selected"); }
 function setDropperActive(active) 
@@ -1447,10 +1447,10 @@ function drawLines(lines, context, overridecolor)
 function selectRect(sx, sy, cx, cy)
 {
    selectrectangle.style.display = "block";
-   selectrectangle.style.left = Math.min(sx, cx);
-   selectrectangle.style.top = Math.min(sy, cy);
-   selectrectangle.style.width = Math.abs(sx - cx);
-   selectrectangle.style.height = Math.abs(sy - cy);
+   selectrectangle.style.left = Math.min(sx, cx) + "px";
+   selectrectangle.style.top = Math.min(sy, cy) + "px";
+   selectrectangle.style.width = Math.abs(sx - cx) + "px";
+   selectrectangle.style.height = Math.abs(sy - cy) + "px";
 }
 
 function clearSelectRect()
