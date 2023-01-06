@@ -5,7 +5,7 @@
 var system = 
 {
    name: "journal",
-   version: "2.0.0_f3"
+   version: "2.0.1_f3"
 };
 
 var globals = 
@@ -18,6 +18,15 @@ var globals =
    scheduledMessages: [],
    scheduledPages: [],
    scheduledLines: [],
+   toolRemember: {
+      //To make life easier, we put a default eraser rememberance which is
+      //three times as large as the regular brush
+      "eraser" : { 
+         "sizemodifier" : "size3", 
+         "sizetext" : "6", 
+         "patternselect" : "0"
+      }
+   },
    pbspeedAccumulator: 0, //ONLY for smoothing autofollow!
    undoBuffer : false,
    layerTop : 0,
@@ -92,6 +101,7 @@ function windowOnLoad()
       setupToggleSetting("pagechat", pagechat, 
          () => show(chat),
          () => hide(chat));
+      setupToggleSetting("easymode", easymode);
 
       //If these need to be done later, it could pose a problem, there's an
       //ordering issue here: static export needs the close button
@@ -187,6 +197,7 @@ function getSetting(name) { return StorageUtilities.ReadLocal(constants.settingP
 function setSetting(name, value) { StorageUtilities.WriteLocal(constants.settingPrepend + name, value); }
 function setStatus(status) { percent.setAttribute("data-status", status); }
 function shouldAutoFollow() { return globals.readonly && !globals.exported && autofollow.checked; }
+function isEasyMode() { return getSetting("easymode"); }
 function getPlaybackSpeed() { 
    return Number(playbacktext.value) * 
       Number(playbackmodifier.querySelector("[data-selected]").id.replace("playback",""));
@@ -247,6 +258,29 @@ function getLayerOffset() {
       x : Number(layer1.style.left.replace("px", "")),
       y : Number(layer1.style.top.replace("px", ""))
    };
+}
+//Use current state of toolbox to save the current tool settings
+function saveToolRemember(toolname) {
+   //var tool = getTool();
+      //Number(sizemodifier.querySelector("[data-selected]").id.replace("size",""));
+   globals.toolRemember[toolname] = {
+      "sizemodifier" : document.getElementById("sizemodifier").querySelector("[data-selected]").id,
+      "sizetext" : document.getElementById("sizetext").value, 
+      "patternselect" : document.getElementById("patternselect").value
+   };
+   console.log(`Saved tool ${toolname}: `, globals.toolRemember[toolname]);
+}
+//Restore the given tool (if there's any data)
+function restoreToolRemember(toolname) {
+   var remembered = globals.toolRemember[toolname];
+   if(remembered) {
+      document.getElementById(remembered["sizemodifier"]).click();
+      var sizeinput = document.getElementById("sizetext");
+      sizeinput.value = remembered["sizetext"];
+      doValueLink(sizeinput);
+      document.getElementById("patternselect").value = remembered["patternselect"];
+      console.log(`Restored tool ${toolname}`);
+   }
 }
 
 
@@ -448,7 +482,21 @@ function setupRadioEmulators(element)
 {
    [...element.querySelectorAll("[data-radio]")].forEach(x =>
    {
-      [...x.children].forEach(y => (y.onclick = () => HTMLUtilities.SimulateRadioSelect(y, x)));
+      [...x.children].forEach(y => {
+         y.onclick = () => 
+         {
+            //before doing the standard radio simulate, check if this is a special
+            //radio where we do extra stuff
+            if(x.id === "tools" && isEasyMode())
+            {
+               //Save the old tool
+               saveToolRemember(getTool());
+               //Restore the new tool
+               restoreToolRemember(getToolName(y));
+            }
+            HTMLUtilities.SimulateRadioSelect(y, x);
+         };
+      });
    });
 }
 
@@ -503,6 +551,8 @@ function setDrawAbility(ability)
 //remembered. It can also run functions based on check state
 function setupToggleSetting(name, checkbox, checktrue, checkfalse)
 {
+   checktrue = checktrue || (() => console.log("Setting " + name));
+   checkfalse = checkfalse || (() => console.log("Unsetting " + name));
    var change = e => {
       safety(() => setSetting(name, checkbox.checked));
       if(checkbox.checked)
