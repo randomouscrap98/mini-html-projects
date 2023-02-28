@@ -5,7 +5,7 @@
 var system = 
 {
    name: "journal",
-   version: "2.0.3_f3"
+   version: "2.0.4_f3"
 };
 
 var globals = 
@@ -948,7 +948,10 @@ window.onload = function() {
    var microSvgWidth = constants.mwidth; //(constants.mwidth * constants.microScale);
    var microSvgHeight = constants.mheight; //(constants.mheight * constants.microScale);
    var microSvgTotalHeight = microSvgHeight * 1.25;
-   var svgHeight = svgSquareN * constants.pheight;
+   //I want ROUGHLY square static output, but it doesn't always line up like
+   //that, so to avoid empty rows, we use the real row count rather than that
+   //which would make it square (so NOT the calculated svgSquareN).
+   var svgHeight = Math.ceil(normalPageCount / (svgSquareN * svgWidthMod)) * constants.pheight;
    var microPerColumn = Math.floor(svgHeight / microSvgTotalHeight);
    var microColumns = Math.ceil(microPageCount / microPerColumn);
    var svgMicroStartX = svgSquareN * constants.pheight;
