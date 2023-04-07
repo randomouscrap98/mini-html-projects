@@ -464,6 +464,34 @@ function setupSpecialControls()
    {
       setLayerOffset(0, 0);
    };
+
+   //Note: image insert controls are inside the slideout tray, but the tray
+   //doesn't display if you can't select the image tool, so it's fine to setup
+   //on all page types
+   imageadder_submit.onclick = () =>
+   {
+      if(imageadder_url.value)
+      {
+         var container = document.createElement("div");
+         container.className = "stamp";
+         container.onclick = () => HTMLUtilities.SimulateRadioSelect(container, imageselector);
+         hide(container);
+         var image = new Image();
+         image.onload = function() {
+            show(container);
+            container.click();
+         };
+         image.onerror = function() {
+            alert("Couldn't load image!");
+            container.parentNode.removeChild(container);
+         };
+         image.src = imageadder_url.value;
+         container.appendChild(image);
+         imageselector.appendChild(container);
+
+         imageadder_url.value = "";
+      }
+   };
 }
 
 // Refresh the entire palette display (minus the standard color input) based on
