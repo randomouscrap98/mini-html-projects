@@ -366,15 +366,18 @@ StreamDrawElementParser.prototype.CreateImageInsert = function(lines) {
    //Then the rest is just the url. Note that, just in case we were given an
    //unloaded image data, we check for url first before going to the image.
    result += btoa(line.extra.url || line.extra.image.src);
+   //console.log("Creating image insert: ", line, result, this.ParseImageInsert(result, 0, result.length));
    return result;
 };
 
 StreamDrawElementParser.prototype.ParseImageInsert = function(data, start, length) {
    //Image insert is only ever a single line. But the caller expects an array,
    //so be careful.
-   var t = this.ParseStandardPoint(data, 0);
-   var t2 = this.ParseStandardPoint(data, this.POINTBYTES);
-   var url = atob(data.substr(this.POINTBYTES * 2, length - this.POINTBYTES * 2));
+   var t = this.ParseStandardPoint(data, start);
+   var t2 = this.ParseStandardPoint(data, start + this.POINTBYTES);
+   var pointlen = this.POINTBYTES * 2;
+   //console.log(t, t2, data.substr(start + pointlen, length - pointlen));
+   var url = atob(data.substr(start + pointlen, length - pointlen));
 
    return [
       //Some of the variables in linedata aren't used, such as size, color,

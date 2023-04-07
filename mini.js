@@ -694,6 +694,7 @@ var MiniDraw2 =
                   try {
                      await new Promise((resolve, reject) => {
                         var img = new Image();
+                        img.crossOrigin = "Anonymous";
                         img.onload = () => {
                            MiniDraw2._MemoizedImages[ld.extra.url] = img;
                            resolve();

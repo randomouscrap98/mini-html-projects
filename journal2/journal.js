@@ -230,6 +230,30 @@ function getTool() {
       return getToolName(selectedTool);
 }
 function getImageInsert() { return imageselector.querySelector("[data-selected] img"); }
+function setImageInsertFixedData(img) {
+   //if(img.displaywidth && img.displayheight) return;
+   var width = img.naturalWidth;
+   var height = img.naturalHeight;
+   var ratio = width / height;
+   var fixedwidth = Number(img.getAttribute("data-width"));
+   if(fixedwidth)
+   {
+      if(ratio >= 1)
+      {
+         width = fixedwidth;
+         height = fixedwidth / ratio;
+      }
+      else 
+      {
+         height = fixedwidth;
+         width = fixedwidth * ratio;
+      }
+   }
+   img.postwidth = width / getZoom();
+   img.postheight = height / getZoom();
+   img.displaywidth = width / window.devicePixelRatio;
+   img.displayheight = height / window.devicePixelRatio;
+}
 function getPattern() { return Number(patternselect.value); }
 function toolIsRect(tool) { return tool && (tool.indexOf("rect") >= 0); }
 function toolIsErase(tool) { return tool && (tool.indexOf("erase") >= 0); }
@@ -679,10 +703,11 @@ function setupPageControls()
    };
 }
 
+function getZoom() { return Number(canvaszoom.value); }
 function refreshZoom()
 {
    var oldZoom = getSetting("canvassize") || 1;
-   var zoom = Number(canvaszoom.value);
+   var zoom = getZoom();
    CanvasUtilities.SetScaling(layer1, zoom);
    CanvasUtilities.SetScaling(layer2, zoom);
    setSetting("canvassize", zoom);
@@ -1502,6 +1527,31 @@ function trackPendingStroke(drw, pending)
             pending.lines[0].y2 = Math.round(Math.max(drw.currentY,0));
          }
       }
+      else if (pending.tool === "imageinsert")
+      {
+         pending.type = "image";
+         //pending.postLines = false; //Just for now
+         var img = getImageInsert();
+
+         if(!pending.lines.length)
+         {
+            //This shouldn't happen often
+            setImageInsertFixedData(img);
+            //We're going to set a bunch of these values later anyway
+            pending.lines.push(new MiniDraw2.LineData(pending.size, pending.color,
+               0, 0, 0, 0, MiniDraw2.ImageType(img), pending.pattern));
+         }
+
+         pending.lines[0].x1 = Math.round(drw.currentX - img.postwidth / 2);
+         pending.lines[0].y1 = Math.round(drw.currentY - img.postheight / 2);
+         pending.lines[0].x2 = Math.round(drw.currentX + img.postwidth / 2);
+         pending.lines[0].y2 = Math.round(drw.currentY + img.postheight / 2);
+         pending.postLines = 
+            pending.lines[0].x1 >= 0 && pending.lines[0].y1 >= 0 &&
+            pending.lines[0].x2 >= 0 && pending.lines[0].y2 >= 0 &&
+            pending.lines[0].x1 < constants.pwidth && pending.lines[0].y1 < constants.pheight &&
+            pending.lines[0].x2 < constants.pwidth && pending.lines[0].y2 < constants.pheight;
+      }
 
       //if the amount of lines we're about to add is too much, remove from the
       //current lines
@@ -1541,38 +1591,22 @@ function selectRect(sx, sy, cx, cy)
    selectrectangle.style.height = Math.abs(sy - cy) + "px";
 }
 
-function imageInsertRect(cx,cy,img)
+
+function imageInsertRect(cx,cy,img,display)
 {
    if(!imageinsertrect.hasAttribute("data-assigned"))
    {
       imageinsertrect.setAttribute("data-assigned", "");
-      var width = img.naturalWidth;
-      var height = img.naturalHeight;
-      var ratio = width / height;
-      var fixedwidth = Number(img.getAttribute("data-width"));
-      if(fixedwidth)
-      {
-         if(ratio >= 1)
-         {
-            width = fixedwidth;
-            height = fixedwidth / ratio;
-         }
-         else 
-         {
-            height = fixedwidth;
-            width = fixedwidth * ratio;
-         }
-      }
+      setImageInsertFixedData(img);
       imageinsertrect.style.backgroundImage = `url(${img.src})`;
       imageinsertrect.style.display = "block";
-      imageinsertrect.style.width = width + "px";
-      imageinsertrect.style.height = height + "px";
-      imageinsertrect.dispwidth = width;
-      imageinsertrect.dispheight = height;
+      imageinsertrect.style.width = img.displaywidth + "px";
+      imageinsertrect.style.height = img.displayheight + "px";
    }
 
-   imageinsertrect.style.left = (cx - imageinsertrect.dispwidth / 2) + "px";
-   imageinsertrect.style.top = (cy - imageinsertrect.dispheight / 2) + "px";
+   imageinsertrect.style.left = (cx - img.displaywidth / 2) + "px";
+   imageinsertrect.style.top = (cy - img.displayheight / 2) + "px";
+   setHidden(imageinsertrect, !display);
 }
 
 function clearAllRects()
@@ -1818,7 +1852,8 @@ async function drawerTick(drawer, pending)
       }
       else if(currentTool === "imageinsert")
       {
-         imageInsertRect(drawer.currentAction.clientX, drawer.currentAction.clientY, getImageInsert());
+         imageInsertRect(drawer.currentAction.clientX, drawer.currentAction.clientY, getImageInsert(),
+            pending && pending.postLines);
       }
    }
    //Not currently drawing, post lines since we're done (why is this in the frame drawer again?)
@@ -1826,7 +1861,6 @@ async function drawerTick(drawer, pending)
    {
       //Hopefully this doesn't become a performance concern
       clearAllRects();
-      //clearSelectRect();
       var layerOffset = getLayerOffset();
       globals.layerTop = layerOffset.y; 
       globals.layerLeft = layerOffset.x;
@@ -1849,6 +1883,7 @@ async function drawerTick(drawer, pending)
             if(pending.displayAtEnd)
                await drawLines(pending.lines);
          }
+         console.log("Done pending: ", JSON.stringify(pending));
          pending.active = false;
          pending.lines = [];
       }
