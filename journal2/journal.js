@@ -229,6 +229,7 @@ function getTool() {
    else
       return getToolName(selectedTool);
 }
+function getImageInsert() { return imageselector.querySelector("[data-selected] img"); }
 function getPattern() { return Number(patternselect.value); }
 function toolIsRect(tool) { return tool && (tool.indexOf("rect") >= 0); }
 function toolIsErase(tool) { return tool && (tool.indexOf("erase") >= 0); }
@@ -1528,9 +1529,6 @@ async function drawLines(lines, context, overridecolor)
       var ctx = context || globals.contexts[layer];
       await MiniDraw2.DrawLineDataAsync(ctx, x);
    }
-   //lines.forEach(x => 
-   //{
-   //});
    return lines; 
 }
 
@@ -1543,10 +1541,47 @@ function selectRect(sx, sy, cx, cy)
    selectrectangle.style.height = Math.abs(sy - cy) + "px";
 }
 
-function clearSelectRect()
+function imageInsertRect(cx,cy,img)
+{
+   if(!imageinsertrect.hasAttribute("data-assigned"))
+   {
+      imageinsertrect.setAttribute("data-assigned", "");
+      var width = img.naturalWidth;
+      var height = img.naturalHeight;
+      var ratio = width / height;
+      var fixedwidth = Number(img.getAttribute("data-width"));
+      if(fixedwidth)
+      {
+         if(ratio >= 1)
+         {
+            width = fixedwidth;
+            height = fixedwidth / ratio;
+         }
+         else 
+         {
+            height = fixedwidth;
+            width = fixedwidth * ratio;
+         }
+      }
+      imageinsertrect.style.backgroundImage = `url(${img.src})`;
+      imageinsertrect.style.display = "block";
+      imageinsertrect.style.width = width + "px";
+      imageinsertrect.style.height = height + "px";
+      imageinsertrect.dispwidth = width;
+      imageinsertrect.dispheight = height;
+   }
+
+   imageinsertrect.style.left = (cx - imageinsertrect.dispwidth / 2) + "px";
+   imageinsertrect.style.top = (cy - imageinsertrect.dispheight / 2) + "px";
+}
+
+function clearAllRects()
 {
    selectrectangle.style.display = "none";
+   imageinsertrect.style.display = "none";
+   imageinsertrect.removeAttribute("data-assigned");
 }
+
 
 var ffst = 0;
 var perfmon = 1; //Set this to like 10000 to do single page draw
@@ -1781,12 +1816,17 @@ async function drawerTick(drawer, pending)
          var yMove = drawer.currentAction.clientY - drawer.startAction.clientY;
          setLayerOffset(globals.layerLeft + xMove, globals.layerTop + yMove);
       }
+      else if(currentTool === "imageinsert")
+      {
+         imageInsertRect(drawer.currentAction.clientX, drawer.currentAction.clientY, getImageInsert());
+      }
    }
    //Not currently drawing, post lines since we're done (why is this in the frame drawer again?)
    else
    {
       //Hopefully this doesn't become a performance concern
-      clearSelectRect();
+      clearAllRects();
+      //clearSelectRect();
       var layerOffset = getLayerOffset();
       globals.layerTop = layerOffset.y; 
       globals.layerLeft = layerOffset.x;
