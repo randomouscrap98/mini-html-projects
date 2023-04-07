@@ -1444,7 +1444,7 @@ function drawLines(lines, context, overridecolor)
          x.color = overridecolor;
       var layer = x.layer === undefined ? getLayer() : x.layer; //IS THIS SAFE??
       var ctx = context || globals.contexts[layer];
-      MiniDraw2.SimpleRectLine(ctx, x);
+      MiniDraw2.DrawLineData(ctx, x);
    });
    return lines; 
 }

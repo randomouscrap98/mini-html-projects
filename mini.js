@@ -562,8 +562,12 @@ var MiniDraw =
 var MiniDraw2 = 
 {
    SOLIDRECT : "solidrect",
+   INSERTIMAGE : "image",
    BasicLineType : function(type) {
       return { type : type };
+   },
+   ImageType : function(image) {
+      return { type : MiniDraw2.INSERTIMAGE, image : image };
    },
    _MemoizedPatterns : {},
    //An object to store a single line
@@ -663,18 +667,26 @@ var MiniDraw2 =
          ctx.fill();
       }
    },
-   //The ACTUAL "draw this line data" function
-   SimpleRectLine : function(ctx, ld)
+   //The ACTUAL "draw this line data" function (minidraw2)
+   DrawLineData : function(ctx, ld)
    {
       if(ld.extra)
       {
-         if(ld.is_solidrect())
+         if(ld.extra.type === MiniDraw2.SOLIDRECT)
          {
             MiniDraw2.SetupLineStyle(ctx, ld);
             ctx.beginPath();
             MiniDraw2.SimpleRect(ctx, Math.min(ld.x1, ld.x2), Math.min(ld.y1, ld.y2),
                Math.abs(ld.x1 - ld.x2), Math.abs(ld.y1 - ld.y2), !ld.color);
             ctx.fill();
+         }
+         else if(ld.extra.type === MiniDraw2.INSERTIMAGE)
+         {
+            //This draws the image data directly into the canvas using the line
+            //data provided. Just like all other things, x1, x2, y1, y2 are the
+            //upper left and lower right corners.
+            ctx.drawImage(ld.extra.image, Math.min(ld.x1, ld.x2), Math.min(ld.y1, ld.y2),
+               Math.abs(ld.x1 - ld.x2), Math.abs(ld.y1 - ld.y2));
          }
          else 
          {
