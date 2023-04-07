@@ -1,11 +1,12 @@
 // randomouscrap98
 // 12-15-2020
 // (major overhaul 09-11-2022)
+// (major feature stamps 04-06-2022)
 
 var system = 
 {
    name: "journal",
-   version: "2.0.4_f3"
+   version: "2.1.0_f3"
 };
 
 var globals = 
