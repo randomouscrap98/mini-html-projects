@@ -569,6 +569,11 @@ var MiniDraw2 =
    ImageType : function(image) {
       return { type : MiniDraw2.INSERTIMAGE, image : image };
    },
+   CreateUntaintedImage : function() {
+      var image = new Image();
+      image.crossOrigin = "Anonymous";
+      return image;
+   },
    _MemoizedPatterns : {},
    _MemoizedImages : {}, //CAREFUL! If you have a lot of images this might be mem death?
    //An object to store a single line
@@ -693,8 +698,7 @@ var MiniDraw2 =
                {
                   try {
                      await new Promise((resolve, reject) => {
-                        var img = new Image();
-                        img.crossOrigin = "Anonymous";
+                        var img = MiniDraw2.CreateUntaintedImage();
                         img.onload = () => {
                            MiniDraw2._MemoizedImages[ld.extra.url] = img;
                            resolve();

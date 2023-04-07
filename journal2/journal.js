@@ -505,7 +505,7 @@ function setupSpecialControls()
          container.className = "stamp";
          container.onclick = () => HTMLUtilities.SimulateRadioSelect(container, imageselector);
          hide(container);
-         var image = new Image();
+         var image = MiniDraw2.CreateUntaintedImage();
          image.onload = function() {
             show(container);
             container.click();
