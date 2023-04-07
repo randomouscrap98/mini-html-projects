@@ -335,13 +335,15 @@ StreamDrawElementParser.prototype.ParseGenericBatch = function(data, start, leng
       l += (1 + this.PATTERNBYTES)
    }
 
+   var extra = isRect ? MiniDraw2.BasicLineType(MiniDraw2.SOLIDRECT) : false;
+
    //This one is actually simpler, it's just blobs of lines (or rectangles)
    for(i = start + l; i < start + length; i += (2 * this.POINTBYTES))
    {
       t = this.ParseStandardPoint(data, i);
       t2 = this.ParseStandardPoint(data, i + this.POINTBYTES);
       result.push(new MiniDraw2.LineData(size, t.extra ? color : null, 
-         t.x, t.y, t2.x, t2.y, MiniDraw2.BasicLineType(MiniDraw2.SOLIDRECT), pattern));
+         t.x, t.y, t2.x, t2.y, extra, pattern));
    }
 
    return result;

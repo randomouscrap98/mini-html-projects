@@ -691,15 +691,24 @@ var MiniDraw2 =
                //Oops, not memoized yet. Go do that, and await the result.
                if(!(ld.extra.url in MiniDraw2._MemoizedImages))
                {
-                  await new Promise((resolve, reject) => {
-                     var img = new Image();
-                     img.onload = () => {
-                        MiniDraw2._MemoizedImages[ld.extra.url] = img;
-                        resolve();
-                     };
-                     img.onerror = reject;
-                     img.src = ld.extra.url;
-                  });
+                  try {
+                     await new Promise((resolve, reject) => {
+                        var img = new Image();
+                        img.onload = () => {
+                           MiniDraw2._MemoizedImages[ld.extra.url] = img;
+                           resolve();
+                        };
+                        img.onerror = reject;
+                        img.src = ld.extra.url;
+                     });
+                  }
+                  catch(ex) {
+                     //Don't let the whole drawing system crash just because an
+                     //image couldn't load. Better to just leave it blank and
+                     //move on; probably just a dead link or something.
+                     console.error(`Could not load image ${ld.extra.url}: ${ex}`);
+                     return;
+                  }
                }
 
                //Since we're awaiting a promise up there, we know it'll be in
@@ -813,7 +822,7 @@ var MiniDraw2 =
 
 MiniDraw2.LineData.prototype.is_solidrect = function()
 {
-   return this.extra && this.extra.type === MiniDraw2.SOLIDRECT;
+   return this.extra && (this.extra.type === MiniDraw2.SOLIDRECT);
 };
 
 
