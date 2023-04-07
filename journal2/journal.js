@@ -46,7 +46,7 @@ var constants =
    maxScan : 10000,        //per frame; should be about the max line draw per frame
    maxParse : 2000,
    autoDrawLineChunk : 90,//Be VERY CAREFUL with this value! Harmonic series...
-   nonDrawTools : [ "exportrect", "pan", "imageinsert" ],
+   nonDrawTools : [ "exportrect", "pan" ], //Tools that can be used when drawing is locked//, "imageinsert" ],
    easymodeDefaultTool : "tool_pen",
    slowToolAlpha : 0.15,
    newPageUndos : 30,
@@ -497,17 +497,40 @@ function setupRadioEmulators(element)
          {
             //before doing the standard radio simulate, check if this is a special
             //radio where we do extra stuff
-            if(x.id === "tools" && isEasyMode())
-            {
-               //Save the old tool
-               saveToolRemember(getTool());
-               //Restore the new tool
-               restoreToolRemember(getToolName(y));
-            }
+            if(x.id === "tools")
+               setupToolClick(y);
             HTMLUtilities.SimulateRadioSelect(y, x);
          };
       });
    });
+}
+
+function setupToolClick(toolButton)
+{
+   var lastTool = getTool();
+   var toolName = getToolName(toolButton);
+   if(isEasyMode())
+   {
+      if(toolName != lastTool)
+      {
+         //Save the old tool
+         saveToolRemember(lastTool);
+         //Restore the new tool
+         restoreToolRemember(toolName);
+      }
+      else {
+         console.debug("User reclicked " + toolName);
+      }
+   }
+
+   //Now we do some special things on various tool clicks
+   if(toolName === "imageinsert")
+   {
+      toggleHidden(imagedialog);
+   }
+   else {
+      hide(imagedialog);
+   }
 }
 
 function setupClosable(element)

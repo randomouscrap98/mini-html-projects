@@ -144,11 +144,14 @@ body[data-pagereadonly] [data-hidepagereadonly] {
    font-family: monospace;
 }
 
-#palettedialog {
-   width: 160px;
+.slideout {
    flex: none;
    padding: 3px;
    background-color: white;
+   border-right: 1px solid #BBB; 
+}
+#palettedialog {
+   width: 160px;
 }
 #palettedialogcontrols {
    display: flex;
@@ -184,15 +187,29 @@ body[data-pagereadonly] [data-hidepagereadonly] {
 
 #imagedialog {
    width: 320px;
-   flex: none;
-   padding: 3px;
-   background-color: white;
    display: flex;
    flex-direction: column;
 }
 #imageselector {
    flex: 1;
    overflow-y: auto;
+   display: flex;
+   flex-wrap: wrap;
+   gap: 5px;
+}
+#imageselector .stamp {
+   width: 80px;
+   height: 80px;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+}
+#imageselector .stamp img {
+   max-width: 100%;
+   max-height: 100%;
+}
+#imageselector .stamp[data-selected] {
+   background-color: skyblue !important;
 }
 #imageadder {
    flex: none;
