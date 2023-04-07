@@ -472,6 +472,10 @@ function setupSpecialControls()
    {
       if(imageadder_url.value)
       {
+         var restoreSubmit = () => {
+            enable(imageadder_url);
+            enable(imageadder_submit);
+         };
          var container = document.createElement("div");
          container.className = "stamp";
          container.onclick = () => HTMLUtilities.SimulateRadioSelect(container, imageselector);
@@ -480,16 +484,20 @@ function setupSpecialControls()
          image.onload = function() {
             show(container);
             container.click();
+            restoreSubmit();
          };
          image.onerror = function() {
             alert("Couldn't load image!");
             container.parentNode.removeChild(container);
+            restoreSubmit();
          };
          image.src = imageadder_url.value;
          container.appendChild(image);
          imageselector.appendChild(container);
 
          imageadder_url.value = "";
+         disable(imageadder_url);
+         disable(imageadder_submit);
       }
    };
 }

@@ -198,8 +198,9 @@ body[data-pagereadonly] [data-hidepagereadonly] {
    gap: 5px;
 }
 #imageselector .stamp {
-   width: 80px;
-   height: 80px;
+   width: 90px;
+   height: 90px;
+   padding: 5px;
    display: flex;
    align-items: center;
    justify-content: center;
