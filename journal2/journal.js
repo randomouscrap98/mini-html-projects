@@ -46,7 +46,7 @@ var constants =
    maxScan : 10000,        //per frame; should be about the max line draw per frame
    maxParse : 2000,
    autoDrawLineChunk : 90,//Be VERY CAREFUL with this value! Harmonic series...
-   nonDrawTools : [ "exportrect", "pan" ],
+   nonDrawTools : [ "exportrect", "pan", "imageinsert" ],
    easymodeDefaultTool : "tool_pen",
    slowToolAlpha : 0.15,
    newPageUndos : 30,

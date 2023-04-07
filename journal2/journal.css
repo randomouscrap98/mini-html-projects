@@ -182,6 +182,30 @@ body[data-pagereadonly] [data-hidepagereadonly] {
    height: 30px;
 }
 
+#imagedialog {
+   width: 320px;
+   flex: none;
+   padding: 3px;
+   background-color: white;
+   display: flex;
+   flex-direction: column;
+}
+#imageselector {
+   flex: 1;
+   overflow-y: auto;
+}
+#imageadder {
+   flex: none;
+   display: flex;
+}
+#imageadder_url {
+   flex: 1;
+}
+#imageadder_submit {
+   flex: none;
+}
+
+
 #dropper { 
    padding-bottom: 2px;
 }
