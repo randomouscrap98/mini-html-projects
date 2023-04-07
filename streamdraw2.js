@@ -261,6 +261,7 @@ StreamDrawElementParser.prototype.ParseStroke = function(data, start, length)
    //Now generate the lines
    for(i = 0; i < si - 2; i += 2)
    {
+      //false is the extra data indicating it's not just a normal line
       result[(i >> 1)] = new MiniDraw2.LineData(size, color, 
          segment[i], segment[i + 1], segment[i + 2], segment[i + 3], false, pattern);
    }
@@ -287,7 +288,7 @@ StreamDrawElementParser.prototype.CreateGenericBatch = function(lines)
    var result = "";
 
    result += this.CreateColorData(lines[0].color);
-   result += (lines[0].rect ? "" : StreamConvert.IntToChars(lines[0].width, this.SIZEBYTES));
+   result += (lines[0].is_solidrect() ? "" : StreamConvert.IntToChars(lines[0].width, this.SIZEBYTES));
 
    if(lines[0].patternId) //pattern needs to be a number
       result += this.PATTERNSYMBOL + StreamConvert.IntToChars(lines[0].patternId, this.PATTERNBYTES);
@@ -329,7 +330,7 @@ StreamDrawElementParser.prototype.ParseGenericBatch = function(data, start, leng
       t = this.ParseStandardPoint(data, i);
       t2 = this.ParseStandardPoint(data, i + this.POINTBYTES);
       result.push(new MiniDraw2.LineData(size, t.extra ? color : null, 
-         t.x, t.y, t2.x, t2.y, isRect, pattern));
+         t.x, t.y, t2.x, t2.y, MiniDraw2.BasicLineType(MiniDraw2.SOLIDRECT), pattern));
    }
 
    return result;

@@ -561,9 +561,13 @@ var MiniDraw =
 //may work better
 var MiniDraw2 = 
 {
+   SOLIDRECT : "solidrect",
+   BasicLineType : function(type) {
+      return { type : type };
+   },
    _MemoizedPatterns : {},
    //An object to store a single line
-   LineData : function (width, color, x1, y1, x2, y2, rect, patternId)
+   LineData : function (width, color, x1, y1, x2, y2, extra, patternId)
    {
       this.width = width;
       this.color = color;
@@ -571,7 +575,7 @@ var MiniDraw2 =
       this.y1 = y1;
       this.x2 = x2;
       this.y2 = y2;
-      this.rect = rect;
+      this.extra = extra;
       this.patternId = patternId || 0;
    },
    SetupLineStyle(ctx, ld)
@@ -662,13 +666,20 @@ var MiniDraw2 =
    //The ACTUAL "draw this line data" function
    SimpleRectLine : function(ctx, ld)
    {
-      if(ld.rect)
+      if(ld.extra)
       {
-         MiniDraw2.SetupLineStyle(ctx, ld);
-         ctx.beginPath();
-         MiniDraw2.SimpleRect(ctx, Math.min(ld.x1, ld.x2), Math.min(ld.y1, ld.y2),
-            Math.abs(ld.x1 - ld.x2), Math.abs(ld.y1 - ld.y2), !ld.color);
-         ctx.fill();
+         if(ld.is_solidrect())
+         {
+            MiniDraw2.SetupLineStyle(ctx, ld);
+            ctx.beginPath();
+            MiniDraw2.SimpleRect(ctx, Math.min(ld.x1, ld.x2), Math.min(ld.y1, ld.y2),
+               Math.abs(ld.x1 - ld.x2), Math.abs(ld.y1 - ld.y2), !ld.color);
+            ctx.fill();
+         }
+         else 
+         {
+            console.warn("Couldn't figure out what to do with special line: ", ld.extra);
+         }
       }
       else
       {
@@ -761,6 +772,12 @@ var MiniDraw2 =
       return currentLines;
    }
 };
+
+MiniDraw2.LineData.prototype.is_solidrect = function()
+{
+   return this.extra && this.extra.type === MiniDraw2.SOLIDRECT;
+};
+
 
 
 var StreamConvert =

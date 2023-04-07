@@ -1354,6 +1354,7 @@ function trackPendingStroke(drw, pending)
       {
          pending.type = "stroke"; 
 
+         //false: stroke has no extra, just normal line
          var ld = new MiniDraw2.LineData(pending.size, pending.color,
             Math.round(drw.lastX), Math.round(drw.lastY), 
             Math.round(drw.currentX), Math.round(drw.currentY),
@@ -1406,10 +1407,11 @@ function trackPendingStroke(drw, pending)
          //is literally just one rectangle
          if(!pending.lines.length)
          {
+            //Solid Rectangle is basic type, hence BasicLineType thing there.
             pending.lines.push(new MiniDraw2.LineData(pending.size, pending.color,
                Math.round(Math.max(drw.currentX,0)), Math.round(Math.max(drw.currentY,0)),
                Math.round(Math.max(drw.currentX,0)), Math.round(Math.max(drw.currentY,0)), 
-               true, pending.pattern));
+               MiniDraw2.BasicLineType(MiniDraw2.SOLIDRECT), pending.pattern));
          }
          else
          {
