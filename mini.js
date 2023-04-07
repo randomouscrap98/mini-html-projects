@@ -570,6 +570,7 @@ var MiniDraw2 =
       return { type : MiniDraw2.INSERTIMAGE, image : image };
    },
    _MemoizedPatterns : {},
+   _MemoizedImages : {}, //CAREFUL! If you have a lot of images this might be mem death?
    //An object to store a single line
    LineData : function (width, color, x1, y1, x2, y2, extra, patternId)
    {
@@ -667,8 +668,9 @@ var MiniDraw2 =
          ctx.fill();
       }
    },
-   //The ACTUAL "draw this line data" function (minidraw2)
-   DrawLineData : function(ctx, ld)
+   //The ACTUAL "draw this line data" function (minidraw2). It's async because
+   //some kinds of lines may need to load resources.
+   DrawLineDataAsync : async function(ctx, ld)
    {
       if(ld.extra)
       {
@@ -682,6 +684,30 @@ var MiniDraw2 =
          }
          else if(ld.extra.type === MiniDraw2.INSERTIMAGE)
          {
+            //There's no loaded image yet for this line data, need to go
+            //fulfill that.
+            if(!ld.extra.image)
+            {
+               //Oops, not memoized yet. Go do that, and await the result.
+               if(!(ld.extra.url in MiniDraw2._MemoizedImages))
+               {
+                  await new Promise((resolve, reject) => {
+                     var img = new Image();
+                     img.onload = () => {
+                        MiniDraw2._MemoizedImages[ld.extra.url] = img;
+                        resolve();
+                     };
+                     img.onerror = reject;
+                     img.src = ld.extra.url;
+                  });
+               }
+
+               //Since we're awaiting a promise up there, we know it'll be in
+               //the memoized pool or whatever here.
+               ld.extra.image = MiniDraw2._MemoizedImages[ld.extra.url];
+               ld.extra.url = false;
+            }
+
             //This draws the image data directly into the canvas using the line
             //data provided. Just like all other things, x1, x2, y1, y2 are the
             //upper left and lower right corners.

@@ -661,7 +661,7 @@ function createSystem()
    );
 }
 
-function exportSinglePage(page, system, redrawPage) //forgetPage)//, system)
+async function exportSinglePage(page, system, redrawPage) //forgetPage)//, system)
 {
    var pageData = system.FindPage(page);
    prepPage(pageData, system);
@@ -676,7 +676,7 @@ function exportSinglePage(page, system, redrawPage) //forgetPage)//, system)
    system.ScanLines(drawTracking, l => allLines.push(...l), Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER);
 
    //Don't bother sending a context, we're drawing DIRECTLY onto the original pages
-   drawLines(allLines);
+   await drawLines(allLines);
 
    //Copy the top layer OVER the bottom layer
    CanvasUtilities.CopyInto(globals.contexts[1], layer1, 0, 0, "source-over");
@@ -834,10 +834,15 @@ function setupExports()
    var url = new URL(location.href);
    url.searchParams.set("export", "1");
    document.getElementById("export").href = url.toString();
-   exportstatic.onclick = (e) =>
+   exportstatic.onclick = async (e) =>
    {
       e.preventDefault();
-      performStaticExport();
+      try {
+         await performStaticExport();
+      }
+      catch(ex) {
+         alert(`Could not complete export: ${ex}`);
+      }
    };
    exportsingle.onclick = (e) =>
    {
@@ -846,7 +851,7 @@ function setupExports()
    };
 }
 
-function performStaticExport()
+async function performStaticExport()
 {
    var activeUrls = [];
    showCover({
@@ -961,20 +966,21 @@ window.onload = function() {
    svg.setAttribute("width", svgWidth);
    svg.setAttribute("height", svgHeight);
 
-   var wait = setInterval(() =>
-   {
-      if(ready)
-      {
-         ready = false;
+   var work = [];
 
-         var page = sys.pages[pageIndex++];
-         var pageURI = exportSinglePage(page.name, sys);
+   //Was talking about memory whatever, but changed to async so needed normal
+   //loop. Hope it works...
+   for(let pageIndex = 0; pageIndex < sys.pages.length; pageIndex++)
+   {
+      work.push(async () => {
+         var page = sys.pages[pageIndex];
+         var pageURI = await exportSinglePage(page.name, sys);
 
          //The html element
          var pageID = document.createElement("a");
-         pageID.id = "page_" + pageIndex;
+         pageID.id = "page_" + (pageIndex + 1);
          pageID.className = "pageid";
-         pageID.innerHTML = `Page ${pageIndex} (${page.name})`;
+         pageID.innerHTML = `Page ${(pageIndex + 1)} (${page.name})`;
          pageID.href = "#" + pageID.id;
          imagebox.appendChild(pageID);
          var image = document.createElement("img");
@@ -997,7 +1003,7 @@ window.onload = function() {
             svgImageHeight = microSvgHeight;
             simage.setAttribute("style", "image-rendering:crisp-edges; image-rendering:optimizespeed; image-rendering: pixelated;");
          }
-         
+
          simage.setAttribute("x", svgx);
          simage.setAttribute("y", svgy);
          simage.setAttribute("width", svgImageWidth);
@@ -1007,7 +1013,7 @@ window.onload = function() {
 
          //The page text for svg
          var stext = HTMLUtilities.CreateSvgElement("text");
-         stext.appendChild(document.createTextNode(`${pageIndex} : ${page.name}`));
+         stext.appendChild(document.createTextNode(`${(pageIndex + 1)} : ${page.name}`));
          if(page.micro)
          {
             stext.setAttribute("x", svgx + 5);
@@ -1036,30 +1042,46 @@ window.onload = function() {
          else
             normalIndex++;
 
-         appendScroll(coverscreencontainer, `Page ${pageIndex}`);
-         ready = true;
-      }
+         appendScroll(coverscreencontainer, `Page ${(pageIndex + 1)}`);
+      });
+   }
 
-      if(pageIndex >= sys.pages.length)
-      {
-         appendScroll(coverscreencontainer, "Finalizing...");
-         changePage(getPage());
-         clearInterval(wait);
+   work.push(() => {
+      appendScroll(coverscreencontainer, "Finalizing...");
+      changePage(getPage());
+      //clearInterval(wait);
 
-         allMessages.forEach(x => textbox.appendChild(createMessageElement(x)));
+      allMessages.forEach(x => textbox.appendChild(createMessageElement(x)));
 
-         //Finalize SVG. Set viewbox just in case (it's not necessary but it
-         //helps with scaling if you need it later)
-         HTMLUtilities.FillSvgBackground(svg, "white");
-         svg.setAttribute("viewBox", `0 0 ${svg.getAttribute("width")} ${svg.getAttribute("height")}`);
-         makeDownload(svg.outerHTML, "SVG (Images only)", `${globals.roomname}.svg`);
+      //Finalize SVG. Set viewbox just in case (it's not necessary but it
+      //helps with scaling if you need it later)
+      HTMLUtilities.FillSvgBackground(svg, "white");
+      svg.setAttribute("viewBox", `0 0 ${svg.getAttribute("width")} ${svg.getAttribute("height")}`);
+      makeDownload(svg.outerHTML, "SVG (Images only)", `${globals.roomname}.svg`);
 
-         //Modify svg to produce a "quarter" svg (useful for zoomed out stuff)
-         svg.setAttribute("width", Number(svg.getAttribute("width")) / 4);
-         svg.setAttribute("height", Number(svg.getAttribute("height")) / 4);
-         makeDownload(svg.outerHTML, "SVG (Quarter size)", `${globals.roomname}_quarter.svg`);
+      //Modify svg to produce a "quarter" svg (useful for zoomed out stuff)
+      svg.setAttribute("width", Number(svg.getAttribute("width")) / 4);
+      svg.setAttribute("height", Number(svg.getAttribute("height")) / 4);
+      makeDownload(svg.outerHTML, "SVG (Quarter size)", `${globals.roomname}_quarter.svg`);
 
-         makeDownload(htmlexport.documentElement.outerHTML, "HTML", `${globals.roomname}_static.html`);
+      makeDownload(htmlexport.documentElement.outerHTML, "HTML", `${globals.roomname}_static.html`);
+   });
+
+   let w = false;
+
+   var wait = setInterval(() => {
+      if(!w) {
+         w = work.shift();
+         if(!w) {
+            console.log("All export work complete");
+            clearInterval(wait);
+         }
+         w().then(() => {
+            w = false;
+         }).catch((e) => {
+            alert(`Failed during export: ${e}`);
+            clearInterval(wait);
+         });
       }
    }, 100);
 }
@@ -1435,17 +1457,20 @@ function trackPendingStroke(drw, pending)
    return currentLines;
 }
 
-function drawLines(lines, context, overridecolor) 
+async function drawLines(lines, context, overridecolor) 
 { 
    //console.log("Drawing: " + lines.length + " lines");
-   lines.forEach(x => 
+   for(let x of lines)
    {
       if(overridecolor)
          x.color = overridecolor;
       var layer = x.layer === undefined ? getLayer() : x.layer; //IS THIS SAFE??
       var ctx = context || globals.contexts[layer];
-      MiniDraw2.DrawLineData(ctx, x);
-   });
+      await MiniDraw2.DrawLineDataAsync(ctx, x);
+   }
+   //lines.forEach(x => 
+   //{
+   //});
    return lines; 
 }
 
@@ -1471,7 +1496,7 @@ function messageEvent(m) { globals.scheduledMessages.push(m); }
 function pageEvent(p) { globals.scheduledPages.push(p); }
 function lineEvent(l) { globals.scheduledLines.push(...l); }
 
-function frameFunction()
+async function frameFunctionAsync()
 {
    if(perfmon > 1)
       ffst = performance.now();
@@ -1518,12 +1543,12 @@ function frameFunction()
 
       // no point trying to splice something that's 0 items pulled out
       if(pbspeed > 0)
-         drawLines(globals.scheduledLines.splice(0, pbspeed * perfmon));
+         await drawLines(globals.scheduledLines.splice(0, pbspeed * perfmon));
    }
 
    //Only do drawing stuff on frame if there IS a drawer.
    if(globals.drawer)
-      drawerTick(globals.drawer, globals.pendingStroke);
+      await drawerTick(globals.drawer, globals.pendingStroke);
 
    var tracker = globals.system.Scan(messageEvent, pageEvent, constants.maxParse * perfmon, constants.maxScan * perfmon);
 
@@ -1632,12 +1657,19 @@ function frameFunction()
 
    if(perfmon > 1 && performance.now() - ffst > 10)
       console.log("draw chunk: ", (performance.now() - ffst));
+}
 
-   requestAnimationFrame(frameFunction);
+function frameFunction()
+{
+   frameFunctionAsync().then(() => {
+      requestAnimationFrame(frameFunction);
+   }).catch((e) => {
+      alert(`Error in frame function, halting: ${e}`);
+   });
 }
 
 //The drawing function to be performed per frame
-function drawerTick(drawer, pending)
+async function drawerTick(drawer, pending)
 {
    //Do NOTHING if the drawer is basically inactive! There's nothing to do on
    //each tick unless the drawer is trying to do things!
@@ -1657,7 +1689,7 @@ function drawerTick(drawer, pending)
          //This creates pending lines from our current drawing tool/etc for
          //posting later. The generated lines are drawn NOW though, so the line
          //data must be correct/working/etc (including stuff like complex func)
-         drawLines(trackPendingStroke(drawer, pending));
+         await drawLines(trackPendingStroke(drawer, pending));
 
          //These are NOT performed every frame because the drawing events are
          //NOT synchronized to the frame, so we could be removing that very
@@ -1715,7 +1747,7 @@ function drawerTick(drawer, pending)
                pending.layer, pending.lines, pending.ignoredColors);
             post(endpoint(globals.roomname), ldata, () => setStatus("ok"), () => setStatus("error"));
             if(pending.displayAtEnd)
-               drawLines(pending.lines);
+               await drawLines(pending.lines);
          }
          pending.active = false;
          pending.lines = [];
