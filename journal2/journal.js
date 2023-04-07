@@ -905,7 +905,7 @@ body { width: 2700px; font-family: sans-serif; margin: 8px; padding: 0; }
 .username { font-weight: bold; margin-right: 0.25em; }
 .keyword { color: deeppink; }
 .username::after { content: ":"; }
-.wholemessage { padding: 1px 3px; }
+.wholemessage { padding: 1px 3px; word-wrap: break-word; }
 .striped:nth-child(even) { background-color: #F7F7F7; }
 .exported { color: #777; font-size: 0.8em; display: block; margin: 7px 0 3px 0;
    font-style: italic; }
@@ -1046,7 +1046,7 @@ window.onload = function() {
       });
    }
 
-   work.push(() => {
+   work.push(async () => {
       appendScroll(coverscreencontainer, "Finalizing...");
       changePage(getPage());
       //clearInterval(wait);
@@ -1075,6 +1075,7 @@ window.onload = function() {
          if(!w) {
             console.log("All export work complete");
             clearInterval(wait);
+            return;
          }
          w().then(() => {
             w = false;

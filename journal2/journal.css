@@ -81,7 +81,10 @@ body[data-pagereadonly] [data-hidepagereadonly] {
 }
 
 #messages { padding: 0.2em 0; }
-.wholemessage { padding: 0.08em 0.3em; }
+.wholemessage { 
+   padding: 0.08em 0.3em; 
+   word-wrap: break-word;
+}
 .message { white-space: pre-wrap; }
 .username { 
    font-weight: bold;
