@@ -1181,6 +1181,10 @@ function performFunctionalExport(room)
    });
 
    appendScroll(coverscreencontainer, "Please wait, downloading + stitching data + scripts");
+   
+   //Remove stuff that causes problems
+   var rem = document.getElementById("imageselector");
+   rem.parentNode.removeChild(rem);
 
    //Then, go download all the header stuff and jam them into their respective elements
    var styles = document.head.querySelectorAll('link[rel="stylesheet"]');
