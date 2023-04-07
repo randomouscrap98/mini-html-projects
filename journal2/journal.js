@@ -512,7 +512,7 @@ function setupSpecialControls()
             restoreSubmit();
          };
          image.onerror = function() {
-            alert("Couldn't load image!");
+            alert("Couldn't load image! Probably CORS (restricted image), check console if possible!");
             container.parentNode.removeChild(container);
             restoreSubmit();
          };
