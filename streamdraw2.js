@@ -100,6 +100,15 @@ StreamDrawElementParser.prototype.ParseColorData = function(data, start)
 // -- ELEMENT PARSERS --
 // ---------------------
 
+// NOTE: all these element parsers parse AFTER the identifier. So, the raw data
+// stream format has this idea of containers which house the data you see here.
+// I can't just dump the data generated here (such as CreateMessage) directly
+// into the stream, because the parser won't know it's a message.
+//
+// SO: when writing new generators/parsers here, keep that in mind. These go
+// INSIDE containers and thus don't need to self-identify. Don't include the
+// tokens and endcaps and whatever!
+
 StreamDrawElementParser.prototype.CreateMessage = function(username, message)
 {
    var m = username + ":" + message;
@@ -142,6 +151,8 @@ StreamDrawElementParser.prototype.ParsePage = function(data, start, length)
    return JSON.parse(fullMessage);
 };
 
+//A stroke is an optimized continuous line. As such, it doesn't need to store
+//each line segment, it's more of a "path".
 StreamDrawElementParser.prototype.CreateStroke = function(lines, recurseJoiner)
 {
    var result = "";
@@ -336,7 +347,44 @@ StreamDrawElementParser.prototype.ParseGenericBatch = function(data, start, leng
    return result;
 };
 
+//Because we had this old assumption that the only things we'd be drawing were
+//non-antialiased lines and rectangles, anything outside of that assumption
+//that may have non-standard data has to be specially crafted. 
 
+//Image insert takes a single line which is ALREADY fully ready to insert an
+//image (all data present) and creates raw stream data for it. Note that this
+//is still considered standard line data, so the data must not have ' in it. As
+//such, the link is converted to base64 (even though it's wasteful)
+StreamDrawElementParser.prototype.CreateImageInsert = function(lines) {
+   var line = lines[0]; //This may fail if they gave us no lines, but whatever
+   var result = "";
+   //Put the x and y of the line in there first, since it's a known length
+   result += this.CreateStandardPoint(line.x1, line.y1, false);
+   result += this.CreateStandardPoint(line.x2, line.y2, false);
+   //Then the rest is just the url. Note that, just in case we were given an
+   //unloaded image data, we check for url first before going to the image.
+   result += btoa(line.extra.url || line.extra.image.src);
+   return result;
+};
+
+StreamDrawElementParser.prototype.ParseImageInsert = function(data, start, length) {
+   //Image insert is only ever a single line. But the caller expects an array,
+   //so be careful.
+   var t = this.ParseStandardPoint(data, 0);
+   var t2 = this.ParseStandardPoint(data, this.POINTBYTES);
+   var url = atob(data.substr(this.POINTBYTES * 2, length - this.POINTBYTES * 2));
+
+   return [
+      //Some of the variables in linedata aren't used, such as size, color,
+      //pattern. Note that since we can't wait for the image to load, we create
+      //a special object which has just the URL. The line drawing function will
+      //handle that for us.
+      new MiniDraw2.LineData(0, null, t.x, t.y, t2.x, t2.y, {
+         type: MiniDraw2.INSERTIMAGE,
+         url: url
+      }, 0)
+   ];
+};
 
 
 // The mega parser that does overall data stream parsing. Requires an element
@@ -349,11 +397,16 @@ function StreamDrawSystemParser(elementParser)
    this.symbols =          
    {
       text : "~",
+      page : "#",
+      cap : "'",
+      //raw : "!",     //A SUPER ineficient way to store line data!
+      //The rest are line segment idenfifiers, which are capped with, well, the
+      //cap. This means the data contained within these containers must NOT
+      //contain the cap character!! Be careful!
       stroke : "|",
       lines : "-",
       rectangles : "+",
-      cap : "'",
-      page : "#"
+      image : "i"
    };
 }
 
@@ -378,20 +431,28 @@ StreamDrawSystemParser.prototype.DataScan = function(data, start, textfunc, line
 
       cc = data.charAt(current);
 
+      //Text segments proclaim their length at the start
       if(cc == this.symbols.text)
       {
          clength = 1 + this.eparser.MessageSize(data, current + 1);
          lengthModifier = 1;
          func = textfunc;
       }
+      //Page segments proclaim their length at the start
       else if(cc == this.symbols.page)
       {
          clength = 1 + this.eparser.PageSize(data, current + 1);
          lengthModifier = 1;
          func = pagefunc;
       }
-      else if(cc == this.symbols.stroke || cc == this.symbols.lines || cc == this.symbols.rectangles)
-      {
+      //Line segments end with a cap character, since there may be thousands of
+      //them and a cap character is shorter than proclaiming the length by 1-2 bytes
+      else if(
+         cc == this.symbols.stroke || 
+         cc == this.symbols.lines || 
+         cc == this.symbols.rectangles ||
+         cc == this.symbols.image
+      ) {
          clength = data.indexOf(this.symbols.cap, current) - current + 1;
          lengthModifier = 2;
          func = linefunc;
@@ -444,6 +505,11 @@ StreamDrawSystemParser.prototype.CreateLines = function(type, layer, lines)
       startChunk = this.symbols.rectangles + startChunk;
       result = this.eparser.CreateBatchRects(lines);
    }
+   else if(type == "image")
+   {
+      startChunk = this.symbols.image + startChunk;
+      result = this.eparser.CreateImageInsert(lines);
+   }
    else
    {
       throw "Unknown pending lines type!";
@@ -461,6 +527,8 @@ StreamDrawSystemParser.prototype.ParseLineChunk = function(data, start, length, 
       return this.eparser.ParseBatchLines(data, start, length);
    else if(type == this.symbols.rectangles)
       return this.eparser.ParseBatchRects(data, start, length);
+   else if(type == this.symbols.image)
+      return this.eparser.ParseImageInsert(data, start, length);
    else
       throw `Unparseable data type ${type}`;
 };
