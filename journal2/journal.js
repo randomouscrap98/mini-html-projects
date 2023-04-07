@@ -1530,7 +1530,7 @@ function trackPendingStroke(drw, pending)
       else if (pending.tool === "imageinsert")
       {
          pending.type = "image";
-         //pending.postLines = false; //Just for now
+         pending.postLines = true;
          var img = getImageInsert();
 
          if(!pending.lines.length)
@@ -1546,11 +1546,11 @@ function trackPendingStroke(drw, pending)
          pending.lines[0].y1 = Math.round(drw.currentY - img.postheight / 2);
          pending.lines[0].x2 = Math.round(drw.currentX + img.postwidth / 2);
          pending.lines[0].y2 = Math.round(drw.currentY + img.postheight / 2);
-         pending.postLines = 
-            pending.lines[0].x1 >= 0 && pending.lines[0].y1 >= 0 &&
-            pending.lines[0].x2 >= 0 && pending.lines[0].y2 >= 0 &&
-            pending.lines[0].x1 < constants.pwidth && pending.lines[0].y1 < constants.pheight &&
-            pending.lines[0].x2 < constants.pwidth && pending.lines[0].y2 < constants.pheight;
+         //pending.postLines = 
+            //pending.lines[0].x1 >= 0 && pending.lines[0].y1 >= 0 &&
+            //pending.lines[0].x2 >= 0 && pending.lines[0].y2 >= 0 &&
+            //pending.lines[0].x1 < constants.pwidth && pending.lines[0].y1 < constants.pheight &&
+            //pending.lines[0].x2 < constants.pwidth && pending.lines[0].y2 < constants.pheight;
       }
 
       //if the amount of lines we're about to add is too much, remove from the
@@ -1592,7 +1592,7 @@ function selectRect(sx, sy, cx, cy)
 }
 
 
-function imageInsertRect(cx,cy,img,display)
+function imageInsertRect(cx,cy,img) //,display)
 {
    if(!imageinsertrect.hasAttribute("data-assigned"))
    {
@@ -1606,7 +1606,7 @@ function imageInsertRect(cx,cy,img,display)
 
    imageinsertrect.style.left = (cx - img.displaywidth / 2) + "px";
    imageinsertrect.style.top = (cy - img.displayheight / 2) + "px";
-   setHidden(imageinsertrect, !display);
+   //setHidden(imageinsertrect, !display);
 }
 
 function clearAllRects()
@@ -1852,8 +1852,8 @@ async function drawerTick(drawer, pending)
       }
       else if(currentTool === "imageinsert")
       {
-         imageInsertRect(drawer.currentAction.clientX, drawer.currentAction.clientY, getImageInsert(),
-            pending && pending.postLines);
+         imageInsertRect(drawer.currentAction.clientX, drawer.currentAction.clientY, getImageInsert());
+            //pending && pending.postLines);
       }
    }
    //Not currently drawing, post lines since we're done (why is this in the frame drawer again?)
@@ -1883,7 +1883,7 @@ async function drawerTick(drawer, pending)
             if(pending.displayAtEnd)
                await drawLines(pending.lines);
          }
-         console.log("Done pending: ", JSON.stringify(pending));
+         //console.log("Done pending: ", JSON.stringify(pending));
          pending.active = false;
          pending.lines = [];
       }

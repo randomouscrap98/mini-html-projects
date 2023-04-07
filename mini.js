@@ -909,6 +909,16 @@ var StreamConvert =
       while(c & StreamConvert.varVal);
 
       return result;
+   },
+   SignedToVariableWidth : function(value)
+   {
+      return StreamConvert.IntToVariableWidth(StreamConvert.SignedToSpecial(value));
+   },
+   VariableWidthToSigned : function(chars, start)
+   {
+      var result = StreamConvert.VariableWidthToInt(chars, start);
+      result.value = StreamConvert.SpecialToSigned(result.value);
+      return result;
    }
 };
 

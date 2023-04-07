@@ -360,31 +360,55 @@ StreamDrawElementParser.prototype.ParseGenericBatch = function(data, start, leng
 StreamDrawElementParser.prototype.CreateImageInsert = function(lines) {
    var line = lines[0]; //This may fail if they gave us no lines, but whatever
    var result = "";
+   //Because of the nature of images, they won't be frequent, so we can waste
+   //data using these much larger representations. Images can be posted
+   //anywhere, I want them to be able to clip the edges at any time.
+   result += StreamConvert.SignedToVariableWidth(line.x1);
+   result += StreamConvert.SignedToVariableWidth(line.y1);
+   result += StreamConvert.SignedToVariableWidth(line.x2);
+   result += StreamConvert.SignedToVariableWidth(line.y2);
+   //SPECIAL NOTE: Because of the nature of images, I allow negatives in ONLY
+   //the first point. If the second point is negative, we just throw. We spread
+   //the sign data across the two points since we have only one bit of extra
+   //data per point.
+   //if(line.x2 < 0 || line.y2 < 0) throw "Bad line data: end is negative!";
    //Put the x and y of the line in there first, since it's a known length
-   result += this.CreateStandardPoint(line.x1, line.y1, false);
-   result += this.CreateStandardPoint(line.x2, line.y2, false);
+   //result += this.CreateStandardPoint(Math.abs(line.x1), Math.abs(line.y1), line.x1 < 0);
+   //result += this.CreateStandardPoint(line.x2, line.y2, line.y1 < 0);
    //Then the rest is just the url. Note that, just in case we were given an
    //unloaded image data, we check for url first before going to the image.
    result += btoa(line.extra.url || line.extra.image.src);
-   //console.log("Creating image insert: ", line, result, this.ParseImageInsert(result, 0, result.length));
    return result;
 };
 
 StreamDrawElementParser.prototype.ParseImageInsert = function(data, start, length) {
    //Image insert is only ever a single line. But the caller expects an array,
    //so be careful.
-   var t = this.ParseStandardPoint(data, start);
-   var t2 = this.ParseStandardPoint(data, start + this.POINTBYTES);
-   var pointlen = this.POINTBYTES * 2;
-   //console.log(t, t2, data.substr(start + pointlen, length - pointlen));
-   var url = atob(data.substr(start + pointlen, length - pointlen));
+   var l = 0;
+   var points = []; //x1,y1,x2,y2
+   for(var i = 0; i < 4; i++)
+   {
+      var result = StreamConvert.VariableWidthToSigned(data, start + l);
+      l += result.length;
+      points.push(result.value);
+   }
+   //var x1 = StreamConvert.VariableWidthToSigned(data, start + l);
+   //var x2 = StreamConvert.VariableWidthToSigned(data, start);
+   //var t = this.ParseStandardPoint(data, start);
+   //var t2 = this.ParseStandardPoint(data, start + this.POINTBYTES);
+   //if(t.extra) t.x = -t.x;
+   //if(t2.extra) t.y = -t.y;
+   //var pointlen = this.POINTBYTES * 2;
+   //var url = atob(data.substr(start + pointlen, length - pointlen));
+   var url = atob(data.substr(start + l, length - l));
 
    return [
       //Some of the variables in linedata aren't used, such as size, color,
       //pattern. Note that since we can't wait for the image to load, we create
       //a special object which has just the URL. The line drawing function will
       //handle that for us.
-      new MiniDraw2.LineData(0, null, t.x, t.y, t2.x, t2.y, {
+      new MiniDraw2.LineData(0, null, points[0], points[1], points[2], points[3], {
+      //t.x, t.y, t2.x, t2.y, {
          type: MiniDraw2.INSERTIMAGE,
          url: url
       }, 0)
