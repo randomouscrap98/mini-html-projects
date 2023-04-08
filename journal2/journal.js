@@ -104,6 +104,8 @@ function windowOnLoad()
          () => show(chat),
          () => hide(chat));
       setupToggleSetting("easymode", easymode);
+      //Note: even if we're not able to draw, this shouldn't impact anything (I think)
+      setupToggleSetting("imageinsert_select", imagecontrol_select);
 
       //If these need to be done later, it could pose a problem, there's an
       //ordering issue here: static export needs the close button
@@ -231,6 +233,7 @@ function getTool() {
       return getToolName(selectedTool);
 }
 function getImageInsert() { return imageselector.querySelector("[data-selected] img"); }
+function isImageSelect() { return imagecontrol_select.checked; }
 function setImageInsertFixedData(img) {
    //if(img.displaywidth && img.displayheight) return;
    var width = img.naturalWidth;
@@ -1536,26 +1539,50 @@ function trackPendingStroke(drw, pending)
       {
          pending.type = "image";
          pending.postLines = true;
-         var img = getImageInsert();
 
          if(!pending.lines.length)
          {
             //This shouldn't happen often
+            var img = getImageInsert();
             setImageInsertFixedData(img);
-            //We're going to set a bunch of these values later anyway
+
+            //We're going to set a bunch of these values later anyway. However,
+            //in case the image is "ImageSelect" mode, we pre-set the startx
+            //and starty. Also, we do NOT round anything, because we fix that
+            //at the end specially for images.
             pending.lines.push(new MiniDraw2.LineData(pending.size, pending.color,
-               0, 0, 0, 0, MiniDraw2.ImageType(img), pending.pattern));
+               //Startx, starty, endX, endY
+               drw.currentX, drw.currentY, 0, 0,
+               //Math.round(Math.max(drw.currentX,0)), Math.round(Math.max(drw.currentY,0)),
+               MiniDraw2.ImageType(img), pending.pattern));
          }
 
-         pending.lines[0].x1 = Math.round(drw.currentX - img.postwidth / 2);
-         pending.lines[0].y1 = Math.round(drw.currentY - img.postheight / 2);
-         pending.lines[0].x2 = Math.round(drw.currentX + img.postwidth / 2);
-         pending.lines[0].y2 = Math.round(drw.currentY + img.postheight / 2);
-         //pending.postLines = 
-            //pending.lines[0].x1 >= 0 && pending.lines[0].y1 >= 0 &&
-            //pending.lines[0].x2 >= 0 && pending.lines[0].y2 >= 0 &&
-            //pending.lines[0].x1 < constants.pwidth && pending.lines[0].y1 < constants.pheight &&
-            //pending.lines[0].x2 < constants.pwidth && pending.lines[0].y2 < constants.pheight;
+         //Since we fix everything afterwards anyway, just track wherever the
+         //cursor is. It'll mean something different depending on the select type
+         pending.lines[0].x2 = drw.currentX;
+         pending.lines[0].y2 = drw.currentY;
+
+         //if(isImageSelect())
+         //{
+         //   //User gives rect; we just track the movements like in the other
+         //   //rectangle. But at the end, we'll have to move some points around.
+         //   pending.lines[0].x2 = drw.currentX;
+         //   pending.lines[0].y2 = drw.currentY;
+         //   //pending.lines[0].x2 = Math.round(Math.max(drw.currentX,0));
+         //   //pending.lines[0].y2 = Math.round(Math.max(drw.currentY,0));
+         //}
+         //else
+         //{
+         //   //The entire image moves around and is statically sized.
+         //   //pending.lines[0].x1 = Math.round(drw.currentX - img.postwidth / 2);
+         //   //pending.lines[0].y1 = Math.round(drw.currentY - img.postheight / 2);
+         //   //pending.lines[0].x2 = Math.round(drw.currentX + img.postwidth / 2);
+         //   //pending.lines[0].y2 = Math.round(drw.currentY + img.postheight / 2);
+         //   pending.lines[0].x1 = drw.currentX - img.postwidth / 2;
+         //   pending.lines[0].y1 = drw.currentY - img.postheight / 2;
+         //   pending.lines[0].x2 = drw.currentX + img.postwidth / 2;
+         //   pending.lines[0].y2 = drw.currentY + img.postheight / 2;
+         //}
       }
 
       //if the amount of lines we're about to add is too much, remove from the
@@ -1597,7 +1624,7 @@ function selectRect(sx, sy, cx, cy)
 }
 
 
-function imageInsertRect(cx,cy,img) //,display)
+function imageInsertRect(sx, sy, cx,cy,img)
 {
    if(!imageinsertrect.hasAttribute("data-assigned"))
    {
@@ -1605,13 +1632,24 @@ function imageInsertRect(cx,cy,img) //,display)
       setImageInsertFixedData(img);
       imageinsertrect.style.backgroundImage = `url(${img.src})`;
       imageinsertrect.style.display = "block";
+   }
+
+   if(isImageSelect())
+   {
+      //Regular rect select (like selectRect)
+      imageinsertrect.style.left = Math.min(sx, cx) + "px";
+      imageinsertrect.style.top = Math.min(sy, cy) + "px";
+      imageinsertrect.style.width = Math.abs(sx - cx) + "px";
+      imageinsertrect.style.height = Math.abs(sy - cy) + "px";
+   }
+   else
+   {
+      //Drag and stamp
+      imageinsertrect.style.left = (cx - img.displaywidth / 2) + "px";
+      imageinsertrect.style.top = (cy - img.displayheight / 2) + "px";
       imageinsertrect.style.width = img.displaywidth + "px";
       imageinsertrect.style.height = img.displayheight + "px";
    }
-
-   imageinsertrect.style.left = (cx - img.displaywidth / 2) + "px";
-   imageinsertrect.style.top = (cy - img.displayheight / 2) + "px";
-   //setHidden(imageinsertrect, !display);
 }
 
 function clearAllRects()
@@ -1857,8 +1895,8 @@ async function drawerTick(drawer, pending)
       }
       else if(currentTool === "imageinsert")
       {
-         imageInsertRect(drawer.currentAction.clientX, drawer.currentAction.clientY, getImageInsert());
-            //pending && pending.postLines);
+         imageInsertRect(drawer.startAction.clientX, drawer.startAction.clientY,
+            drawer.currentAction.clientX, drawer.currentAction.clientY, getImageInsert());
       }
    }
    //Not currently drawing, post lines since we're done (why is this in the frame drawer again?)
@@ -1882,6 +1920,8 @@ async function drawerTick(drawer, pending)
          //This saves us in a few ways: some tools don't actually generate lines!
          if(pending.lines.length > 0 && pending.postLines)
          {
+            if(pending.type === "image")
+               fixImageSelect(pending);
             var ldata = globals.system.parser.CreateLines(pending.type,
                pending.layer, pending.lines, pending.ignoredColors);
             post(endpoint(globals.roomname), ldata, () => setStatus("ok"), () => setStatus("error"));
@@ -1892,6 +1932,65 @@ async function drawerTick(drawer, pending)
          pending.active = false;
          pending.lines = [];
       }
+   }
+}
+
+//For simplicity, we just kept the corners stored in the lines. Before we
+//actually post the lines, fix the corners so they're contained within the rect
+//and preserve the image's aspect ratio
+function fixImageSelect(pending)
+{
+   var isRect = isImageSelect();
+
+   for(let line of pending.lines)
+   {
+      //Rectangle select requires fitting the image into the rectangle
+      if(isRect)
+      {
+         let rectLeft = Math.min(line.x1, line.x2);
+         let rectTop = Math.min(line.y1, line.y2);
+         let rectWidth = Math.abs(line.x1 - line.x2);
+         let rectHeight = Math.abs(line.y1 - line.y2);
+         let rectRatio = rectWidth / rectHeight;
+         let imageRatio = line.extra.image.naturalWidth / line.extra.image.naturalHeight;
+
+         //If the rectangle is wider than the image, the limiting factor is the
+         //height. The image fills the whole rect's height
+         if(rectRatio > imageRatio)
+         {
+            //So, the y coordinates remain unchanged, only x moves
+            let newWidth = rectHeight * imageRatio;
+            line.x1 = rectLeft + (rectWidth - newWidth) / 2; //Half the remaining space in the outer rect
+            line.x2 = rectLeft + rectWidth - (rectWidth - newWidth) / 2; //The other side
+         }
+         //Otherwise the rectangle is narrower than the image, the limiting factor
+         //is the width. The image fills the whole rect's width
+         else 
+         {
+            //So, the x coordinates remain unchanged, only y
+            let newHeight = rectWidth / imageRatio;
+            line.y1 = rectTop + (rectHeight - newHeight) / 2; //Half the remaining space in the outer rect
+            line.y2 = rectTop + rectHeight - (rectHeight - newHeight) / 2; //The other side
+         }
+      }
+      //Otherwise, the user was dragging the image around. The only thing that
+      //matters is the current position, then we use the calculated postwidth etc.
+      //Note that we assume the image stored in the line is a reference to the
+      //actual image with the data already calculated on it (very fragile! fix this!)
+      else 
+      {
+         let x = line.x2;
+         let y = line.y2;
+         line.x1 = x - line.extra.image.postwidth / 2;
+         line.y1 = y - line.extra.image.postheight / 2;
+         line.x2 = x + line.extra.image.postwidth / 2;
+         line.y2 = y + line.extra.image.postheight / 2;
+      }
+      //Then regardless, we round everything
+      line.x1 = Math.round(line.x1);
+      line.x2 = Math.round(line.x2);
+      line.y1 = Math.round(line.y1);
+      line.y2 = Math.round(line.y2);
    }
 }
 

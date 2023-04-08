@@ -38,8 +38,10 @@ body[data-pagereadonly] [data-hidepagereadonly] {
 
 #imageinsertrect {
    filter: opacity(0.5);
-   background-size: cover;
    border: 1px solid rgba(255,0,0,0.5);
+   background-repeat: no-repeat;
+   background-position: center;
+   background-size: contain;
 }
 
 #window {
@@ -221,6 +223,10 @@ body[data-pagereadonly] [data-hidepagereadonly] {
 }
 #imageselector .stamp[data-selected] {
    background-color: skyblue !important;
+}
+#imagecontrols {
+   flex: none;
+   display: flex;
 }
 #imageadder {
    flex: none;
