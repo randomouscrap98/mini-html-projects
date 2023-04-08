@@ -210,8 +210,8 @@ body[data-pagereadonly] [data-hidepagereadonly] {
    align-content: flex-start;
 }
 #imageselector .stamp {
-   width: 90px;
-   height: 90px;
+   width: 85px;
+   height: 85px;
    padding: 5px;
    display: flex;
    align-items: center;

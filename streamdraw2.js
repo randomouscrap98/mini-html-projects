@@ -359,7 +359,7 @@ StreamDrawElementParser.prototype.ParseGenericBatch = function(data, start, leng
 //such, the link is converted to base64 (even though it's wasteful)
 StreamDrawElementParser.prototype.CreateImageInsert = function(lines) {
    var line = lines[0]; //This may fail if they gave us no lines, but whatever
-   var result = "";
+   var result = "0000"; //We have 4 reserved bytes. They're all 0 for now
    //Because of the nature of images, they won't be frequent, so we can waste
    //data using these much larger representations. Images can be posted
    //anywhere, I want them to be able to clip the edges at any time.
@@ -383,8 +383,9 @@ StreamDrawElementParser.prototype.CreateImageInsert = function(lines) {
 
 StreamDrawElementParser.prototype.ParseImageInsert = function(data, start, length) {
    //Image insert is only ever a single line. But the caller expects an array,
-   //so be careful.
-   var l = 0;
+   //so be careful. Also, remember we have 4 reserved bytes we're not using
+   //yet. I have plans for maybe 10 of them so far (hflip, vflip, rotate-360)
+   var l = 4;
    var points = []; //x1,y1,x2,y2
    for(var i = 0; i < 4; i++)
    {
