@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# These are cute illustrations from https://www.irasutoya.com/
 # Set the directory to process
 directory="stamps/irasutoya"
 
