@@ -12,7 +12,7 @@ do
   then
     # Generate the HTML output
     echo "<div class=\"stamp\">"
-    echo "   <img src=\"$directory/$(basename "$file")\" data-width=\"200\">"
+    echo "   <img data-src=\"$directory/$(basename "$file")\" data-width=\"200\">"
     echo "</div>"
   fi
 done

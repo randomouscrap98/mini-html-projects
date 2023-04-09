@@ -470,6 +470,19 @@ function setupColorControls()
    refreshPaletteDialog();
 }
 
+//To improve loading times(?), only load the images when the tray is opened the
+//first time. Note that this function could be called repeatedly, it should be
+//fairly inexpensive since it only does it the first time
+function loadAllStamps()
+{
+   var unsourced = imageselector.querySelectorAll("[data-src]");
+   for(var i = 0; i < unsourced.length; i++)
+   {
+      unsourced[i].src = unsourced[i].getAttribute("data-src");
+      unsourced[i].removeAttribute("data-src");
+   }
+}
+
 function setupSpecialControls()
 {
    layerselect.onclick = () =>
@@ -591,6 +604,7 @@ function setupToolClick(toolButton)
    //Now we do some special things on various tool clicks
    if(toolName === "imageinsert")
    {
+      loadAllStamps();
       toggleHidden(imagedialog);
    }
    else {
@@ -1186,9 +1200,9 @@ function performFunctionalExport(room)
 
    appendScroll(coverscreencontainer, "Please wait, downloading + stitching data + scripts");
    
-   //Remove stuff that causes problems
-   var rem = document.getElementById("imageselector");
-   rem.parentNode.removeChild(rem);
+   ////Remove stuff that causes problems
+   //var rem = document.getElementById("imageselector");
+   //rem.parentNode.removeChild(rem);
 
    //Then, go download all the header stuff and jam them into their respective elements
    var styles = document.head.querySelectorAll('link[rel="stylesheet"]');

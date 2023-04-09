@@ -701,6 +701,7 @@ var MiniDraw2 =
                         var img = MiniDraw2.CreateUntaintedImage();
                         img.onload = () => {
                            MiniDraw2._MemoizedImages[ld.extra.url] = img;
+                           console.log(`Cached image: ${ld.extra.url}`);
                            resolve();
                         };
                         img.onerror = reject;
