@@ -574,11 +574,6 @@ var MiniDraw2 =
       image.crossOrigin = "Anonymous";
       return image;
    },
-   //Patterns can apparently be used anywhere, so we can memoize the globally
-   _MemoizedPatterns : {}, 
-   //Images can of COURSE be used anywhere, so memoize them globally. Warning:
-   //I have not set a limit on images yet, so this could be bad...
-   _MemoizedImages : {},
    //An object to store a single line
    LineData : function (width, color, x1, y1, x2, y2, extra, patternId)
    {
@@ -591,11 +586,23 @@ var MiniDraw2 =
       this.extra = extra;
       this.patternId = patternId || 0;
    },
+   //Setup a container to be a memoizer; this should get called automatically
+   //if you did not setup a container yet.
+   SetupMemoizeContainer : function(container)
+   {
+      if(!container._MemoizedPatterns)
+         container._MemoizedPatterns = {};
+      if(!container._MemoizedImages)
+         container._MemoizedImages = {};
+      return container;
+   }
    //Setup the context's draw settings (fillStyle, etc) based on the given line
    //data. Stuff such as color or pattern. Patterns MAY get generated when you
    //call this, if they have not previous been used!
-   SetupLineStyle : function(ctx, ld)
+   SetupLineStyle : function(ctx, ld, memoizeContainer)
    {
+      memoizeContainer = MiniDraw2.SetupMemoizeContainer(memoizeContainer || this);
+
       if(ld.color)
       {
          if(ld.patternId)
@@ -606,7 +613,7 @@ var MiniDraw2 =
             //maybe 100, which times 16 pixels is only 1600, which... might be ok?
             //In any case, we could limit the memoizing to maybe 32 and always get
             //rid of the one with the least accesses
-            if(!MiniDraw2._MemoizedPatterns[pkey])
+            if(!memoizeContainer._MemoizedPatterns[pkey])
             {
                var cv = document.createElement("canvas");
                cv.width = 4; cv.height = 4;
@@ -626,6 +633,47 @@ var MiniDraw2 =
          else
          {
             ctx.fillStyle = ld.color;
+         }
+      }
+   },
+   FixLineData : async function(ctx, ld, memoizeContainer)
+   {
+      memoizeContainer = MiniDraw2.SetupMemoizeContainer(memoizeContainer || this);
+
+      //There's no loaded image yet for this line data, need to go
+      //fulfill that.
+      if(ld.extra.type === MiniDraw2.INSERTIMAGE)
+      {
+         if(!ld.extra.image)
+         {
+            //Oops, not memoized yet. Go do that, and await the result.
+            if(!(ld.extra.url in globals._memoizedImages))
+            {
+               try {
+                  await new Promise((resolve, reject) => {
+                     var img = MiniDraw2.CreateUntaintedImage();
+                     img.onload = () => {
+                        globals._memoizedImages[ld.extra.url] = img;
+                        console.log(`Cached image ${ld.extra.url}`);
+                        resolve();
+                     };
+                     img.onerror = reject;
+                     img.src = ld.extra.url;
+                  });
+               }
+               catch(ex) {
+                  //Don't let the whole drawing system crash just because an
+                  //image couldn't load. Better to just leave it blank and
+                  //move on; probably just a dead link or something.
+                  console.error(`Could not load image ${ld.extra.url}: ${ex}`);
+                  return;
+               }
+            }
+
+            //Since we're awaiting a promise up there, we know it'll be in
+            //the memoized pool or whatever here.
+            ld.extra.image = globals._memoizedImages[ld.extra.url];
+            ld.extra.url = false;
          }
       }
    },
@@ -680,10 +728,8 @@ var MiniDraw2 =
       }
    },
    //The ACTUAL "draw this line data" function (minidraw2). Note that this
-   //function MAY NOT immediately draw the line data, if something needs to
-   //load. If you want to make sure the line data is fully rendered, call
-   //MiniDraw2.WaitForDrawing(ctx). Also, if you want to cancel any queued
-   //line data, call MiniDraw2.CancelDrawing(ctx)
+   //expects all relevant line data to be present, meaning if you're trying to
+   //draw an image, that image must be loaded first.
    DrawLineData : function(ctx, ld)
    {
       if(ld.extra)
@@ -698,39 +744,44 @@ var MiniDraw2 =
          }
          else if(ld.extra.type === MiniDraw2.INSERTIMAGE)
          {
-            //There's no loaded image yet for this line data, need to go
-            //fulfill that.
             if(!ld.extra.image)
             {
-               //Oops, not memoized yet. Go do that, and await the result.
-               if(!(ld.extra.url in MiniDraw2._MemoizedImages))
-               {
-                  try {
-                     await new Promise((resolve, reject) => {
-                        var img = MiniDraw2.CreateUntaintedImage();
-                        img.onload = () => {
-                           MiniDraw2._MemoizedImages[ld.extra.url] = img;
-                           console.log(`Cached image ${ld.extra.url}`);
-                           resolve();
-                        };
-                        img.onerror = reject;
-                        img.src = ld.extra.url;
-                     });
-                  }
-                  catch(ex) {
-                     //Don't let the whole drawing system crash just because an
-                     //image couldn't load. Better to just leave it blank and
-                     //move on; probably just a dead link or something.
-                     console.error(`Could not load image ${ld.extra.url}: ${ex}`);
-                     return;
-                  }
-               }
-
-               //Since we're awaiting a promise up there, we know it'll be in
-               //the memoized pool or whatever here.
-               ld.extra.image = MiniDraw2._MemoizedImages[ld.extra.url];
-               ld.extra.url = false;
+               console.error("NO IMAGE DATA IN IMAGE LINETYPE!: ", ld);
+               return;
             }
+            ////There's no loaded image yet for this line data, need to go
+            ////fulfill that.
+            //if(!ld.extra.image)
+            //{
+            //   //Oops, not memoized yet. Go do that, and await the result.
+            //   if(!(ld.extra.url in MiniDraw2._MemoizedImages))
+            //   {
+            //      try {
+            //         await new Promise((resolve, reject) => {
+            //            var img = MiniDraw2.CreateUntaintedImage();
+            //            img.onload = () => {
+            //               MiniDraw2._MemoizedImages[ld.extra.url] = img;
+            //               console.log(`Cached image ${ld.extra.url}`);
+            //               resolve();
+            //            };
+            //            img.onerror = reject;
+            //            img.src = ld.extra.url;
+            //         });
+            //      }
+            //      catch(ex) {
+            //         //Don't let the whole drawing system crash just because an
+            //         //image couldn't load. Better to just leave it blank and
+            //         //move on; probably just a dead link or something.
+            //         console.error(`Could not load image ${ld.extra.url}: ${ex}`);
+            //         return;
+            //      }
+            //   }
+
+            //   //Since we're awaiting a promise up there, we know it'll be in
+            //   //the memoized pool or whatever here.
+            //   ld.extra.image = MiniDraw2._MemoizedImages[ld.extra.url];
+            //   ld.extra.url = false;
+            //}
 
             //This draws the image data directly into the canvas using the line
             //data provided. Just like all other things, x1, x2, y1, y2 are the

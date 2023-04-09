@@ -29,6 +29,10 @@ var globals =
       }
    },
    pbspeedAccumulator: 0, //ONLY for smoothing autofollow!
+   //Used to figure out if the old context for drawing lines is still valid,
+   //increases with each page change (even when exporting).
+   contextSwitchId: 0,
+   _memoizedImages: {},    //WARN: these will be duplicated in the sidebar too!  Double memory usage!
    undoBuffer : false,
    layerTop : 0,
    layerLeft : 0
@@ -1602,6 +1606,7 @@ function trackPendingStroke(drw, pending)
 
 async function drawLines(lines, context, overridecolor) 
 { 
+   let thisContext = globals.contextSwitchId;
    //console.log("Drawing: " + lines.length + " lines");
    for(let x of lines)
    {
@@ -1609,9 +1614,62 @@ async function drawLines(lines, context, overridecolor)
          x.color = overridecolor;
       var layer = x.layer === undefined ? getLayer() : x.layer; //IS THIS SAFE??
       var ctx = context || globals.contexts[layer];
-      await MiniDraw2.DrawLineDataAsync(ctx, x);
+      //Here, we fix up line data before sending it off to be drawn. Currently,
+      //this only means fixing up the image data
+      await fixLine(x);
+
+      //Oops, we waited too long and the context is different now. Give up
+      if(thisContext !== globals.contextSwitchId)
+      {
+         console.warn("Context switched while waiting on lines, dropping draw calls");
+         return [];  //Not sure if this is appropriate
+      }
+
+      //await MiniDraw2.DrawLineDataAsync(ctx, x);
+      MiniDraw2.DrawLineData(ctx, x);
    }
    return lines; 
+}
+
+// Fix a single line so it is prepped for drawing. 
+async function fixLine(ld)
+{
+   //There's no loaded image yet for this line data, need to go
+   //fulfill that.
+   if(ld.extra.type === MiniDraw2.INSERTIMAGE)
+   {
+      if(!ld.extra.image)
+      {
+         //Oops, not memoized yet. Go do that, and await the result.
+         if(!(ld.extra.url in globals._memoizedImages))
+         {
+            try {
+               await new Promise((resolve, reject) => {
+                  var img = MiniDraw2.CreateUntaintedImage();
+                  img.onload = () => {
+                     globals._memoizedImages[ld.extra.url] = img;
+                     console.log(`Cached image ${ld.extra.url}`);
+                     resolve();
+                  };
+                  img.onerror = reject;
+                  img.src = ld.extra.url;
+               });
+            }
+            catch(ex) {
+               //Don't let the whole drawing system crash just because an
+               //image couldn't load. Better to just leave it blank and
+               //move on; probably just a dead link or something.
+               console.error(`Could not load image ${ld.extra.url}: ${ex}`);
+               return;
+            }
+         }
+
+         //Since we're awaiting a promise up there, we know it'll be in
+         //the memoized pool or whatever here.
+         ld.extra.image = globals._memoizedImages[ld.extra.url];
+         ld.extra.url = false;
+      }
+   }
 }
 
 function selectRect(sx, sy, cx, cy)
