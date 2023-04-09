@@ -574,8 +574,11 @@ var MiniDraw2 =
       image.crossOrigin = "Anonymous";
       return image;
    },
-   _MemoizedPatterns : {},
-   _MemoizedImages : {}, //CAREFUL! If you have a lot of images this might be mem death?
+   //Patterns can apparently be used anywhere, so we can memoize the globally
+   _MemoizedPatterns : {}, 
+   //Images can of COURSE be used anywhere, so memoize them globally. Warning:
+   //I have not set a limit on images yet, so this could be bad...
+   _MemoizedImages : {},
    //An object to store a single line
    LineData : function (width, color, x1, y1, x2, y2, extra, patternId)
    {
@@ -588,7 +591,10 @@ var MiniDraw2 =
       this.extra = extra;
       this.patternId = patternId || 0;
    },
-   SetupLineStyle(ctx, ld)
+   //Setup the context's draw settings (fillStyle, etc) based on the given line
+   //data. Stuff such as color or pattern. Patterns MAY get generated when you
+   //call this, if they have not previous been used!
+   SetupLineStyle : function(ctx, ld)
    {
       if(ld.color)
       {
@@ -673,9 +679,12 @@ var MiniDraw2 =
          ctx.fill();
       }
    },
-   //The ACTUAL "draw this line data" function (minidraw2). It's async because
-   //some kinds of lines may need to load resources.
-   DrawLineDataAsync : async function(ctx, ld)
+   //The ACTUAL "draw this line data" function (minidraw2). Note that this
+   //function MAY NOT immediately draw the line data, if something needs to
+   //load. If you want to make sure the line data is fully rendered, call
+   //MiniDraw2.WaitForDrawing(ctx). Also, if you want to cancel any queued
+   //line data, call MiniDraw2.CancelDrawing(ctx)
+   DrawLineData : function(ctx, ld)
    {
       if(ld.extra)
       {
@@ -701,6 +710,7 @@ var MiniDraw2 =
                         var img = MiniDraw2.CreateUntaintedImage();
                         img.onload = () => {
                            MiniDraw2._MemoizedImages[ld.extra.url] = img;
+                           console.log(`Cached image ${ld.extra.url}`);
                            resolve();
                         };
                         img.onerror = reject;
@@ -829,6 +839,29 @@ MiniDraw2.LineData.prototype.is_solidrect = function()
 {
    return this.extra && (this.extra.type === MiniDraw2.SOLIDRECT);
 };
+
+
+//// A second version of the drawing helper which is now contextual, so it must
+//// be constructed and passed around. This is because we have patterns and image
+//// support, which require queued drawing commands and memoization
+//function MiniDraw2() {
+//   this._MemoizedPatterns = [];
+//   this._MemoizedImages = [];
+//}
+//
+//MiniDraw2.prototype.StampContext = function(ctx)
+//{
+//   if(!ctx._minidraw2_id)
+//      ctx._minidraw2id = Math.random();
+//   if(!ctx._minidraw2_queue)
+//      ctx._minidraw2_queue = []; //The queue of drawing commands
+//   if(!ctx._minidraw2_queuecontext)
+//      ctx._minidraw2_queuecontext = 0;
+//};
+//
+//MiniDraw2.prototype.
+
+//
 
 
 
