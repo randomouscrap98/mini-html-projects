@@ -6,7 +6,7 @@
 var system = 
 {
    name: "journal",
-   version: "2.1.1_f3"
+   version: "2.1.2_f3"
 };
 
 var globals = 
