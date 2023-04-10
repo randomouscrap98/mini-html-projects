@@ -575,7 +575,8 @@ var MiniDraw2 =
       return image;
    },
    _MemoizedPatterns : {},
-   _MemoizedImages : {}, //CAREFUL! If you have a lot of images this might be mem death?
+   _MemoizedImages : {},   //CAREFUL! If you have a lot of images this might be mem death?
+   _LineContextId : 0,     //Lines are stamped with this context and only drawn if it matches
    //An object to store a single line
    LineData : function (width, color, x1, y1, x2, y2, extra, patternId)
    {
@@ -587,6 +588,10 @@ var MiniDraw2 =
       this.y2 = y2;
       this.extra = extra;
       this.patternId = patternId || 0;
+      this._contextId = MiniDraw2._LineContextId;
+   },
+   CancelPendingLines : function () {
+      MiniDraw2._LineContextId++;
    },
    SetupLineStyle(ctx, ld)
    {
@@ -677,6 +682,13 @@ var MiniDraw2 =
    //some kinds of lines may need to load resources.
    DrawLineDataAsync : async function(ctx, ld)
    {
+      //Check the context at the start, this will cancel lines types that are
+      //immediate or which were waiting forever quickly
+      if(ld._contextId !== MiniDraw2._LineContextId)
+         return;
+      //{
+      //   //console.warn("Skipping out-of-context line: ", ld);
+      //}
       if(ld.extra)
       {
          if(ld.extra.type === MiniDraw2.SOLIDRECT)
@@ -707,6 +719,14 @@ var MiniDraw2 =
                         img.onerror = reject;
                         img.src = ld.extra.url;
                      });
+                     //Since we awaited, gotta check again. May make this DRY
+                     //later, but I need to avoid function calls maybe?
+                     if(ld._contextId !== MiniDraw2._LineContextId)
+                        return;
+                     //{
+                     //   console.warn("Skipping out-of-context line: ", ld);
+                     //   return;
+                     //}
                   }
                   catch(ex) {
                      //Don't let the whole drawing system crash just because an

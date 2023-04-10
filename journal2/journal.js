@@ -6,7 +6,7 @@
 var system = 
 {
    name: "journal",
-   version: "2.1.2_f3"
+   version: "2.1.3_f3"
 };
 
 var globals = 
@@ -820,6 +820,9 @@ function prepPage(pageData, system)
       setDrawSize(system, constants.pwidth, constants.pheight);
    }
 
+   //There may be lines still waiting around from an async something, don't let
+   //them draw please!
+   MiniDraw2.CancelPendingLines();
    CanvasUtilities.Clear(layer1);
    CanvasUtilities.Clear(layer2);
 }

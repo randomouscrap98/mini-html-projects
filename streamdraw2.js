@@ -367,14 +367,6 @@ StreamDrawElementParser.prototype.CreateImageInsert = function(lines) {
    result += StreamConvert.SignedToVariableWidth(line.y1);
    result += StreamConvert.SignedToVariableWidth(line.x2);
    result += StreamConvert.SignedToVariableWidth(line.y2);
-   //SPECIAL NOTE: Because of the nature of images, I allow negatives in ONLY
-   //the first point. If the second point is negative, we just throw. We spread
-   //the sign data across the two points since we have only one bit of extra
-   //data per point.
-   //if(line.x2 < 0 || line.y2 < 0) throw "Bad line data: end is negative!";
-   //Put the x and y of the line in there first, since it's a known length
-   //result += this.CreateStandardPoint(Math.abs(line.x1), Math.abs(line.y1), line.x1 < 0);
-   //result += this.CreateStandardPoint(line.x2, line.y2, line.y1 < 0);
    //Then the rest is just the url. Note that, just in case we were given an
    //unloaded image data, we check for url first before going to the image.
    result += btoa(line.extra.url || line.extra.image.src);
