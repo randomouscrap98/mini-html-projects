@@ -6,7 +6,7 @@
 var system = 
 {
    name: "journal",
-   version: "2.1.3_f3"
+   version: "2.2.0_f3"
 };
 
 var globals = 
@@ -49,6 +49,7 @@ var constants =
    autoDrawLineChunk : 90,//Be VERY CAREFUL with this value! Harmonic series...
    nonDrawTools : [ "exportrect", "pan" ], //Tools that can be used when drawing is locked//, "imageinsert" ],
    easymodeDefaultTool : "tool_pen",
+   klandBase : "https://kland.smilebasicsource.com",
    slowToolAlpha : 0.15,
    newPageUndos : 30,
    confirmPageTimeout : 5000,
@@ -483,6 +484,35 @@ function loadAllStamps()
    }
 }
 
+//Given at LEAST a URL (all other params are optional), create a stamp element
+//and select it. If given "loadLater", stamp will be added but not loaded until
+//'loadAllStamps' is called again (which it SHOULD be on every image tray open)
+function createNewStamp(url, onComplete, onSuccess, onError, loadLater)
+{
+   var container = document.createElement("div");
+   container.className = "stamp";
+   container.onclick = () => HTMLUtilities.SimulateRadioSelect(container, imageselector);
+   hide(container);
+   var image = MiniDraw2.CreateUntaintedImage();
+   image.onload = function() {
+      show(container);
+      container.click();
+      imageselector.scrollTop = imageselector.scrollHeight; 
+      if(onComplete) onComplete();
+      if(onSuccess) onSuccess();
+   };
+   image.onerror = function() {
+      alert("Couldn't load image! Probably CORS (restricted image), check console if possible!");
+      container.parentNode.removeChild(container);
+      if(onComplete) onComplete();
+      if(onError) onError();
+   };
+   if(loadLater) image.setAttribute("data-src", url);
+   else image.src = url;
+   container.appendChild(image);
+   imageselector.appendChild(container);
+}
+
 function setupSpecialControls()
 {
    layerselect.onclick = () =>
@@ -518,30 +548,57 @@ function setupSpecialControls()
             enable(imageadder_url);
             enable(imageadder_submit);
          };
-         var container = document.createElement("div");
-         container.className = "stamp";
-         container.onclick = () => HTMLUtilities.SimulateRadioSelect(container, imageselector);
-         hide(container);
-         var image = MiniDraw2.CreateUntaintedImage();
-         image.onload = function() {
-            show(container);
-            container.click();
-            restoreSubmit();
-         };
-         image.onerror = function() {
-            alert("Couldn't load image! Probably CORS (restricted image), check console if possible!");
-            container.parentNode.removeChild(container);
-            restoreSubmit();
-         };
-         image.src = imageadder_url.value;
-         container.appendChild(image);
-         imageselector.appendChild(container);
-
-         imageadder_url.value = "";
          disable(imageadder_url);
          disable(imageadder_submit);
+         createNewStamp(imageadder_url.value, restoreSubmit, () => { imageadder_url.value = ""; });
       }
    };
+
+   //Setup the image uploader for stamps to kland, which will add permanent stamps (for
+   //this journal) into the sidebar. We must set the bucket appropriately, and
+   //override the onsubmit for the form.
+   imageadder_kland_bucket.value = globals.roomname;
+   imageadder_kland.onsubmit = (e) => 
+   {
+      e.preventDefault();
+      var restoreSubmit = () => {
+         enable(imageadder_kland_submit);
+         enable(imageadder_kland_file);
+      };
+      disable(imageadder_kland_submit);
+      disable(imageadder_kland_file);
+      var kland_form = new FormData(imageadder_kland);
+      uploadKlandRaw(kland_form)
+         .then(url => {
+            imageadder_kland_file.value = "";
+            createNewStamp(url);
+            restoreSubmit();
+         })
+         .catch(err => {
+            alert("Could not upload image to kland!");
+            restoreSubmit();
+         });
+   };
+
+   //We use a standard bucket to upload your images: it's the roomname. To make
+   //life easier, go get all the images you've previously uploaded to that
+   //bucket and add them back to the stamp list. I'm hoping most of your images
+   //will be uploaded through there and not "added" as a url, since those are
+   //much harder to display after reload in the stamps list.
+   fetch(`${constants.klandBase}/image?bucket=${globals.roomname}&asJson=true&ipp=500`)
+      .then(r => r.json())
+      .then(j => {
+         j.pastImages.forEach(i => {
+            //We pass "true" for "load later" so the page isn't inundated with
+            //data on load. When you open the tray, it will then dynamically
+            //load all the images (or so we hope);
+            createNewStamp(`${constants.klandBase}${i.imageLink}`, false,
+               false, false, true);
+         });
+      })
+      .catch(err => {
+         console.error("Could not pull stamps from kland bucket!");
+      });
 }
 
 // Refresh the entire palette display (minus the standard color input) based on
@@ -1296,6 +1353,11 @@ function copySection(ld)
    return exportCanvas;
 }
 
+function uploadKlandRaw(form) {
+   return fetch(constants.klandBase + "/uploadimage" , { method: "POST", body: form })
+         .then(r => r.text())
+}
+
 function exportSection(ld)
 {
    if(ld.x1 - ld.x2 == 0 || ld.y1 - ld.y2 == 0)
@@ -1320,7 +1382,7 @@ function exportSection(ld)
    var klandBucket = document.createElement("input");
    klandBucket.setAttribute("type", "text");
    klandBucket.setAttribute("placeholder", "Kland bucket");
-   klandBucket.value = getSetting("lastKlandBucket") || "";
+   klandBucket.value = getSetting("lastKlandBucket") || globals.roomname;
 
    var klandUpload = document.createElement("button");
    klandUpload.textContent = "Upload to kland";
@@ -1333,8 +1395,7 @@ function exportSection(ld)
          data.append("image", blob, explink.download);
          if(bucket) data.append("bucket", bucket);
          setSetting("lastKlandBucket", bucket); //always set it, in case you want to clear it
-         fetch("https://kland.smilebasicsource.com/uploadimage" , { method: "POST", body: data })
-            .then(r => r.text())
+         uploadKlandRaw(data)
             .then(t => 
             {
                var klandLink = document.createElement("a");

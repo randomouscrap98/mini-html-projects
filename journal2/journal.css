@@ -228,14 +228,14 @@ body[data-pagereadonly] [data-hidepagereadonly] {
    flex: none;
    display: flex;
 }
-#imageadder {
+.imageadder {
    flex: none;
    display: flex;
 }
-#imageadder_url {
+.imageadder_input {
    flex: 1;
 }
-#imageadder_submit {
+.imageadder_submit {
    flex: none;
 }
 

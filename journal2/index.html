@@ -3,14 +3,14 @@
    <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-      <script src="../jquery-3.4.1.min.js?v=1681084728"></script>
-      <script src="../randomous.js?v=1681084728"></script>
-      <script src="../randomousCanvas.js?v=1681084728"></script>
-      <script src="../mini.js?v=1681084728"></script>
-      <script src="../streamdraw2.js?v=1681084728"></script>
-      <script src="journal.js?v=1681084728"></script>
-      <link rel="stylesheet" href="../mini.css?v=1681084728">
-      <link rel="stylesheet" href="journal.css?v=1681084728">
+      <script src="../jquery-3.4.1.min.js?v=1682032849"></script>
+      <script src="../randomous.js?v=1682032849"></script>
+      <script src="../randomousCanvas.js?v=1682032849"></script>
+      <script src="../mini.js?v=1682032849"></script>
+      <script src="../streamdraw2.js?v=1682032849"></script>
+      <script src="journal.js?v=1682032849"></script>
+      <link rel="stylesheet" href="../mini.css?v=1682032849">
+      <link rel="stylesheet" href="journal.css?v=1682032849">
       <title>Journal 2</title>
    </head>
    <body class="collapseall">
@@ -213,10 +213,15 @@
                <span>Select Area (default)</span>
             </label>
          </div>
-         <div id="imageadder">
-            <input type="text" id="imageadder_url" placeholder="url">
-            <button id="imageadder_submit">Add</button>
+         <div id="imageadder" class="imageadder">
+            <input type="text" id="imageadder_url" class="imageadder_input" placeholder="url">
+            <button id="imageadder_submit" class="imageadder_submit">Add temp</button>
          </div>
+         <form id="imageadder_kland" class="imageadder">
+            <input type="file" name="image" id="imageadder_kland_file" class="imageadder_input" required="">
+            <input type="hidden" name="bucket" id="imageadder_kland_bucket" value="journal2_orphaned_stamps">
+            <button id="imageadder_kland_submit" type="submit" class="imageadder_submit">Upload</button>
+         </form>
       </div>
       <div id="sidebar" class="inertall" data-disabled>
          <div id="paintcontrols" class="controls">
