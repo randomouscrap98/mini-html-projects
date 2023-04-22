@@ -161,6 +161,11 @@ body[data-pagereadonly] [data-hidepagereadonly] {
    background-color: white;
    border-right: 1px solid #BBB; 
 }
+[data-ios] .slideout {
+   /* iOS has this stupid always-there bar at the bottom, as though yeah,
+    * nothing is down there on any page! Fuck you! */
+   padding-bottom: 1em;
+}
 #palettedialog {
    width: 160px;
 }

@@ -3,14 +3,14 @@
    <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-      <script src="../jquery-3.4.1.min.js?v=1682143589"></script>
-      <script src="../randomous.js?v=1682143589"></script>
-      <script src="../randomousCanvas.js?v=1682143589"></script>
-      <script src="../mini.js?v=1682143589"></script>
-      <script src="../streamdraw2.js?v=1682143589"></script>
-      <script src="journal.js?v=1682143589"></script>
-      <link rel="stylesheet" href="../mini.css?v=1682143589">
-      <link rel="stylesheet" href="journal.css?v=1682143589">
+      <script src="../jquery-3.4.1.min.js?v=1682144590"></script>
+      <script src="../randomous.js?v=1682144590"></script>
+      <script src="../randomousCanvas.js?v=1682144590"></script>
+      <script src="../mini.js?v=1682144590"></script>
+      <script src="../streamdraw2.js?v=1682144590"></script>
+      <script src="journal.js?v=1682144590"></script>
+      <link rel="stylesheet" href="../mini.css?v=1682144590">
+      <link rel="stylesheet" href="journal.css?v=1682144590">
       <title>Journal 2</title>
    </head>
    <body class="collapseall">
@@ -38,31 +38,6 @@
             <textarea tabindex="1" id="message" maxlength="3500" placeholder="message" required=""></textarea>
             <input tabindex="2" type="submit">
          </form>
-      </div>
-      <div id="palettedialog" class="inertall slideout" data-hidden>
-         <div id="palettedialogcontrols">
-            <button id="palettedialogleft">◀</button>
-            <span id="palettedialogname"></span>
-            <button id="palettedialogright">▶</button>
-         </div>
-         <div id="palettedialogpalette">
-         </div>
-         <input type="color" id="color">
-      </div>
-      <div id="configdialog" class="inertall slideout configlist" data-hidden>
-         <label title="Set reasonable defaults you might expect in an art
-            program related to tools/tracking/etc">
-            <input type="checkbox" id="easymode" checked="true">Easier</label>
-         <label title="If a page has an imported image, export it as jpg (recommended)">
-            <input type="checkbox" id="imjpg" checked="true">Im&#9656;Jpg</label>
-         <hr>
-         <em>Export:</em>
-         <a href="#" id="exportsingle" title="Export the entire page you're on as a png">Page</a>
-         <a href="" target="_blank" id="export" data-hidepagereadonly
-            title="Export page as-is (readonly), requires javascript to view">Functional</a>
-         <a href="#" id="exportstatic" title="Export journal as simple html or svg">Static</a>
-         <a href="#" id="viewonly" title="Link to readonly page without any
-         room information, useful for sharing" data-hidepagereadonly>Readonly</a>
       </div>
       <div id="imagedialog" class="inertall slideout" data-hidden>
          <!-- Flex to fill up whole area, but scrollable -->
@@ -238,6 +213,37 @@
             <button id="imageadder_kland_submit" type="submit" class="imageadder_submit">Upload</button>
          </form>
       </div>
+      <!-- Dialogs are ordered by importance, which most important going last.
+           I want the color dialog closer to the sidebar than the images -->
+      <div id="palettedialog" class="inertall slideout" data-hidden>
+         <div id="palettedialogcontrols">
+            <button id="palettedialogleft">◀</button>
+            <span id="palettedialogname"></span>
+            <button id="palettedialogright">▶</button>
+         </div>
+         <div id="palettedialogpalette">
+         </div>
+         <input type="color" id="color">
+      </div>
+      <!-- Want this as close to the sidebar as possible for visual consistency -->
+      <div id="configdialog" class="inertall slideout configlist" data-hidden>
+         <label title="Set reasonable defaults you might expect in an art
+            program related to tools/tracking/etc">
+            <input type="checkbox" id="easymode" checked="true">Easier</label>
+         <label title="Applies various fixes for special child iOS devices (iPad, mostly)">
+            <input type="checkbox" id="iosmode">iOS</label>
+         <label title="If a page has an imported image, export it as jpg (recommended)">
+            <input type="checkbox" id="imjpg" checked="true">Im&#9656;Jpg</label>
+         <hr>
+         <em>Export:</em>
+         <a href="#" id="exportsingle" title="Export the entire page you're on as a png">Page</a>
+         <a href="" target="_blank" id="export" data-hidepagereadonly
+            title="Export page as-is (readonly), requires javascript to view">Functional</a>
+         <a href="#" id="exportstatic" title="Export journal as simple html or svg">Static</a>
+         <a href="#" id="viewonly" title="Link to readonly page without any
+         room information, useful for sharing" data-hidepagereadonly>Readonly</a>
+      </div>
+      <!-- And finally, the always visiable sidebar -->
       <div id="sidebar" class="inertall" data-disabled>
          <div id="paintcontrols" class="controls">
             <div id="colortools" class="flexrow" data-hidepagereadonly>

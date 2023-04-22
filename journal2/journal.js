@@ -6,7 +6,7 @@
 var system = 
 {
    name: "journal",
-   version: "2.2.1_f3"
+   version: "2.2.2_f3"
 };
 
 var globals = 
@@ -110,6 +110,9 @@ function windowOnLoad()
          () => hide(configdialog));
       setupToggleSetting("easymode", easymode);
       setupToggleSetting("imjpg", imjpg);
+      setupToggleSetting("iosmode", iosmode,
+         () => document.body.setAttribute("data-ios", ""),
+         () => document.body.removeAttribute("data-ios"));
       //Note: even if we're not able to draw, this shouldn't impact anything (I think)
       setupToggleSetting("imageinsert_select", imagecontrol_select);
 
