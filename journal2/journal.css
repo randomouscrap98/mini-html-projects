@@ -196,6 +196,11 @@ body[data-pagereadonly] [data-hidepagereadonly] {
    height: 30px;
 }
 
+#configdialog {
+   width: 160px;
+   background-color: #F7F7F7;
+}
+
 #imagedialog {
    width: 320px;
    display: flex;
@@ -312,13 +317,14 @@ button[data-selected] { background-color: skyblue !important; }
    display: block;
 }
 
-#webcontrols {
+/* We have these scattered now, so it's a class (the lists of checkboxes you
+ * use to configure the journal */
+.configlist {
    flex: auto;
    font-size: 13px; /*0.8em;*/
    padding: 0.2em 0;
 }
-
-#webcontrols > * {
+.configlist > * {
    display: block;
    margin: 0.2em 0.4em;
 }

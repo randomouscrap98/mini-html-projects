@@ -6,7 +6,7 @@
 var system = 
 {
    name: "journal",
-   version: "2.2.0_f3"
+   version: "2.2.1_f3"
 };
 
 var globals = 
@@ -53,6 +53,7 @@ var constants =
    slowToolAlpha : 0.15,
    newPageUndos : 30,
    confirmPageTimeout : 5000,
+   jpgquality : 0.95,
    microScale : 5
 };
 
@@ -104,7 +105,11 @@ function windowOnLoad()
       setupToggleSetting("pagechat", pagechat, 
          () => show(chat),
          () => hide(chat));
+      setupToggleSetting("pageconfig", pageconfig, 
+         () => show(configdialog),
+         () => hide(configdialog));
       setupToggleSetting("easymode", easymode);
+      setupToggleSetting("imjpg", imjpg);
       //Note: even if we're not able to draw, this shouldn't impact anything (I think)
       setupToggleSetting("imageinsert_select", imagecontrol_select);
 
@@ -825,7 +830,7 @@ async function exportSinglePage(page, system, redrawPage) //forgetPage)//, syste
 {
    var pageData = system.FindPage(page);
    prepPage(pageData, system);
-
+   
    //We're only going to go through this once.
    var drawTracking = system.InitializeLineScan(page);
    var allLines = [];
@@ -838,15 +843,22 @@ async function exportSinglePage(page, system, redrawPage) //forgetPage)//, syste
    //Don't bother sending a context, we're drawing DIRECTLY onto the original pages
    await drawLines(allLines);
 
-   //Copy the top layer OVER the bottom layer
+   //Copy the top layer OVER the bottom layer. This will create a merged image
    CanvasUtilities.CopyInto(globals.contexts[1], layer1, 0, 0, "source-over");
+
+   //Clear the top layer with white, then redraw the combined layers over that.
+   //This will ensure the fully merged image has a white background
+   CanvasUtilities.Clear(layer1, "#FFFFFF");
+   CanvasUtilities.CopyInto(globals.contexts[0], layer2, 0, 0, "source-over");
 
    var result = false;
 
-   //Need this so images are saved with backgrounds. Can only do it AFTER all
-   //drawings, because often times an eraser is used!
-   CanvasUtilities.SwapColor(globals.contexts[1], new Color(0,0,0,0), new Color(255,255,255,1), 0);
-   result = layer2.toDataURL("image/png", "-moz-parse-options:png-zlib-level=9;transparency=none");
+   if(getSetting("imjpg") && allLines.some(x => x.is_image())) {
+      result = layer1.toDataURL("image/jpeg", constants.jpgquality);
+   }
+   else {
+      result = layer1.toDataURL("image/png", "-moz-parse-options:png-zlib-level=9;transparency=none");
+   }
 
    //This should reset layer2 for us. We already have the data URL
    if(redrawPage)

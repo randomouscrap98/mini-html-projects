@@ -851,6 +851,10 @@ MiniDraw2.LineData.prototype.is_solidrect = function()
    return this.extra && (this.extra.type === MiniDraw2.SOLIDRECT);
 };
 
+MiniDraw2.LineData.prototype.is_image = function()
+{
+   return this.extra && (this.extra.type === MiniDraw2.INSERTIMAGE);
+};
 
 
 var StreamConvert =
