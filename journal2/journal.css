@@ -238,6 +238,9 @@ body[data-pagereadonly] [data-hidepagereadonly] {
    display: flex;
 }
 .imageadder_input {
+   /* For some reason, input type file doesn't work with flex: 1 unless I set a
+    * width. It can be anything, this width is most likely bogus */
+   width: 100px;
    flex: 1;
 }
 .imageadder_submit {
