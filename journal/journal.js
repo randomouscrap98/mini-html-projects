@@ -160,11 +160,11 @@ function windowOnLoad(skipPrechecks)
       }
       else
       {
-         pullInitialStream(() =>
+         pullInitialStream((data) =>
          {
             //DON'T start the frame function until we have the initial stream, this isn't an export!
             enable(sidebar);
-            startLongPoller();
+            startLongPoller(data);
             frameFunction(); 
          });
       }
@@ -911,7 +911,7 @@ function pullInitialStream(continuation)
             successfulDataCallback(data);
 
             if(continuation) 
-               continuation();
+               continuation(data);
          }
       })
       .fail(data =>
@@ -920,14 +920,14 @@ function pullInitialStream(continuation)
       });
 }
 
-function startLongPoller()
+function startLongPoller(origdata)
 {
-   //console.log(globals);
-   queryEnd(globals.roomname, globals.system.rawData.length, (data, start) =>
+   // used to start at globals.system.rawData.length, this is incorrect(?)
+   queryEnd(globals.roomname, origdata.nextstart, (data, start) =>
    {
       globals.system.rawData += data.data;
       successfulDataCallback(data);
-      return data.data.length;
+      return data.datalength;
    }, () =>
    { 
       setStatus("error");

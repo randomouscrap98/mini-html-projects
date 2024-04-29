@@ -107,7 +107,7 @@ $(document).ready(function()
       if(data.used > 1480000)
          exp.addClass("disabled");
 
-      return data.data.length;
+      return data.datalength;
    }, function() { setError(statusindicator); }, isReadonly);
 
    //Start the system
