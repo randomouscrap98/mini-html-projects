@@ -110,6 +110,7 @@ body[data-pagereadonly] [data-hidepagereadonly] {
 
 #messageform > * {
    width: 100%;
+   box-sizing: border-box;
 }
 
 #messageform textarea {
